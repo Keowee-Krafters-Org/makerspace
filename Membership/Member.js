@@ -25,6 +25,8 @@ class Member {
   }
 
   toObject() {
-    return { ...this };
+    const clone = { ...this };
+    delete clone.authentication;
+    return clone;
   }
 }

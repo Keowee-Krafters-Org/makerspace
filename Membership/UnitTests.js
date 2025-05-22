@@ -9,33 +9,35 @@ const assert = (label, expected, actual) => {
   }
 };
 
-const TEST_EMAIL = 'oopscope@gmail.com';
-
+const testEmailAddress = 'testuser@keoweekrafters.org'; 
 // Mock member input
 const testMemberMinimum = {
-  emailAddress: 'testuser@example.com'
+  emailAddress: testEmailAddress
 };
 
 const testMember = {
-  emailAddress: 'testuser@example.com',
+  emailAddress: testEmailAddress,
   firstName: 'Testy',
   lastName: 'User',
   phoneNumber: '123-456-7890',
   address: '123 Mock St, Faketown',
   interests: 'Woodworking, Quilting',
-  level: 2
+  level: 1
 };
 
 function deleteTestMember(emailAddress) {
   const sheet = getRegistrySheet();
   const data = sheet.getDataRange().getValues();
+  const columnIndexByName = getNamedColumnIndexMap(); 
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][SharedConfig.registry.sheet.namedColumns.emailAddress] === emailAddress) {
+    if (data[i][columnIndexByName['emailAddress']] === emailAddress) {
       sheet.deleteRow(i + 1);
       Logger.log(`Deleted test member: ${emailAddress}`);
       return;
     }
   }
+  SpreadsheetApp.flush();
 }
 
 function test_if_member_registers__then_member_data_is_complete() {
@@ -65,7 +67,7 @@ function test_if_member_registers__then_member_data_is_complete() {
 }
 
 function test_if_system_sends_email_then_user_receives_email() {
-  sendEmail(TEST_EMAIL, 'Test', 'Just Testing');
+  sendEmail(testEmailAddress, 'Test', 'Just Testing');
 }
 
 function test_if_member_is_added_member_is_found() {
@@ -169,4 +171,26 @@ function test_verifyToken_transitions_user_to_VERIFIED() {
 
   assert('Verification success', true, result.success);
   assert('Status updated to VERIFIED', 'VERIFIED', result.status);
+}
+/**
+ * Test that getAllMembers() returns the correct structure
+ */
+function test_getAllMembers_returns_members() {
+  addMemberRegistration(testMember);
+  const all = getAllMembers();
+  const found = all.find(m => m.emailAddress === testMember.emailAddress);
+  assert('Found registered member', true, !!found);
+  assert('First name matches', testMember.firstName, found.firstName);
+  deleteTestMember(testMember.emailAddress);
+}
+
+function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified () {
+  let lookup =  addMemberRegistration(testMember);
+  lookup = memberLookup(testMember.emailAddress); 
+  const authenticationIn = generateAuthentication(); 
+  setRecordValue(lookup, 'authentication', authenticationIn);
+  SpreadsheetApp.flush(); 
+  const authenticationOut = getAuthentication(testMember.emailAddress); 
+  assert ('Authentication', true, authenticationOut); 
+  assert("Token", authenticationIn.token, authenticationOut.token);
 }

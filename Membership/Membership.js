@@ -4,19 +4,7 @@ function getAllMembers() {
   const sheet = getRegistrySheet();
   const data = sheet.getDataRange().getValues();
   const colMap = getNamedColumnIndexMap(sheet);
-  const headers = data[0];
-  const members = [];
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const member = {};
-    for (const [name, colIndex] of Object.entries(colMap)) {
-      member[name] = row[colIndex - 1];
-    }
-    members.push(member);
-  }
-
-  return members;
+  return data.slice(1).map(row => Member.fromRow(row, colMap).toObject());
 }
 
 function updateMember(emailAddress, updates) {
@@ -28,71 +16,49 @@ function updateMember(emailAddress, updates) {
   return true;
 }
 
-function loginMember(emailAddress) {
-  let lookup = memberLookup(emailAddress);
-  let expired = true;
-  const authentication = generateAuthentication();
-  const authenticationEntry = JSON.stringify(authentication);
-  if (!lookup.found) {
+function loginMember(email) {
+  const lookup = memberLookup(email);
+  const token = Math.floor(100000 + Math.random() * 900000).toString();
+  const expirationTime = new Date(Date.now() + SharedConfig.loginTokenExpirationMinutes * 60 * 1000).toISOString();
+  const tokenEntry = `${token}|${expirationTime}`;
+
+  if (lookup.found && lookup.token) {
+    const [_, expiry] = lookup.token.split('|');
+    const expired = new Date() > new Date(expiry);
+
+    if (expired) {
+      setRecordStatus(lookup, 'TOKEN_EXPIRED');
+      setRecordValue(lookup, 'authentication', tokenEntry);
+      sendEmail(email, 'Your MakeKeowee Login Code', `Your verification code is: ${token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`);
+    } else if (lookup.memberStatus === 'REGISTERED') {
+      setRecordStatus(lookup, 'VERIFIED');
+    }
+  } else {
     appendNewMemberRecord({
-      emailAddress: emailAddress,
-      authentication: authenticationEntry,
-      memberStatus: "NEW"
+      emailAddress: email,
+      authentication: tokenEntry,
+      memberStatus: 'VERIFYING'
     });
-    SpreadsheetApp.flush();
-    lookup = memberLookup(emailAddress);
-  }
-  setRecordStatus(lookup, 'VERIFYING');
-  if (lookup.authentication) {
-    const expirationTime = lookup.authentication.expirationTime;
-    expired = new Date() > new Date(expirationTime);
-  }
-
-  if (!expired && lookup.memberStatus === 'REGISTERED') {
-    setRecordStatus(lookup, 'VERIFIED');
-  }
-
-  setRecordValue(lookup, 'authentication', authenticationEntry);
-  SpreadsheetApp.flush();
-  // Still in verification mode? 
-  if (lookup.status === 'VERIFYING') {
-    sendEmail(emailAddress, 'Your MakeKeowee Login Code', `Your verification code is: ${authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`);
+    sendEmail(email, 'Your MakeKeowee Login Code', `Your verification code is: ${token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`);
   }
 
   return {
     success: true,
     found: lookup.found,
-    emailAddress: lookup.emailAddress,
+    email,
     firstName: lookup.firstName || '',
     lastName: lookup.lastName || '',
     status: lookup.status || 'VERIFYING',
     memberStatus: lookup.memberStatus || 'NEW',
     redirectToForm: false,
-    level: lookup.level,
     formUrl: null,
     entryMap: null
   };
 }
 
-function generateAuthentication() {
-  const token = Math.floor(100000 + Math.random() * 900000).toString();
-  const expirationTime = new Date(Date.now() + SharedConfig.loginTokenExpirationMinutes * 60 * 1000).toISOString();
-  const authentication = { token: token, expirationTime: expirationTime };
-  return authentication;
-}
-
-function verifyMemberToken(emailAddress, userToken) {
-  const lookup = memberLookup(emailAddress);
-  if (!lookup.found) {
-    return {
-      success: false,
-      status: 'UNVERIFIED',
-      message: 'Email record not found - please login again to correct'
-    };
-  }
-
-  if (!lookup.authentication) {
-    setRecordStatus(lookup, 'UNVERIFIED');
+function verifyMemberToken(email, userToken) {
+  const lookup = memberLookup(email);
+  if (!lookup.found || !lookup.token) {
     return {
       success: false,
       status: 'UNVERIFIED',
@@ -100,8 +66,8 @@ function verifyMemberToken(emailAddress, userToken) {
     };
   }
 
-  const expirationTime = lookup.authentication.expirationTime;
-  if (new Date() > new Date(expirationTime)) {
+  const [storedToken, expiry] = lookup.token.split('|');
+  if (new Date() > new Date(expiry)) {
     return {
       success: false,
       status: lookup.status,
@@ -109,7 +75,7 @@ function verifyMemberToken(emailAddress, userToken) {
     };
   }
 
-  if (userToken !== lookup.authentication.token) {
+  if (userToken !== storedToken) {
     return {
       success: false,
       status: lookup.status,
@@ -127,13 +93,13 @@ function verifyMemberToken(emailAddress, userToken) {
       message: 'Access denied. Please contact administrator.'
     };
   }
-  SpreadsheetApp.flush();
+
   return {
     success: true,
-    emailAddress: emailAddress, 
     found: lookup.found,
     firstName: lookup.firstName,
     lastName: lookup.lastName,
+    email,
     memberStatus: lookup.memberStatus,
     status: lookup.status,
     redirectToForm: false
@@ -141,49 +107,36 @@ function verifyMemberToken(emailAddress, userToken) {
 }
 
 /**
- * Looks up a member by emailAddress in the registry sheet.
+ * Looks up a member by email in the registry sheet.
  */
-function memberLookup(emailAddress) {
+function memberLookup(email) {
   const sheet = SpreadsheetApp.openById(SharedConfig.registry.sheet.id)
     .getSheetByName(SharedConfig.registry.sheet.name);
   const data = sheet.getDataRange().getValues();
   const columnIndexByName = getNamedColumnIndexMap(sheet);
-
   const emailCol = columnIndexByName['emailAddress'] - 1;
-  const firstNameCol = columnIndexByName['firstName'] - 1;
-  const lastNameCol = columnIndexByName['lastName'] - 1;
-  const statusCol = columnIndexByName['status'] - 1;
-  const authCol = columnIndexByName['authentication'] - 1;
-  const memberStatusCol = columnIndexByName['memberStatus'] - 1;
-
-  const levelCol = columnIndexByName['level'] - 1;
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][emailCol]?.toLowerCase() === emailAddress.toLowerCase()) {
+    if (data[i][emailCol]?.toLowerCase() === email.toLowerCase()) {
+      const member = Member.fromRow(data[i], columnIndexByName);
       return {
         found: true,
-        emailAddress: data[i][emailCol],
-        firstName: data[i][firstNameCol],
-        lastName: data[i][lastNameCol],
-        status: data[i][statusCol],
-        authentication: parseAuthenticationEntry(data[i][authCol]),
-        memberStatus: data[i][memberStatusCol],
+        ...member.toObject(),
+        authentication: data[i][columnIndexByName['authentication'] - 1],
         rowIndex: i + 1,
-        level: data[i][levelCol],
         sheet,
         columnIndexByName
       };
     }
   }
-
   return { found: false, sheet, columnIndexByName };
 }
 
 function addMember(member) {
-  const lookup = memberLookup(member.emailAddress);
+  const lookup = memberLookup(member.emailAddress); 
   if (lookup.found) return lookup;
 
-  const newLookup = addMemberWithEmail(member.emailAddress);
+  const newLookup = addMemberWithEmail(member.emailAddress); 
 
   updateMemberRecord(newLookup, {
     emailAddress: member.emailAddress,
@@ -195,21 +148,21 @@ function addMember(member) {
 }
 
 function addMemberWithEmail(emailAddress) {
-  const columnIndexByName = getNamedColumnIndexMap();
+  const columnIndexByName = getNamedColumnIndexMap(); 
   const sheet = getRegistrySheet();
-  const row = sheet.getLastRow();
   sheet.appendRow(new Array(sheet.getLastColumn()).fill(''));
-
+  SpreadsheetApp.flush();
+  const row = sheet.getLastRow();
   const lookup = {
-    rowIndex: row + 1,
-    sheet: sheet,
-    found: true,
+    rowIndex: row, 
+    sheet: sheet, 
+    found: true, 
     columnIndexByName: columnIndexByName
   }
 
   setSheetValue(lookup, SharedConfig.registry.sheet.emailLookupColumn, emailAddress);
-  SpreadsheetApp.flush();
-  return lookup;
+  
+  return lookup; 
 }
 
 
@@ -235,10 +188,9 @@ function updateMemberRecord(lookup, values) {
 
   for (const [key, value] of Object.entries(values)) {
     if (columnIndexByName[key] !== undefined && value !== undefined) {
-      setSheetValue(lookup, key, value);
+      setSheetValue(lookup, key,value);
     }
   }
-  SpreadsheetApp.flush();
 }
 
 /**
@@ -264,13 +216,13 @@ function setSheetValue(lookup, column, value) {
 function setRecordStatus(lookup, status) {
   setSheetValue(lookup, 'status', status);
   lookup.status = status;
-  return lookup;
+  return lookup; 
 }
 
 function setRecordValue(lookup, column, status) {
   setSheetValue(lookup, column, status);
   lookup[column] = status;
-  return lookup;
+  return lookup; 
 }
 
 function setMemberStatus(lookup, status) {
@@ -286,9 +238,9 @@ function getSharedConfig() {
   return SharedConfig;
 }
 
-function sendEmail(emailAddress, title, message) {
-  console.info(`Sending token to: ${emailAddress}`);
-  GmailApp.sendEmail(emailAddress, title,
+function sendEmail(email, title, message) {
+  console.info(`Sending token to: ${email}`);
+  GmailApp.sendEmail(email, title,
     message,
     {
       from: 'noreply@keoweekrafters.org',
@@ -318,32 +270,10 @@ function getNamedColumnIndexMap(sheet = getRegistrySheet()) {
   return map;
 }
 
-/**
- * Get the value in the record for column
- * @returns the value of the rom and column
- */
-function getRecordValue(lookup, column) {
-  const sheet = lookup.sheet;
-  const row = lookup.rowIndex;
-  const columnIndexByName = lookup.columnIndexByName;
-  return sheet.getRange(row, columnIndexByName[column]).getValue();
-}
+// Membership.gs — Core membership logic shared by web app and form triggers
 
-function getRecordAuthentication(lookup) {
-  const authenticationEntry = getRecordValue(lookup, 'authentication');
-
-  return parseAuthenticationEntry(authenticationEntry);
-}
-
-function parseAuthenticationEntry(authenticationEntry) {
-  return (authenticationEntry && authenticationEntry != '') ?
-    JSON.parse(authenticationEntry) :
-    generateAuthentication();
-}
-
-function memberLogout(emailAddress) {
-  const lookup = memberLookup(emailAddress); 
-  setRecordStatus(lookup, 'UNVERIFIED'); 
-  SpreadsheetApp.flush(); 
-  return {success: true, status: 'UNVERIFIED'}; 
+function getAuthentication(emailAddress) {
+  const lookup = memberLookup(emailAddress);
+  if (!lookup.found) return null;
+  return lookup.authentication || null;
 }
