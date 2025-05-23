@@ -9,24 +9,15 @@ class Member {
     this.address = data.address || '';
     this.interests = data.interests || '';
     this.level = data.level || 0;
-    this.status = data.status || 'UNVERIFIED';
-    this.memberStatus = data.memberStatus || 'NEW';
-    this.authentication = data.authentication || null;
-    this.waiverDate = data.waiverDate || '';
-    this.waiverPdfLink = data.waiverPdfLink || '';
+    this.login = new Login(data); 
+    this.registration = new Registration(data); 
   }
 
-  static fromRow(row, colMap) {
-    const member = new Member();
-    for (const [key, colIndex] of Object.entries(colMap)) {
-      member[key] = row[colIndex - 1]; // Convert 1-based index to 0-based
-    }
-    return member;
-  }
+ 
 
   toObject() {
     const clone = { ...this };
-    delete clone.authentication;
+    delete clone.login.authentication;
     return clone;
   }
 }

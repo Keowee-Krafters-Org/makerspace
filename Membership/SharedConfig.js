@@ -1,5 +1,5 @@
 var SharedConfig = {
-  version: 'SNAPSHOT-0.1.25',
+  version: 'SNAPSHOT-0.1.26',
   loginTokenExpirationMinutes: 15, 
   sesstionTokenExpirationMinutes: 60 * 24,
   forms: {

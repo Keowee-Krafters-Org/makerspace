@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    input[type="text"], select {
+      padding: 6px;
+      width: 200px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 6px 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Member Administration Panel</h2>
+  <div>
+    <input type="text" id="search" placeholder="Search by name or email" />
+    <select id="filter">
+      <option value="">All Statuses</option>
+      <option value="NEW">New</option>
+      <option value="REGISTERED">Registered</option>
+      <option value="VERIFIED">Verified</option>
+      <option value="APPLIED">Applied</option>
+      <option value="PENDING">Pending</option>
+    </select>
+    <button onclick="loadMembers()">Search</button>
+  </div>
+  <table id="memberTable">
+    <thead>
+      <tr><th>Email</th><th>First Name</th><th>Last Name</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+   
+
+    function loadMembers(members) {
+      const search = document.getElementById('search').value.toLowerCase();
+      const filter = document.getElementById('filter').value;
+
+      const filtered = members.filter(m => {
+        const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) || m.firstName?.toLowerCase().includes(search) || m.lastName?.toLowerCase().includes(search);
+        const matchesFilter = !filter || m.memberStatus === filter;
+        return matchesSearch && matchesFilter;
+      });
+
+      const tbody = document.querySelector('#memberTable tbody');
+      tbody.innerHTML = '';
+      filtered.forEach(member => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${member.emailAddress || ''}</td>
+          <td>${member.firstName || ''}</td>
+          <td>${member.lastName || ''}</td>
+          <td>${member.memberStatus || ''}</td>
+          <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function editMember(email) {
+      alert('Edit member: ' + email);
+      // Future: Show modal with editable fields
+    }
+
+    google.script.run.withSuccessHandler(data => {
+      const members = JSON.parse(data); 
+      console.log(members); 
+      loadMembers(members);
+    }).getAllMembers();
+  </script>
+  <p><h5>Version: SNAPSHOT-0.00.007</h5></p>
+</body>
+</html>
