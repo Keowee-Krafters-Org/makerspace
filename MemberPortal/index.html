@@ -74,7 +74,7 @@
         content += `<h2>Welcome, ${member.firstName} ${member.lastName}</h2>`;
       }
 
-      switch (member.status) {
+      switch (member.login.status) {
         case 'UNVERIFIED':
           content += `<h2>Member Login</h2>
             <label for="email">Email Address:</label>
@@ -101,12 +101,12 @@ case 'VERIFYING':
           break;
 
         case 'VERIFIED':
-          if (member.memberStatus === 'NEW') {
+          if (member.registration.status === 'NEW') {
             const registrationUrl = buildPrefilledFormUrl(config.forms.registration, member);
             content += `<p>You're almost done! Please complete your registration below.</p>
               <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p>`;
 
-          } else if (member.memberStatus === 'REGISTERED') {
+          } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
             const level = parseInt(member.level || 0);
 
@@ -134,16 +134,16 @@ case 'VERIFYING':
 
             content += '</ul>';
 
-          } else if (member.memberStatus === 'APPLIED') {
+          } else if (member.registration.status === 'APPLIED') {
             const waiverUrl = buildPrefilledFormUrl(config.forms.waiver, member);
             content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
               <p><a href="${waiverUrl}" target="_blank">Sign Waiver Form</a></p>`;
 
-          } else if (member.memberStatus === 'PENDING') {
+          } else if (member.registration.status === 'PENDING') {
             content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>`;
 
           } else {
-            content += `<p>Your membership status is ${member.status.toLowerCase()}.</p>`;
+            content += `<p>Your membership status is ${member.login.status.toLowerCase()}.</p>`;
           }
 
           content += `<button onclick="logout()">Logout</button>`;

@@ -10,12 +10,13 @@ const assert = (label, expected, actual) => {
 };
 
 const testEmailAddress = 'testuser@keoweekrafters.org'; 
-// Mock member input
-const testMemberMinimum = {
-  emailAddress: testEmailAddress
-};
 
-const testMember = {
+// Replace raw objects with instances of Member class
+const testMemberMinimum = new Member({
+  emailAddress: testEmailAddress
+});
+
+const testMember = new Member({
   emailAddress: testEmailAddress,
   firstName: 'Testy',
   lastName: 'User',
@@ -23,7 +24,7 @@ const testMember = {
   address: '123 Mock St, Faketown',
   interests: 'Woodworking, Quilting',
   level: 1
-};
+});
 
 function deleteTestMember(emailAddress) {
   const sheet = getRegistrySheet();
@@ -42,7 +43,7 @@ function deleteTestMember(emailAddress) {
 
 function test_if_member_registers__then_member_data_is_complete() {
   try {
-    addMemberRegistration(testMember);
+    addMemberRegistration(testMember.toObject());
     const lookup = memberLookup(testMember.emailAddress);
     const sheet = lookup.sheet;
     const row = lookup.rowIndex;
@@ -72,9 +73,9 @@ function test_if_system_sends_email_then_user_receives_email() {
 
 function test_if_member_is_added_member_is_found() {
   try {
-    addMember(testMemberMinimum);
+    addMember(testMemberMinimum.toObject());
     const lookup = memberLookup(testMemberMinimum.emailAddress);
-    assert ("Record", true, lookup.found); 
+    assert("Record", true, lookup.found);
     const sheet = lookup.sheet;
     const row = lookup.rowIndex;
     const cols = lookup.columnIndexByName; 
@@ -89,11 +90,11 @@ function test_if_member_is_added_member_is_found() {
 }
 
 function test_if_duplicate_member_is_not_added() {
-  addMember(testMemberMinimum); // First insert
+  addMember(testMemberMinimum.toObject()); // First insert
   const firstLookup = memberLookup(testMemberMinimum.emailAddress);
   const originalRow = firstLookup.rowIndex;
 
-  addMember(testMemberMinimum); // Try again
+  addMember(testMemberMinimum.toObject()); // Try again
   const secondLookup = memberLookup(testMemberMinimum.emailAddress);
   assert('Duplicate row check', originalRow, secondLookup.rowIndex);
 
@@ -101,27 +102,28 @@ function test_if_duplicate_member_is_not_added() {
 }
 
 function test_if_status_and_memberStatus_are_set_correctly() {
-  const member = { ...testMember };
-  addMember(member);
+  const member = new Member(testMember.toObject());
+  addMember(member.toObject());
 
   let lookup = memberLookup(member.emailAddress);
-  assert('Initial status', 'UNVERIFIED', lookup.status);
+  assert('Initial status', 'UNVERIFIED', lookup.member.login.status);
 
   setRecordStatus(lookup, "VERIFIED"); 
-  addMemberRegistration(member); // Should promote memberStatus to APPLIED if VERIFIED
+  addMemberRegistration(member.toObject()); // Should promote memberStatus to APPLIED if VERIFIED
   lookup = memberLookup(member.emailAddress);
-  assert('Member status', 'APPLIED', lookup.memberStatus);
+  assert('Member status', 'APPLIED', lookup.member.registration.status);
 
   deleteTestMember(member.emailAddress);
 }
 
 function test_if_registration_form_ignores_missing_fields() {
-  const partial = {
+  const partial = new Member({
     emailAddress: 'partial@example.com',
     firstName: 'Partial'
-  };
+  });
+
   try {
-    addMemberRegistration(partial);
+    addMemberRegistration(partial.toObject());
     const lookup = memberLookup(partial.emailAddress);
     assert('First Name', 'Partial', lookup.firstName);
     Logger.log('Missing fields handled gracefully');
@@ -145,7 +147,7 @@ function test_when_user_logs_in__then_user_status_is_VERIFYING() {
   assert("Success", true, result.success); 
   
   //And user status is VERIFYING
-  assert("Status", "VERIFYING", result.status); 
+  assert("Status", "VERIFYING", result.data.login.status); 
 } 
 
 /**
@@ -157,26 +159,22 @@ function test_when_user_logs_in__then_user_status_is_VERIFYING() {
  */
 function test_verifyToken_transitions_user_to_VERIFIED() {
   const emailAddress = testMember.emailAddress; 
-  // Given user has entered emailAddress and logged in
   let result = loginMember(emailAddress); 
-  assert("Success", true, result.success); 
   
-  //And user status is VERIFYING
-  assert("Status", "VERIFYING", result.status); 
-  const lookup = memberLookup(emailAddress); 
-  const token = getRecordAuthentication(lookup, 'authentication').token; 
-
-    // Simulate the user entering the correct token
+  assert("Status", "VERIFYING", result.data.login.status); 
+  const lookup  = memberLookup(emailAddress); 
+  const token = getRecordAuthentication(lookup, 'authentication').token;
   result = verifyMemberToken(emailAddress, token);
 
   assert('Verification success', true, result.success);
-  assert('Status updated to VERIFIED', 'VERIFIED', result.status);
+  assert('Status updated to VERIFIED', 'VERIFIED', result.data.login.status);
 }
+
 /**
  * Test that getAllMembers() returns the correct structure
  */
 function test_getAllMembers_returns_members() {
-  addMemberRegistration(testMember);
+  addMemberRegistration(testMember.toObject());
   const all = getAllMembers();
   const found = all.find(m => m.emailAddress === testMember.emailAddress);
   assert('Found registered member', true, !!found);
@@ -184,13 +182,18 @@ function test_getAllMembers_returns_members() {
   deleteTestMember(testMember.emailAddress);
 }
 
-function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified () {
-  let lookup =  addMemberRegistration(testMember);
+
+function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
+  let lookup = addMemberRegistration(testMember.toObject());
   lookup = memberLookup(testMember.emailAddress); 
   const authenticationIn = generateAuthentication(); 
-  setRecordValue(lookup, 'authentication', authenticationIn);
+  setRecordValue(lookup, 'authentication', JSON.stringify(authenticationIn));
   SpreadsheetApp.flush(); 
   const authenticationOut = getAuthentication(testMember.emailAddress); 
-  assert ('Authentication', true, authenticationOut); 
-  assert("Token", authenticationIn.token, authenticationOut.token);
+
+
+  assert('Authentication Null', false, !authenticationOut); 
+  assert('Token', authenticationIn.token, authenticationOut.token);
 }
+
+

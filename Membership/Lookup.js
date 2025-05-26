@@ -8,10 +8,20 @@ class Lookup {
     this.found = found; 
     this.rowIndex = rowIndex; 
     this.columnIndexByName = columnIndexByName; 
-    this.sheet  = sheet;
+    this.sheet = sheet;
     this.member = new Member(data);
   }
+
     toObject() {
-    return this; 
+    return {
+      found: this.found,
+      rowIndex: this.rowIndex,
+      columnIndexByName: { ...this.columnIndexByName },
+      member: this.member.toObject()
+    };
+  }
+
+    hasAdminAccess(requiredLevel) {
+    return this.level >= requiredLevel;
   }
 } 
