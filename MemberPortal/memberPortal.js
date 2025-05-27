@@ -19,16 +19,16 @@ function login(email) {
   email = String(email || '').trim();
   if (!email) throw new Error('No email provided.');
 
-  return Membership.loginMember(email);
+  return JSON.stringify(Membership.loginMember(email));
 }
 
 /**
  * Verifies a submitted token against the stored value via Membership module.
  */
 function verifyToken(email, userToken) {
-  return Membership.verifyMemberToken(email, userToken);
+  return JSON.stringify(Membership.verifyMemberToken(email, userToken));
 }
 
 function logout(emailAddress) {
-    return Membership.memberLogout(emailAddress); 
+    return JSON.stringify(Membership.memberLogout(emailAddress)); 
 }

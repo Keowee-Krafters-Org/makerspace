@@ -67,7 +67,11 @@
 
     let currentEmail = '';
 
+/**
+ * Generate the document 
+ */
     function getDashboardContent(member, config) {
+      console.log(`Generating content with ${member} + ${config}`);
       let content = '<div class="dashboard">';
 
       if (member.firstName && member.lastName) {
@@ -170,24 +174,27 @@ case 'VERIFYING':
       currentEmail = email;
 
       if (!email) {
-        renderDashboard({ status: 'VERIFYING', error: 'Please enter a valid email address.' });
+        renderDashboard({ login: { status:  'VERIFYING', error: 'Please enter a valid email address.' } });
         return;
       }
 
       if (!email.includes('@') || !email.includes('.')) {
-        renderDashboard({ status: 'VERIFYING', error: 'Please enter a valid email address.' });
+        renderDashboard({ login: { status:  'VERIFYING', error: 'Please enter a valid email address.' } });
         return;
       }
 
       google.script.run
         .withFailureHandler(e => {
-          renderDashboard({ status: 'VERIFYING', error: e.message });
+          renderDashboard({ login: { status:  'VERIFYING', error: e.message } });
         })
-        .withSuccessHandler(response => {
+        .withSuccessHandler(res => {
+          
+          const response = JSON.parse(res); 
           if (response && response.success) {
-            renderDashboard(response);
+            const member = response.data; 
+            renderDashboard(member);
           } else {
-            renderDashboard({ status: 'VERIFYING', error: 'Email not found in member registry.' });
+            renderDashboard({ login: { status:  'VERIFYING', error: 'Email not found in member registry.' } });
           }
         })
         .login(email);
@@ -196,17 +203,20 @@ case 'VERIFYING':
     function verifyCode() {
       const token = document.getElementById('token').value.trim();
       google.script.run.withSuccessHandler(res => {
-        if (!res.success) {
+        
+      const response = JSON.parse(res); 
+        if (!response.success) {
           document.getElementById('error').textContent = res.message;
           return;
         }
 
-        if (res.redirectToForm) {
-          const map = res.entryMap;
-          const url = res.formUrl + `?${map.email}=${encodeURIComponent(currentEmail)}`;
+        if (response.redirectToForm) {
+          const map = response.entryMap;
+          const url = response.formUrl + `?${map.email}=${encodeURIComponent(currentEmail)}`;
           window.location.href = url;
         } else {
-          renderDashboard(res);
+          const member = response.data;
+          renderDashboard(member);
         }
       }).verifyToken(currentEmail, token);
     }
@@ -227,27 +237,30 @@ function resendToken() {
 
   google.script.run
     .withFailureHandler(e => {
-      renderDashboard({ status: 'VERIFYING', error: e.message });
+      renderDashboard({ login: { status:  'VERIFYING', error: e.message } });
     })
-    .withSuccessHandler(response => {
+    .withSuccessHandler(res => {
+      const response = JSON.parse(res); 
       if (response && response.success) {
-        document.getElementById('error').textContent = `Verification code resent to ${currentEmail}`;
-        renderDashboard(response);
+        const member  = response.data; 
+        document.getElementById('error').textContent = `Verification code resent to ${member.emailAddress}`;
+        renderDashboard(member);
       } else {
-        renderDashboard({ status: 'VERIFYING', error: 'Unable to resend code.' });
+        renderDashboard({ login: { status:  'VERIFYING', error: 'Unable to resend code.' } });
       }
     })
     .login(email);
 }
     
     function logout() {
-      google.script.run.withSuccessHandler(() => location.reload()).logout();
+      google.script.run.withSuccessHandler( () =>  renderDashboard({ login: { status:  'UNVERIFIED' } }))
+      .logout(email);
     }
 
-    renderDashboard({ status: 'UNVERIFIED' });
+    renderDashboard({ login: { status:  'UNVERIFIED' } });
   </script>
 </body>
 
-<h5>Version: SNAPSHOT-0.01.036</h5>
+<h5>Version: SNAPSHOT-0.01.041</h5>
 
 </html>

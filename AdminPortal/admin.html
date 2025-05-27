@@ -63,7 +63,7 @@
 
       const filtered = members.filter(m => {
         const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) || m.firstName?.toLowerCase().includes(search) || m.lastName?.toLowerCase().includes(search);
-        const matchesFilter = !filter || m.memberStatus === filter;
+        const matchesFilter = !filter || m.registration.status === filter;
         return matchesSearch && matchesFilter;
       });
 
