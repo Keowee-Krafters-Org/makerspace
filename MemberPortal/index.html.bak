@@ -161,10 +161,9 @@ case 'VERIFYING':
       return content;
     }
 
-  function renderDashboard(user) {
+    function renderDashboard(user) {
       google.script.run.withSuccessHandler(config => {
         document.getElementById('app').innerHTML = getDashboardContent(user, config);
-        document.getElementById('version').textContent = `Version: ${config.version.memberPortal}`;
       }).getSharedConfig();
     }
 
@@ -207,7 +206,7 @@ case 'VERIFYING':
         
       const response = JSON.parse(res); 
         if (!response.success) {
-          document.getElementById('error').textContent = response.message;
+          document.getElementById('error').textContent = res.message;
           return;
         }
 
@@ -260,6 +259,8 @@ function resendToken() {
 
     renderDashboard({ login: { status:  'UNVERIFIED' } });
   </script>
-  <h5>  <p id="version"></p></h5>
 </body>
+
+<h5>Version: SNAPSHOT-0.01.041</h5>
+
 </html>

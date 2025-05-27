@@ -1,0 +1,15 @@
+Found 14 versions.
+1 - Admin Portal for Memberships
+2 - SNAPSHOT-0.0.002
+3 - SNAPSHOT-0.0.003
+4 - No description
+5 - SNAPSHOT-0.0.003
+6 - No description
+7 - SNAPSHOT-0.0.004
+8 - SNAPSHOT-0.00.005
+9 - SNAPSHOT-0.00.006
+10 - SNAPSHOT-0.00.007
+11 - SNAPSHOT-0.00.008
+12 - AdminPortal version ..1 - Automated Deployment
+13 - AdminPortal version SNAPSHOT-0.00.8 - Automated Deployment
+14 - AdminPortal version SNAPSHOT-0.00.8 - Automated Deployment

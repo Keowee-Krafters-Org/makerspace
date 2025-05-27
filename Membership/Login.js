@@ -1,7 +1,7 @@
 class Login {
   constructor(data = {}) {
     this.status = data.status || 'UNVERIFIED';
-    this.authentication = data.authentication || {};
+      this.authentication = parseAuthenticationEntry(data.authentication) || {};
     this.errors = [];
     this.found = data.hasOwnProperty('found') ? data.found : false;
   }

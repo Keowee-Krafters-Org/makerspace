@@ -56,9 +56,7 @@
       const search = document.getElementById('search').value.toLowerCase();
       const filter = document.getElementById('filter').value;
 
-      google.script.run.withSuccessHandler(res => {
-        const response = JSON.parse(res); 
-        const members = response.data; 
+      google.script.run.withSuccessHandler(members => {
       const filtered = members.filter(m => {
           const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) ||
                                 m.firstName?.toLowerCase().includes(search) ||
@@ -83,9 +81,7 @@
     }
 
     function editMember(email) {
-      google.script.run.withSuccessHandler(res => {
-        const response = JSON.parse(res); 
-        const member = response.data; 
+      google.script.run.withSuccessHandler(member => {
         selectedMember = member;
         document.getElementById('editEmail').value = member.emailAddress;
         document.getElementById('editFirstName').value = member.firstName;
@@ -108,15 +104,10 @@
         .updateMemberInfo(updatedMember);
     }
 
-        // Load shared config and update version dynamically
-    google.script.run.withSuccessHandler(config => {
-      document.getElementById('version').textContent = `Version: ${config.version.adminPortal}`;
-    }).getSharedConfig();
-
     // Initial load of members
     loadMembers();
   </script>
-   <h5><p id="version"></p></h5>
+  <p><h5>Version: SNAPSHOT-0.00.007</h5></p>
 </body>
 </html>
 </html>

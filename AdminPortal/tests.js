@@ -23,8 +23,8 @@ const assert = (label, expected, actual) => {
  * Test that getAllMembers() returns the correct structure
  */
 function test_getAllMembers_returns_members() {
-  const all = Membership.getAllMembers();
-  const found = all.find(m => m.emailAddress === testMember.emailAddress);
+  const all = JSON.parse(getAllMembers());
+  const found = all.data.find(m => m.emailAddress === testMember.emailAddress);
   assert('Found registered member', true, !!found);
   assert('First name matches', testMember.firstName, found.firstName);
 }
@@ -34,4 +34,9 @@ function test_whenUserLandsOnPageWithEmail_thenUserIsAllowedIn() {
   lookup = Membership.memberLookup(testMember.emailAddress);
   const result = doGet({parameter: {emailAddress: testMember.emailAddress}}); 
   assert("Result", true, result); 
+}
+
+function test_whenMemberIsLookedup_thenMemberisReturned() {
+  let lookup = JSON.parse(getMemberByEmail(testMember.emailAddress)); 
+  assert("Member", testMember.emailAddress, lookup.data.emailAddress); 
 }
