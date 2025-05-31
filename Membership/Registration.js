@@ -1,7 +1,8 @@
 class Registration {
   constructor(data = {}) {
+    this.level = data.level || 1;
     // Initialize registration status; default to 'NEW' if not provided
-    this.status = data.memberStatus || 'NEW';
+    this.status = data.status || 'NEW';
     // Set waiverSigned; ensure it's a boolean; default to false
     this.waiverSigned = typeof data.waiverSigned === 'boolean' ? data.waiverSigned : false;
     // Set waiverDate; validate if it's a proper date
@@ -20,9 +21,18 @@ class Registration {
   toObject() {
     return {
       status: this.status,
+      level: this.level,
       waiverSigned: this.waiverSigned,
       waiverDate: this.waiverDate,
       waiverPdfLink: this.waiverPdfLink
     };
+  }
+
+  static fromObject(data) {
+    return new Registration(data?{...data}:{}); 
+  }
+
+  static fromRow(row) {
+    return new Registration({...row, status: row.memberStatus}) ;
   }
 }

@@ -1,7 +1,7 @@
 class Login {
   constructor(data = {}) {
     this.status = data.status || 'UNVERIFIED';
-      this.authentication = parseAuthenticationEntry(data.authentication) || {};
+    this.authentication = data.authentication || {};
     this.errors = [];
     this.found = data.hasOwnProperty('found') ? data.found : false;
   }
@@ -31,10 +31,28 @@ class Login {
   }
 
   // Method to convert the object to a plain object
-  toObject() {
+  toObjectNoAuthentication() {
     const clone = { ...this };
     delete clone.authentication;
     return clone;
+  }
+
+  toObject() {
+    return {
+      status: this.status,
+      authentication: this.authentication
+    };
+  }
+
+  /**
+   * Create a Login from JSON object data
+   */
+  static fromObject(data) {
+    return new Login(data?{...data, authentication: data.authentication}:{}); 
+  }
+
+  static fromRow(row) {
+    return new Login({...row, authentication: parseAuthenticationEntry(row.authentication)}); 
   }
 }
 

@@ -60,7 +60,7 @@ function login(email) {
  */
 function getAllMembers() {
   const members = Membership.getAllMembers(); 
-  const response = new Response(true,members ); 
+  const response = Membership.makeResponse(true,members ); 
   return JSON.stringify(response);
 }
 
@@ -71,19 +71,16 @@ function getMemberByEmail(email) {
   const lookup = memberLookup(email);
   if (!lookup.found) throw new Error('Member not found');
 
-  return JSON.stringify(new Response(true, lookup.member.toObject()));
+  return JSON.stringify(Membership.makeResponse(true, lookup.member.toObjectNoAuthentication()));
 }
 
 /**
  * Updates a member's record with new information.
  * @param {Object} updatedMember - The member object with updated data.
  */
-function updateMemberInfo(updatedMember) {
-  const lookup = memberLookup(updatedMember.emailAddress);
-  if (!lookup.found) throw new Error('Member not found');
-
-  updateMemberRecord(lookup, updatedMember);
-  return true;
+function updateMember(updatedMemberJson) {
+  const savedMember = Membership.updateMember(JSON.parse( updatedMemberJson));
+  return JSON.stringify(Membership.makeResponse(true, savedMember.toObjectNoAuthentication()));
 }
 
 /**
@@ -93,11 +90,4 @@ function getSharedConfig() {
   return Membership.SharedConfig;
 }
 
-function updateMemberInfo(updatedMember) {
-  const lookup = memberLookup(updatedMember.emailAddress);
-  if (!lookup.found) throw new Error('Member not found');
-
-  updateMemberRecord(lookup, updatedMember);
-  return true;
-}
 

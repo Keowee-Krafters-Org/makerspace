@@ -1,19 +1,107 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base target="_top">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .member-list { border-collapse: collapse; width: 100%; }
-    .member-list th, .member-list td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    .member-list th { background-color: #f2f2f2; }
-    .member-editor { margin-top: 20px; }
-    .hidden { display: none; }
-    input[type="text"], select { padding: 6px; width: 200px; margin-right: 10px; }
-    button { padding: 6px 12px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .member-list {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .member-list th,
+    .member-list td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .member-list th {
+      background-color: #f2f2f2;
+    }
+
+    .member-editor {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      width: 400px;
+    }
+
+    .member-editor h3 {
+      margin-top: 0;
+    }
+
+    .member-editor label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+
+    .member-editor input[type="text"],
+    .member-editor select {
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    .member-editor button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .member-editor button:hover {
+      background-color: #45a049;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    a.readonly-link {
+      display: inline-block;
+      margin-top: 5px;
+      color: #0645ad;
+      text-decoration: underline;
+    }
+
+    .spinner {
+      display: none;
+      margin: 20px auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3367d6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
+
 <body>
+  <div id="spinner" class="spinner"></div>
+  <div id="app"></div>
   <h2>Admin Portal</h2>
   <div>
     <input type="text" id="search" placeholder="Search by name or email" />
@@ -34,6 +122,7 @@
           <th>Email</th>
           <th>Name</th>
           <th>Status</th>
+          <th>Level</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -43,81 +132,147 @@
 
   <div id="memberEditor" class="member-editor hidden">
     <h3>Edit Member</h3>
-    <label>Email: <input type="text" id="editEmail" disabled /></label><br>
-    <label>First Name: <input type="text" id="editFirstName" /></label><br>
-    <label>Last Name: <input type="text" id="editLastName" /></label><br>
+    <label>Email: <input type="text" id="editEmail" disabled /></label>
+    <label>First Name: <input type="text" id="editFirstName" /></label>
+    <label>Last Name: <input type="text" id="editLastName" /></label>
+
+    <label>Level:
+      <select id="editLevel"></select>
+    </label>
+
+    <label>Status:
+      <select id="editStatus">
+        <option value="NEW">New</option>
+        <option value="REGISTERED">Registered</option>
+        <option value="VERIFIED">Verified</option>
+        <option value="APPLIED">Applied</option>
+        <option value="PENDING">Pending</option>
+      </select>
+    </label>
+
+    <label>Waiver Signed:
+      <select id="editWaiverSigned">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    </label>
+
+    <label>Waiver PDF Link:</label>
+    <a id="editWaiverLink" class="readonly-link" href="#" target="_blank">View Waiver</a>
+
     <button onclick="saveMember()">Save Changes</button>
   </div>
 
   <script>
     let selectedMember = null;
-   
+    let sharedConfig = {};
+
+    function showSpinner() {
+      document.getElementById('spinner').style.display = 'block';
+    }
+
+    function hideSpinner() {
+      document.getElementById('spinner').style.display = 'none';
+    }
+
+    function populateLevelDropdown() {
+      const select = document.getElementById('editLevel');
+      select.innerHTML = '';
+      Object.entries(sharedConfig.levels || {}).forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.appendChild(option);
+      });
+    }
+
     function loadMembers() {
       const search = document.getElementById('search').value.toLowerCase();
       const filter = document.getElementById('filter').value;
-
+      showSpinner();
       google.script.run.withSuccessHandler(res => {
-        const response = JSON.parse(res); 
-        const members = response.data; 
-      const filtered = members.filter(m => {
+        const response = JSON.parse(res);
+        const members = response.data;
+        const filtered = members.filter(m => {
           const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) ||
                                 m.firstName?.toLowerCase().includes(search) ||
                                 m.lastName?.toLowerCase().includes(search);
-        const matchesFilter = !filter || m.registration.status === filter;
-        return matchesSearch && matchesFilter;
-      });
+          const matchesFilter = !filter || m.registration.status === filter;
+          return matchesSearch && matchesFilter;
+        });
 
         const tbody = document.getElementById('memberRows');
-      tbody.innerHTML = '';
-      filtered.forEach(member => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${member.emailAddress || ''}</td>
+        tbody.innerHTML = '';
+        filtered.forEach(member => {
+          const levelName = Object.entries(sharedConfig.levels || {}).find(([key, val]) => key == member.registration.level)?.[1] || member.registration.level;
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${member.emailAddress || ''}</td>
             <td>${member.firstName || ''} ${member.lastName || ''}</td>
-            <td>${member.memberStatus || ''}</td>
-          <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
-        `;
-        tbody.appendChild(row);
-      });
-    }).getAllMembers();
+            <td>${member.registration?.status || ''}</td>
+            <td>${levelName}</td>
+            <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
+          `;
+          tbody.appendChild(row);
+          hideSpinner();
+        });
+      }).getAllMembers();
     }
 
     function editMember(email) {
+      showSpinner();
       google.script.run.withSuccessHandler(res => {
-        const response = JSON.parse(res); 
-        const member = response.data; 
+        const response = JSON.parse(res);
+        const member = response.data;
         selectedMember = member;
         document.getElementById('editEmail').value = member.emailAddress;
         document.getElementById('editFirstName').value = member.firstName;
         document.getElementById('editLastName').value = member.lastName;
+        document.getElementById('editLevel').value = member.registration?.level;
+        document.getElementById('editStatus').value = member.registration?.status || '';
+        document.getElementById('editWaiverSigned').value = String(member.registration?.waiverSigned || 'false');
+        const waiverLink = member.registration?.waiverPdfLink || '#';
+        const linkElement = document.getElementById('editWaiverLink');
+        linkElement.href = waiverLink;
+        linkElement.textContent = waiverLink !== '' ? 'View Waiver' : 'No Waiver Available';
         document.getElementById('memberEditor').classList.remove('hidden');
+        hideSpinner();
       }).getMemberByEmail(email);
     }
 
     function saveMember() {
-      const updatedMember = {
-        emailAddress: selectedMember.emailAddress,
+      const updateMemberRequest = {
+        emailAddress: document.getElementById('editEmail').value,
         firstName: document.getElementById('editFirstName').value,
-        lastName: document.getElementById('editLastName').value
+        lastName: document.getElementById('editLastName').value,
+        registration: {
+          level: parseInt(document.getElementById('editLevel').value,10),
+          status: document.getElementById('editStatus').value,
+          waiverSigned: document.getElementById('editWaiverSigned').value === 'true',
+          waiverPdfLink: selectedMember.registration?.waiverPdfLink || ''
+        }
       };
+      showSpinner();
       google.script.run
         .withSuccessHandler(() => {
           document.getElementById('memberEditor').classList.add('hidden');
           loadMembers();
         })
-        .updateMemberInfo(updatedMember);
+        .updateMember(JSON.stringify(updateMemberRequest));
     }
-
-        // Load shared config and update version dynamically
     google.script.run.withSuccessHandler(config => {
+      sharedConfig = config;
       document.getElementById('version').textContent = `Version: ${config.version.adminPortal}`;
+      populateLevelDropdown();
+      hideSpinner();
     }).getSharedConfig();
 
-    // Initial load of members
     loadMembers();
   </script>
-   <h5><p id="version"></p></h5>
-</body>
-</html>
-</html>
 
+  <h5>
+    <p id="version"></p>
+  </h5>
+</body>
+
+</html>
