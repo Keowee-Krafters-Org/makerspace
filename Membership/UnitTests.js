@@ -9,22 +9,34 @@ const assert = (label, expected, actual) => {
   }
 };
 
+/** 
+ * Assert block for tests
+ */
+const assertNotEqual = (label, expected, actual) => {
+  if (expected === actual) {
+    throw new Error(`${label} mismatch. Expected: ${actual} != ${expected} `);
+  } else {
+    Logger.log(`${label} verified : ${actual} != ${expected}`);
+  }
+};
 const testEmailAddress = 'testuser@keoweekrafters.org'; 
 
-// Replace raw objects with instances of Member class
-const testMemberMinimum = new Member({
-  emailAddress: testEmailAddress
-});
 
-const testMember = new Member({
+const testMemberMinimum = {
+  emailAddress: testEmailAddress
+};
+
+const testMember = {
   emailAddress: testEmailAddress,
   firstName: 'Testy',
   lastName: 'User',
   phoneNumber: '123-456-7890',
   address: '123 Mock St, Faketown',
   interests: 'Woodworking, Quilting',
-  level: 1
-});
+  level: 1,
+  status: 'UNVERIFIED',
+  memberStatus: 'NEW'
+};
 
 function deleteTestMember(emailAddress) {
   const sheet = getRegistrySheet();
@@ -43,7 +55,7 @@ function deleteTestMember(emailAddress) {
 
 function test_if_member_registers__then_member_data_is_complete() {
   try {
-    addMemberRegistration(testMember.toObject());
+    addMemberRegistration(Member.fromObject(testMember));
     const lookup = memberLookup(testMember.emailAddress);
     const sheet = lookup.sheet;
     const row = lookup.rowIndex;
@@ -61,7 +73,7 @@ function test_if_member_registers__then_member_data_is_complete() {
 
     Logger.log('All fields verified successfully');
   } catch (err) {
-    Logger.log('addMemberRegistration failed: ' + err);
+    Logger.error('addMemberRegistration failed: ' + err);
   } finally {
     deleteTestMember(testMember.emailAddress);
   }
@@ -73,7 +85,7 @@ function test_if_system_sends_email_then_user_receives_email() {
 
 function test_if_member_is_added_member_is_found() {
   try {
-    addMember(testMemberMinimum.toObject());
+    addMember(testMemberMinimum);
     const lookup = memberLookup(testMemberMinimum.emailAddress);
     assert("Record", true, lookup.found);
     const sheet = lookup.sheet;
@@ -102,14 +114,14 @@ function test_if_duplicate_member_is_not_added() {
 }
 
 function test_if_status_and_memberStatus_are_set_correctly() {
-  const member = new Member(testMember.toObject());
-  addMember(member.toObject());
+  const member = new Member(testMember);
+  addMember(member);
 
   let lookup = memberLookup(member.emailAddress);
   assert('Initial status', 'UNVERIFIED', lookup.member.login.status);
 
   setRecordStatus(lookup, "VERIFIED"); 
-  addMemberRegistration(member.toObject()); // Should promote memberStatus to APPLIED if VERIFIED
+  addMemberRegistration(member); // Should promote memberStatus to APPLIED if VERIFIED
   lookup = memberLookup(member.emailAddress);
   assert('Member status', 'APPLIED', lookup.member.registration.status);
 
@@ -123,7 +135,7 @@ function test_if_registration_form_ignores_missing_fields() {
   });
 
   try {
-    addMemberRegistration(partial.toObject());
+    addMemberRegistration(partial);
     const lookup = memberLookup(partial.emailAddress);
     assert('First Name', 'Partial', lookup.firstName);
     Logger.log('Missing fields handled gracefully');
@@ -163,18 +175,22 @@ function test_verifyToken_transitions_user_to_VERIFIED() {
   
   assert("Status", "VERIFYING", result.data.login.status); 
   const lookup  = memberLookup(emailAddress); 
-  const token = getRecordAuthentication(lookup, 'authentication').token;
+  const authentication = getRecordAuthentication(lookup);
+  const token = authentication.token;
   result = verifyMemberToken(emailAddress, token);
+
+  const newAuthentication = getRecordAuthentication(lookup);
 
   assert('Verification success', true, result.success);
   assert('Status updated to VERIFIED', 'VERIFIED', result.data.login.status);
+  assertNotEqual('Expiration Changed', authentication.expirationTime, newAuthentication.expirationTime ); 
 }
 
 /**
  * Test that getAllMembers() returns the correct structure
  */
 function test_getAllMembers_returns_members() {
-  addMemberRegistration(testMember.toObject());
+  addMemberRegistration(Member.fromObject(testMember));
   const all = getAllMembers();
   const found = all.find(m => m.emailAddress === testMember.emailAddress);
   assert('Found registered member', true, !!found);
@@ -184,7 +200,7 @@ function test_getAllMembers_returns_members() {
 
 
 function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
-  let lookup = addMemberRegistration(testMember.toObject());
+  let lookup = addMemberRegistration(Member.fromObject(testMember));
   lookup = memberLookup(testMember.emailAddress); 
   const authenticationIn = generateAuthentication(); 
   setRecordValue(lookup, 'authentication', JSON.stringify(authenticationIn));
@@ -196,4 +212,36 @@ function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
   assert('Token', authenticationIn.token, authenticationOut.token);
 }
 
+
+function test_whenMemberIsUpdated_thenMemberData_is_changed () {
+  const originalMember = memberLookup(testMember.emailAddress).member; 
+  const memberChanges =  memberLookup(testMember.emailAddress).member; 
+  memberChanges.registration.waiverSigned = !originalMember.registration.waiverSigned; 
+  memberChanges.phoneNumber = originalMember.phoneNumber.split('').reverse().join(''); 
+  memberChanges.registration.status = originalMember.registration.status.split('').reverse().join('');
+  memberChanges.registration.level = originalMember.registration === 2?1:2; 
+  const updatedMember=updateMember(memberChanges); 
+
+  assert('Phone number changed', memberChanges.phoneNumber,updatedMember.phoneNumber )
+  assert("Waiver Changed", memberChanges.registration.waiverSigned, updatedMember.registration.waiverSigned); 
+  assert("Registration Status Changed", memberChanges.registration.status, updatedMember.registration.status); 
+  assert("Registration level", memberChanges.registration.level, updatedMember.registration.level); 
+
+}
+
+function test_whenMemberIsCreatedFromData_thenAllFieldsAreThere(){
+    const newMember = Member.fromObject({
+  ...testMember,
+    registration: {status: testMember.memberStatus},
+    login: {status: 'UNVERIFIED'}
+  });
+
+  assert('First Name', testMember.firstName, newMember.firstName); 
+
+  assert('Registration Status', testMember.memberStatus, newMember.registration.status); 
+
+  assert('Login Status', testMember.status, newMember.login.status); 
+
+
+}
 

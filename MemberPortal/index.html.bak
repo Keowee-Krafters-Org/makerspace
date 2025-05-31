@@ -46,44 +46,14 @@
     button:hover {
       background: #254a9e;
     }
-
-    .spinner {
-      display: none;
-      margin: 20px auto;
-      border: 6px solid #f3f3f3;
-      border-top: 6px solid #3367d6;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
   </style>
 </head>
 
 <body>
-  <div id="spinner" class="spinner"></div>
   <div id="app"></div>
 
   <script>
     // Main application logic for the member portal dashboard
-
-    function showSpinner() {
-      document.getElementById('spinner').style.display = 'block';
-    }
-
-    function hideSpinner() {
-      document.getElementById('spinner').style.display = 'none';
-    }
 
     function buildPrefilledFormUrl(section, member) {
       const url = new URL(section.url);
@@ -97,9 +67,9 @@
 
     let currentEmail = '';
 
-    /**
-     * Generate the document 
-     */
+/**
+ * Generate the document 
+ */
     function getDashboardContent(member, config) {
       console.log(`Generating content with ${member} + ${config}`);
       let content = '<div class="dashboard">';
@@ -119,9 +89,9 @@
             <p id="error" class="error">${member.error || ''}</p>`;
           break;
 
-        case 'TOKEN_EXPIRED':
-        case 'VERIFYING':
-          content += `<p>A verification code has been sent to:</p>
+case 'TOKEN_EXPIRED':
+case 'VERIFYING':
+  content += `<p>A verification code has been sent to:</p>
     <input type="email" id="email" value="${member.emailAddress}" />
     <p><label for="token">Enter the code:</label></p>
     <input type="text" id="token" maxlength="6" />
@@ -131,7 +101,7 @@
     </p>
     <p id="error" class="error">${member.error || ''}</p>`;
 
-
+          
           break;
 
         case 'VERIFIED':
@@ -142,7 +112,7 @@
 
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
-            const level = parseInt(member.registration.level || 0);
+            const level = parseInt(member.level || 0);
 
             if (level >= 1) {
               content += `<ul>
@@ -159,7 +129,7 @@
             }
 
             if (level >= 10) {
-              content += `<li><strong><a href="https://script.google.com/a/macros/keoweekrafters.org/s/AKfycbzlHKHF6RB8g1P3NyjEMMXfpGDtT_WO2CDkb7K_nB7ybQXNj_VwjhGXirWl54RXf9r3/exec?emailAddress=${member.emailAddress}">Member Admin</a></strong></li>`;
+              content += `<li><strong>Board Member Tools</strong></li>`;
             }
 
             if (level >= 20) {
@@ -194,7 +164,6 @@
     function renderDashboard(user) {
       google.script.run.withSuccessHandler(config => {
         document.getElementById('app').innerHTML = getDashboardContent(user, config);
-        document.getElementById('version').textContent = `Version: ${config.version.memberPortal}`;
       }).getSharedConfig();
     }
 
@@ -205,43 +174,39 @@
       currentEmail = email;
 
       if (!email) {
-        renderDashboard({ login: { status: 'VERIFYING', error: 'Please enter a valid email address.' } });
+        renderDashboard({ login: { status:  'VERIFYING', error: 'Please enter a valid email address.' } });
         return;
       }
 
       if (!email.includes('@') || !email.includes('.')) {
-        renderDashboard({ login: { status: 'VERIFYING', error: 'Please enter a valid email address.' } });
+        renderDashboard({ login: { status:  'VERIFYING', error: 'Please enter a valid email address.' } });
         return;
       }
 
-      showSpinner();
       google.script.run
         .withFailureHandler(e => {
-          renderDashboard({ login: { status: 'VERIFYING', error: e.message } });
-          hideSpinner();
+          renderDashboard({ login: { status:  'VERIFYING', error: e.message } });
         })
         .withSuccessHandler(res => {
-          const response = JSON.parse(res);
+          
+          const response = JSON.parse(res); 
           if (response && response.success) {
-            const member = response.data;
+            const member = response.data; 
             renderDashboard(member);
           } else {
-            renderDashboard({ login: { status: 'VERIFYING', error: 'Email not found in member registry.' } });
+            renderDashboard({ login: { status:  'VERIFYING', error: 'Email not found in member registry.' } });
           }
-          hideSpinner();
         })
         .login(email);
     }
 
     function verifyCode() {
       const token = document.getElementById('token').value.trim();
-      showSpinner();
       google.script.run.withSuccessHandler(res => {
-
-        const response = JSON.parse(res);
+        
+      const response = JSON.parse(res); 
         if (!response.success) {
-          
-          document.getElementById('error').textContent = response.message;
+          document.getElementById('error').textContent = res.message;
           return;
         }
 
@@ -253,56 +218,49 @@
           const member = response.data;
           renderDashboard(member);
         }
-        hideSpinner();
       }).verifyToken(currentEmail, token);
     }
 
-    function resendToken() {
-      const emailInput = document.getElementById('email');
-      const email = emailInput?.value?.trim();
-      if (!email) return;
+function resendToken() {
+  const emailInput = document.getElementById('email');
+  const email = emailInput?.value?.trim();
+  if (!email) return;
 
-      currentEmail = email;
+  currentEmail = email;
 
-      const resendBtn = Array.from(document.querySelectorAll("button"))
-        .find(btn => btn.textContent.includes("Resend"));
-      if (resendBtn) {
-        resendBtn.disabled = true;
-        setTimeout(() => resendBtn.disabled = false, 30000);
+  const resendBtn = Array.from(document.querySelectorAll("button"))
+    .find(btn => btn.textContent.includes("Resend"));
+  if (resendBtn) {
+    resendBtn.disabled = true;
+    setTimeout(() => resendBtn.disabled = false, 30000);
+  }
+
+  google.script.run
+    .withFailureHandler(e => {
+      renderDashboard({ login: { status:  'VERIFYING', error: e.message } });
+    })
+    .withSuccessHandler(res => {
+      const response = JSON.parse(res); 
+      if (response && response.success) {
+        const member  = response.data; 
+        document.getElementById('error').textContent = `Verification code resent to ${member.emailAddress}`;
+        renderDashboard(member);
+      } else {
+        renderDashboard({ login: { status:  'VERIFYING', error: 'Unable to resend code.' } });
       }
-      showSpinner();
-      google.script.run
-        .withFailureHandler(e => {
-          renderDashboard({ login: { status: 'VERIFYING', error: e.message } });
-        })
-        .withSuccessHandler(res => {
-          hideSpinner();
-          const response = JSON.parse(res);
-          if (response && response.success) {
-            const member = response.data;
-            document.getElementById('error').textContent = `Verification code resent to ${member.emailAddress}`;
-            renderDashboard(member);
-          } else {
-            renderDashboard({ login: { status: 'VERIFYING', error: 'Unable to resend code.' } });
-          }
-          hideSpinner();
-        })
-        .login(email);
-    }
-
+    })
+    .login(email);
+}
+    
     function logout() {
-      showSpinner();
-      google.script.run.withSuccessHandler(() => {
-        renderDashboard({ login: { status: 'UNVERIFIED' } }); 
-        hideSpinner();
-      }).logout(email);
+      google.script.run.withSuccessHandler( () =>  renderDashboard({ login: { status:  'UNVERIFIED' } }))
+      .logout(email);
     }
 
-    renderDashboard({ login: { status: 'UNVERIFIED' } });
+    renderDashboard({ login: { status:  'UNVERIFIED' } });
   </script>
-  <h5>
-    <p id="version"></p>
-  </h5>
 </body>
+
+<h5>Version: SNAPSHOT-0.01.041</h5>
 
 </html>

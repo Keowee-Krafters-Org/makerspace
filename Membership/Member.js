@@ -6,9 +6,8 @@ class Member {
     this.phoneNumber = data.phoneNumber || '';
     this.address = data.address || '';
     this.interests = data.interests || '';
-    this.level = data.level || 0;
-    this.login = new Login(data);
-    this.registration = new Registration(data);
+    this.login = Login.fromObject(data.login);
+    this.registration = Registration.fromObject(data.registration);
   }
 
   // Email validation method
@@ -21,9 +20,57 @@ class Member {
     return email;
   }
 
-  toObject() {
+  toObjectNoAuthentication() {
     const clone = { ...this };
     delete clone.login.authentication;
     return clone;
   }
+
+  toObject() {
+    return {
+      emailAddress: this.emailAddress,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      login: this.login.toObject(),
+      registration: this.registration.toObject()
+    };
+  }
+
+  toRow() {
+    const loginData = this.login.toObject(); 
+    const registrationData = this.registration.toObject(); 
+    return {
+      emailAddress: this.emailAddress,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      phoneNumber: this.phoneNumber,
+      level: registrationData.level,
+      interests: this.interests,
+      address: this.address,
+      status: loginData.status,
+      memberStatus: registrationData.status,
+      waiverSigned: registrationData.waiverSigned, 
+      waiverPdfLink: registrationData.waiverPdfLink,
+      waiverDate: registrationData.waiverDate
+    };
+  }
+
+  static fromRow(row = {}) {
+    return new Member({
+      ...row,
+      login: Login.fromRow(row),
+      registration: Registration.fromRow(row)
+    });
+  }
+
+  static fromObject(data = {}) {
+  const member = new Member({
+    ...data,
+    registration: Registration.fromObject(data.registration),
+    login: Login.fromObject(data.login)
+  });
+
+  return member;
+}
+
 }

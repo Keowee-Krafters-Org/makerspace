@@ -4,12 +4,12 @@
  * fields returned by the memberLookup method in Membership.
  */
 class Lookup {
-  constructor(found, rowIndex, columnIndexByName, sheet, data = {}) {
+  constructor(found, rowIndex, columnIndexByName, sheet, member) {
     this.found = found; 
     this.rowIndex = rowIndex; 
     this.columnIndexByName = columnIndexByName; 
     this.sheet = sheet;
-    this.member = new Member(data);
+    this.member = member;
   }
 
     toObject() {

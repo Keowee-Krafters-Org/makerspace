@@ -1,8 +1,8 @@
 var SharedConfig = {
   version: {
-    memberPortal: 'SNAPSHOT-0.1.42',
-    adminPortal: 'SNAPSHOT-0.01.17',
-    membership: 'SNAPSHOT-0.01.55'
+    memberPortal: 'SNAPSHOT-0.1.38',
+    adminPortal: 'SNAPSHOT-0.00.8',
+    membership: 'SNAPSHOT-0.01.34'
   },
   loginTokenExpirationMinutes: 15,
   sesstionTokenExpirationMinutes: 60 * 24,

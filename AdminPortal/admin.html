@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base target="_top">
   <style>
@@ -7,34 +8,101 @@
       font-family: Arial, sans-serif;
       padding: 20px;
     }
-    h2 {
-      margin-bottom: 10px;
-    }
-    table {
-      width: 100%;
+
+    .member-list {
       border-collapse: collapse;
-      margin-top: 10px;
+      width: 100%;
     }
-    th, td {
+
+    .member-list th,
+    .member-list td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: left;
     }
-    th {
+
+    .member-list th {
       background-color: #f2f2f2;
     }
-    input[type="text"], select {
-      padding: 6px;
-      width: 200px;
-      margin-right: 10px;
+
+    .member-editor {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      width: 400px;
     }
-    button {
-      padding: 6px 12px;
+
+    .member-editor h3 {
+      margin-top: 0;
+    }
+
+    .member-editor label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+
+    .member-editor input[type="text"],
+    .member-editor select {
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    .member-editor button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .member-editor button:hover {
+      background-color: #45a049;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    a.readonly-link {
+      display: inline-block;
+      margin-top: 5px;
+      color: #0645ad;
+      text-decoration: underline;
+    }
+
+    .spinner {
+      display: none;
+      margin: 20px auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3367d6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
+
 <body>
-  <h2>Member Administration Panel</h2>
+  <div id="spinner" class="spinner"></div>
+  <div id="app"></div>
+  <h2>Admin Portal</h2>
   <div>
     <input type="text" id="search" placeholder="Search by name or email" />
     <select id="filter">
@@ -47,52 +115,164 @@
     </select>
     <button onclick="loadMembers()">Search</button>
   </div>
-  <table id="memberTable">
-    <thead>
-      <tr><th>Email</th><th>First Name</th><th>Last Name</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div id="memberListContainer">
+    <table class="member-list" id="memberList">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Level</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="memberRows"></tbody>
+    </table>
+  </div>
+
+  <div id="memberEditor" class="member-editor hidden">
+    <h3>Edit Member</h3>
+    <label>Email: <input type="text" id="editEmail" disabled /></label>
+    <label>First Name: <input type="text" id="editFirstName" /></label>
+    <label>Last Name: <input type="text" id="editLastName" /></label>
+
+    <label>Level:
+      <select id="editLevel"></select>
+    </label>
+
+    <label>Status:
+      <select id="editStatus">
+        <option value="NEW">New</option>
+        <option value="REGISTERED">Registered</option>
+        <option value="VERIFIED">Verified</option>
+        <option value="APPLIED">Applied</option>
+        <option value="PENDING">Pending</option>
+      </select>
+    </label>
+
+    <label>Waiver Signed:
+      <select id="editWaiverSigned">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    </label>
+
+    <label>Waiver PDF Link:</label>
+    <a id="editWaiverLink" class="readonly-link" href="#" target="_blank">View Waiver</a>
+
+    <button onclick="saveMember()">Save Changes</button>
+  </div>
 
   <script>
-   
+    let selectedMember = null;
+    let sharedConfig = {};
 
-    function loadMembers(members) {
+    function showSpinner() {
+      document.getElementById('spinner').style.display = 'block';
+    }
+
+    function hideSpinner() {
+      document.getElementById('spinner').style.display = 'none';
+    }
+
+    function populateLevelDropdown() {
+      const select = document.getElementById('editLevel');
+      select.innerHTML = '';
+      Object.entries(sharedConfig.levels || {}).forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.appendChild(option);
+      });
+    }
+
+    function loadMembers() {
       const search = document.getElementById('search').value.toLowerCase();
       const filter = document.getElementById('filter').value;
+      showSpinner();
+      google.script.run.withSuccessHandler(res => {
+        const response = JSON.parse(res);
+        const members = response.data;
+        const filtered = members.filter(m => {
+          const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) ||
+                                m.firstName?.toLowerCase().includes(search) ||
+                                m.lastName?.toLowerCase().includes(search);
+          const matchesFilter = !filter || m.registration.status === filter;
+          return matchesSearch && matchesFilter;
+        });
 
-      const filtered = members.filter(m => {
-        const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) || m.firstName?.toLowerCase().includes(search) || m.lastName?.toLowerCase().includes(search);
-        const matchesFilter = !filter || m.registration.status === filter;
-        return matchesSearch && matchesFilter;
-      });
-
-      const tbody = document.querySelector('#memberTable tbody');
-      tbody.innerHTML = '';
-      filtered.forEach(member => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${member.emailAddress || ''}</td>
-          <td>${member.firstName || ''}</td>
-          <td>${member.lastName || ''}</td>
-          <td>${member.memberStatus || ''}</td>
-          <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
-        `;
-        tbody.appendChild(row);
-      });
+        const tbody = document.getElementById('memberRows');
+        tbody.innerHTML = '';
+        filtered.forEach(member => {
+          const levelName = Object.entries(sharedConfig.levels || {}).find(([key, val]) => key == member.registration.level)?.[1] || member.registration.level;
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${member.emailAddress || ''}</td>
+            <td>${member.firstName || ''} ${member.lastName || ''}</td>
+            <td>${member.registration?.status || ''}</td>
+            <td>${levelName}</td>
+            <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
+          `;
+          tbody.appendChild(row);
+          hideSpinner();
+        });
+      }).getAllMembers();
     }
 
     function editMember(email) {
-      alert('Edit member: ' + email);
-      // Future: Show modal with editable fields
+      showSpinner();
+      google.script.run.withSuccessHandler(res => {
+        const response = JSON.parse(res);
+        const member = response.data;
+        selectedMember = member;
+        document.getElementById('editEmail').value = member.emailAddress;
+        document.getElementById('editFirstName').value = member.firstName;
+        document.getElementById('editLastName').value = member.lastName;
+        document.getElementById('editLevel').value = member.registration?.level;
+        document.getElementById('editStatus').value = member.registration?.status || '';
+        document.getElementById('editWaiverSigned').value = String(member.registration?.waiverSigned || 'false');
+        const waiverLink = member.registration?.waiverPdfLink || '#';
+        const linkElement = document.getElementById('editWaiverLink');
+        linkElement.href = waiverLink;
+        linkElement.textContent = waiverLink !== '' ? 'View Waiver' : 'No Waiver Available';
+        document.getElementById('memberEditor').classList.remove('hidden');
+        hideSpinner();
+      }).getMemberByEmail(email);
     }
 
-    google.script.run.withSuccessHandler(data => {
-      const members = JSON.parse(data); 
-      console.log(members); 
-      loadMembers(members);
-    }).getAllMembers();
+    function saveMember() {
+      const updateMemberRequest = {
+        emailAddress: document.getElementById('editEmail').value,
+        firstName: document.getElementById('editFirstName').value,
+        lastName: document.getElementById('editLastName').value,
+        registration: {
+          level: parseInt(document.getElementById('editLevel').value,10),
+          status: document.getElementById('editStatus').value,
+          waiverSigned: document.getElementById('editWaiverSigned').value === 'true',
+          waiverPdfLink: selectedMember.registration?.waiverPdfLink || ''
+        }
+      };
+      showSpinner();
+      google.script.run
+        .withSuccessHandler(() => {
+          document.getElementById('memberEditor').classList.add('hidden');
+          loadMembers();
+        })
+        .updateMember(JSON.stringify(updateMemberRequest));
+    }
+    google.script.run.withSuccessHandler(config => {
+      sharedConfig = config;
+      document.getElementById('version').textContent = `Version: ${config.version.adminPortal}`;
+      populateLevelDropdown();
+      hideSpinner();
+    }).getSharedConfig();
+
+    loadMembers();
   </script>
-  <p><h5>Version: SNAPSHOT-0.00.007</h5></p>
+
+  <h5>
+    <p id="version"></p>
+  </h5>
 </body>
+
 </html>

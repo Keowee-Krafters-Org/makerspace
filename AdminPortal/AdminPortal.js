@@ -19,7 +19,7 @@ function doGet(e) {
   }
 
   // Check token validity and expiration
-  const authentication = lookup.login.authentication; 
+  const authentication = lookup.member.login.authentication; 
   const isValid = new Date() < new Date(authentication.expirationTime);
 
   if (!isValid) {
@@ -41,6 +41,7 @@ function doGet(e) {
 function memberLookup(email) {
   return Membership.memberLookup(email);
 }
+
 /**
  * Sends a verification token to the user's email via Membership module.
  */
@@ -58,23 +59,35 @@ function login(email) {
  * Returns all members for admin listing.
  */
 function getAllMembers() {
-  return JSON.stringify(Membership.getAllMembers());
+  const members = Membership.getAllMembers(); 
+  const response = Membership.makeResponse(true,members ); 
+  return JSON.stringify(response);
 }
 
 /**
- * Applies updates to a member's record by email.
- * @param {string} emailAddress - The member's email.
- * @param {Object} updates - A map of field names to new values.
+ * Retrieves a member by their email address.
  */
-function updateMember(emailAddress, updates) {
-  return Membership.updateMember(emailAddress, updates);
+function getMemberByEmail(email) {
+  const lookup = memberLookup(email);
+  if (!lookup.found) throw new Error('Member not found');
+
+  return JSON.stringify(Membership.makeResponse(true, lookup.member.toObjectNoAuthentication()));
+}
+
+/**
+ * Updates a member's record with new information.
+ * @param {Object} updatedMember - The member object with updated data.
+ */
+function updateMember(updatedMemberJson) {
+  const savedMember = Membership.updateMember(JSON.parse( updatedMemberJson));
+  return JSON.stringify(Membership.makeResponse(true, savedMember.toObjectNoAuthentication()));
 }
 
 /**
  * Provides the SharedConfig object to the client-side web app.
- * This function acts as a secure relay to expose necessary configuration
- * such as form URLs and entry mappings, while keeping the config centralized. See: Membership.config project
  */
 function getSharedConfig() {
   return Membership.SharedConfig;
 }
+
+
