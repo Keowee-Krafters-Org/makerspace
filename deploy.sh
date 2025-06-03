@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Ensure dotenv is installed: npm install -g dotenv-cli
-
-# Load environment variables
-source .env
-
 # Function to semantically increment a version number
 function increment_version() {
     local version=$1
@@ -19,71 +14,43 @@ function increment_version() {
 # Function to update and deploy clasp projects
 function update_and_deploy() {
     local directory=$1
-    local version_var_name=$2
-    local version_key=$3 # Key name for the version in SharedConfig.js
+   # Navigate to the project directory
+    cd $directory || exit
 
-    # Archive current deployment
-    archive_current_deployment $directory
 
-    # Get the current version from the environment variable
-    local version=${!version_var_name}
+    local deploymentId=$(clasp deployments | grep -E 'SNAPSHOT-[0-9.]*' | grep -oP '(?<=- ).*(?= @)')
+    local version=$(clasp deployments | grep -E 'SNAPSHOT-[0-9.]*' | grep -oP '(?<=SNAPSHOT-)[0-9.]*')
 
     # Increment the version
     local new_version
-    new_version=$(increment_version "$version")
+    new_version=$(increment_version $version)
 
-    # Update the environment file with the new version
-    sed -i.bak "/^${version_var_name}=/s/=.*/=${new_version}/" .env
 
     # Update versions in SharedConfig.js
-    update_version_in_shared_config $version_key $new_version
+    update_version_in_config $new_version
 
-    # Navigate to the project directory
-    cd $directory || exit
 
     # Push the changes
     echo "Pushing changes for $directory..."
     clasp push
-
     # Deploy the changes with a description
     echo "Deploying new version ($new_version) for $directory..."
-    clasp deploy -d "$directory version $new_version - Automated Deployment"
+    clasp redeploy -d "SNAPSHOT-$new_version - Automated Deployment"  $deploymentId
 
     # Return to the original directory
     cd - || exit
 }
 
-# Function to archive the current deployment version
-function archive_current_deployment() {
-    local directory=$1
-
-    # Navigate to the project directory
-    cd $directory || exit
-
-    # Get the current deployment versions
-    local current_versions=$(clasp versions)
-
-    # Save current versions to a file for archiving
-    echo "$current_versions" > "./deployment_version_archive.txt"
-
-    echo "Archived current deployment versions for $directory."
-
-    # Return to the original directory
-    cd - || exit
-}
 
 # Function to update version number in SharedConfig.js
-function update_version_in_shared_config() {
-    local version_key=$1
-    local new_version=$2
+function update_version_in_config() {
+    local new_version=$1
 
-    # Update the specific version in SharedConfig.js
-    sed -i.bak "s/$version_key: 'SNAPSHOT-[0-9.]*'/$version_key: '$new_version'/g" "Membership/SharedConfig.js"
+    # Update the specific version in config.js
+    sed -i.bak "s/version: '.*'/version: 'SNAPSHOT-$new_version'/g" "config.js"
 }
 
 # Update and deploy for each module
-update_and_deploy "MemberPortal" "MEMBER_PORTAL_VERSION" "memberPortal"
-update_and_deploy "Membership" "MEMBERSHIP_VERSION" "membership"
-update_and_deploy "AdminPortal" "ADMIN_PORTAL_VERSION" "adminPortal"
+update_and_deploy $1
 
-echo "All projects updated and deployed successfully."
+echo "$1 updated and deployed successfully."

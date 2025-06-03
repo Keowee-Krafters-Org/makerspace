@@ -3,13 +3,15 @@ class Event {
 
         this.host = data.host || '';
         this.title = data.title || '';
-        this.date = data.date?new Date(data.date):data.preferredDate;
+        this.date = data.startDate?new Date(data.startDate):data.preferredDate;
         this.location = data.location || '';
         this.attendees = [];
         this.id = data.id;
         this.cost = data.cost; 
         this.description = data.description || '';
         this.sizeLimit = data.sizeLimit || 0;
+        this.instructorName = data.instructorName || '';
+        this.instructorEmail = data.instructorEmail || '';
     }
 
     static isAvailable(event) {
@@ -123,6 +125,7 @@ class Event {
     toRow() {
         return {...this}; 
     }
+
 }
 
 // Make the class globally accessible in Google Apps Script

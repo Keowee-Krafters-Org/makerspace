@@ -1,9 +1,10 @@
+const config = {
+  version:  'SNAPSHOT-0.2.09',
+  deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
+}
+
 var SharedConfig = {
-  version: {
-    memberPortal: 'SNAPSHOT-0.1.42',
-    adminPortal: 'SNAPSHOT-0.01.17',
-    membership: 'SNAPSHOT-0.01.55'
-  },
+  ...config,
   loginTokenExpirationMinutes: 15,
   sesstionTokenExpirationMinutes: 60 * 24,
   forms: {
@@ -112,3 +113,4 @@ var SharedConfig = {
     30: 'Administrator'
   }
 };
+

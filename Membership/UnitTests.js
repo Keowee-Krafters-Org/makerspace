@@ -335,3 +335,9 @@ function test_EventManagerGetsAllEvents() {
   assert('Events are there', events.length > 0 ,true); 
   
 }
+function test_EventManagerGetsFilteredEvents() {
+  
+  const eventManager = new EventManager(); 
+  const events = eventManager.getUpcomingEvents() ;
+  assert('Events are there', events.length > 1 ,true); 
+}
