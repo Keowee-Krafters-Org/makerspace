@@ -39,6 +39,6 @@ To install:
 
    ```
    cd makerspace
-   npm install clasp
+   npm install -g @google/clasp
    
    ``` 

@@ -245,3 +245,99 @@ function test_whenMemberIsCreatedFromData_thenAllFieldsAreThere(){
 
 }
 
+function runAllTests() {
+  test_if_member_registers__then_member_data_is_complete();
+  test_if_system_sends_email_then_user_receives_email();
+  test_if_member_is_added_member_is_found();
+  test_if_duplicate_member_is_not_added();
+  test_if_status_and_memberStatus_are_set_correctly();
+  test_if_registration_form_ignores_missing_fields();
+  test_when_user_logs_in__then_user_status_is_VERIFYING();
+  test_verifyToken_transitions_user_to_VERIFIED();
+  test_getAllMembers_returns_members();
+  test_whenAuthenticationIsRequested_thenAuthenticationIsVerified();
+  test_whenMemberIsUpdated_thenMemberData_is_changed();
+  test_whenMemberIsCreatedFromData_thenAllFieldsAreThere(); 
+}
+function runTests() {
+  try {
+    runAllTests();
+    Logger.log('All tests passed successfully!');
+  } catch (error) {
+    Logger.error('Test failed: ' + error.message);
+  }
+}
+
+
+
+class TestData {
+  constructor(data = {}) {
+    this.id = data.id;
+    this.title = data.title;
+    this.timestamp = data.timestamp;
+    this.complete = data.complete;
+  }
+
+  static fromRow(row) {
+    return new TestData(
+      {...row}
+    );
+  }
+
+  toRow() {
+    return {
+      ...this
+  };
+  }
+}
+function test_StorageManager_add() {
+  const storageManager = new StorageManager('tests');
+  // Ensure the sheet is empty before the test
+  const sheet = storageManager.getSheet();
+
+  const testData = new TestData({id:'1', title:'Test Title', timestamp:new Date(), complete:true});
+
+  // Add record
+  storageManager.add(testData);
+
+  // Load data
+  const loadedData = storageManager.getRecordById(TestData,testData.id);
+
+  // Assertions
+  assert('Record added and loaded correctly', JSON.stringify(testData), JSON.stringify(loadedData));
+}
+
+function test_StorageManager_getAll() {
+  const storageManager = new StorageManager('tests');
+  const sheet = storageManager.getSheet();
+  
+  // Clear the sheet before the test
+  storageManager.clear();
+  // Add test records
+  const testData1 = new TestData({ id: '1', title: 'Test Title 1', timestamp: new Date(), complete: true });
+  const testData2 = new TestData({ id: '2', title: 'Test Title 2', timestamp: new Date(), complete: false });
+
+  storageManager.add(testData1);
+  storageManager.add(testData2);
+
+  // Retrieve all records
+  const allRecords = storageManager.getAll(TestData);
+
+  // Assertions
+  assert('Correct number of records', 2, allRecords.length);
+  assert('First record matches', JSON.stringify(testData1), JSON.stringify(allRecords[0]));
+  assert('Second record matches', JSON.stringify(testData2), JSON.stringify(allRecords[1]));
+}
+
+function test_EventManagerGetsAllEvents() {
+  const eventManager = new EventManager(); 
+  const events = eventManager.getEventList() ;
+  assert('Events are there', events.length > 0 ,true); 
+  
+}
+function test_EventManagerGetsFilteredEvents() {
+  
+  const eventManager = new EventManager(); 
+  const events = eventManager.getUpcomingEvents() ;
+  assert('Events are there', events.length > 1 ,true); 
+}
