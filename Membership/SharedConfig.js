@@ -46,6 +46,53 @@ var SharedConfig = {
       emailLookupColumn: 'emailAddress'
     }
   },
+  classes: {
+    sheet: {
+      id: '1revNbHEK6W4C5KkxvNIQiOk-_VmkOCZabR5OyKwwc6I',
+      name: 'Class List',
+      namedColumns: {
+        title: 'ClassTitle', 
+        description: 'Description'
+      }
+    }
+  },
+  events: {
+    sheet: {
+      id: '1revNbHEK6W4C5KkxvNIQiOk-_VmkOCZabR5OyKwwc6I',
+      name: 'Event List',
+      namedColumns: {
+        title: 'EventTitle',
+        description: 'Description',
+        date: 'EventDate',
+        host: 'Host',
+        location: 'Location',
+        sizeLimit: 'SizeLimit'
+      }
+    }
+  },
+  eventSignups: {
+    sheet: {
+      id: '1revNbHEK6W4C5KkxvNIQiOk-_VmkOCZabR5OyKwwc6I',
+      name: 'Event Signups',
+      namedColumns: {
+        eventId: 'EventId',
+        attendeeName: 'AttendeeName',
+        attendeeEmail: 'AttendeeEmail'
+      }
+    }
+  },
+  tests: {
+    sheet: {
+      id: '1bQ_kTLamrx7PUlvKxyhvhFYypNy_bLgqmKysH0QdC0o',
+      name: 'Test Data',
+      namedColumns: {
+        id: 'id',
+        title: 'title',
+        timestamp: 'timestamp',
+        complete: 'complete',
+      }
+    }
+  },
   emailAddress: {
     admin: 'secretary@keoweekrafters.org',
     from: 'noreply@keoweekrafters.org'
