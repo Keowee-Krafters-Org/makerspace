@@ -34,3 +34,4 @@ function test_when_not_verified_user_is_sent_email() {
   const response= login(TEST_EMAIL);
   assert("Status", "VERIFYING", response.status); 
 }
+
