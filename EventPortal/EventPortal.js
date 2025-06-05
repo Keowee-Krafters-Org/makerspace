@@ -18,3 +18,4 @@ function signup(formData) {
     Membership.signup(formdata); 
     return { success: true, message: 'Signup successful!' };
 }
+

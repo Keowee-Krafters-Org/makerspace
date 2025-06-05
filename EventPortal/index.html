@@ -70,15 +70,47 @@
         .signup-btn:hover {
             background: #26734d;
         }
+
+        .spinner {
+            display: none;
+            margin: 20px auto;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3367d6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
 <body>
+    <div id="spinner" class="spinner"></div>
     <div class="container">
         <h1>MakeKeowee Classes</h1>
         <div id="classes" class="classes-grid"></div>
     </div>
     <script>
+
+        let sharedConfig = {};
+
+        function showSpinner() {
+            document.getElementById('spinner').style.display = 'block';
+        }
+
+        function hideSpinner() {
+            document.getElementById('spinner').style.display = 'none';
+        }
         // Render classes from Google Apps Script response
         function renderClasses(classes) {
             const container = document.getElementById('classes');
@@ -117,23 +149,35 @@
             google.script.run.signUp(classId);
         }
 
-        // Fetch and render classes on page load using Apps Script
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run.withSuccessHandler(res => {
-                    const response = JSON.parse(res);
-                    const classes = response.data;
-                    renderClasses(classes);
-                }).getEventList()
+        function loadEvents() {
+            // Fetch and render classes on page load using Apps Script
+            showSpinner();
+            document.addEventListener('DOMContentLoaded', () => {
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run.withSuccessHandler(res => {
+                        const response = JSON.parse(res);
+                        const classes = response.data;
+                        renderClasses(classes);
+                    }).getEventList()
 
-            } else {
-                document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
-            }
-        });
+                } else {
+                    document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
+                }
+            });
+
+            google.script.run.withSuccessHandler(config => {
+                sharedConfig = config;
+                document.getElementById('version').textContent = `Version: ${config.version}`;
+                //populateLevelDropdown();
+                hideSpinner();
+            }).getConfig();
+
+        }
+        loadEvents(); 
     </script>
-    <div id:="version"  style="text-align: center; margin-top: 20px; color: #888;">
-        Version 0.1.14
-    </div>  
+    <h5>
+        <p id="version"></p>
+    </h5>
 
 </body>
 
