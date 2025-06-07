@@ -2,6 +2,7 @@
  * Factory wrapper for exposing constructors across Apps Script library boundaries
  */
 
+
 function makeResponse(success, data = {}, message, error) {
   return new Response(success, data, message, error);
 }
@@ -19,13 +20,14 @@ function makeRegistration(data = {}) {
 }
 
 function makeStorageManager(storageName) {
-  return new StorageManager(storageName); 
+  return new IStorageManager(new SheetStorageManager(storageName)); 
 }
 
 
 function makeEventManager() {
-  return new EventManager(makeStorageManager('events'), SharedConfig.events);
+  return new EventManager(makeStorageManager('events'));
 }
 function makeEvent(data = {}) {
   return new Event(data);
 }
+

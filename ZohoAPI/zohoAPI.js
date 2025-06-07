@@ -1,3 +1,5 @@
+
+
 /**
  * ZohoOAuthSignon is a class that facilitates OAuth2 authentication with Zoho services.
  * It provides methods to generate authorization URLs, exchange authorization codes for tokens,
@@ -17,7 +19,7 @@ class ZohoAPI {
         this.authConfig = authConfig || {};
     }
 
-       /**
+    /**
      * Makes an HTTP request and refreshes the access token if it is expired.
      * @param {string} url - The URL to make the request to.
      * @param {Object} options - The options for the HTTP request.
@@ -155,109 +157,119 @@ class ZohoAPI {
         return PropertiesService.getUserProperties().getProperty('zohoRefreshToken');
     }
 
-    /**
-     * Retrieves all customers (contacts) from Zoho Books using the stored access token.
-     * If the access token is expired, it attempts to refresh it using the stored refresh token.
-     * @param {string} organizationId - The Zoho Books organization ID.
-     * @returns {Object} The response JSON containing the list of customers.
-     */
-    getAllCustomers(organizationId) {
-        let accessToken = this.getAccessToken();
-        if (!accessToken) {
-            throw new Error('No access token found. Please authenticate first.');
-        }
+    // --- Generalized Entity Methods ---
+    generateUrl(entityType, id = '', params = {}) {
+        const orgId = this.authConfig.organizationId;
+        const apiBaseUrl = this.authConfig.apiBaseUrl || 'https://www.zohoapis.com/books/v3';
+        let url = `${apiBaseUrl}/${entityType}`;
+        if (id) url += `/${encodeURIComponent(id)}`;
+        params.organization_id = orgId;
+        const query = Object.keys(params)
+            .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+            .join('&');
+        return `${url}?${query}`;
+    }
 
-        const orgId = organizationId || this.authConfig.organizationId;
-        const apiBaseUrl = this.authConfig.apiBaseUrl || 'https://books.zoho.com/api/v3';
-        const url = `${apiBaseUrl}/contacts?organization_id=${encodeURIComponent(orgId)}`;
-        const options = {
+    fetch(url, options = {}) {
+        const accessToken = this.getAccessToken();
+        if (!accessToken) throw new Error('No access token found. Please authenticate first.');
+        options = Object.assign({
             method: 'get',
+            headers: { Authorization: 'Zoho-oauthtoken ' + accessToken },
+            muteHttpExceptions: true
+        }, options);
+        const response = this.fetchWithTokenRefresh(url, options);
+        if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+           return {code: response.getResponseCode, message: response.getMessage(), content: null};
+        }
+        const body = response.getContentText();
+        return JSON.parse(body);
+    }
+
+    // --- Generalized Entity Methods ---
+
+    getEntity(entityType, id, params = {}) {
+        const url = this.generateUrl(entityType, id, params);
+        return this.fetch(url);
+    }
+
+    getEntities(entityType, params = {}) {
+        const url = this.generateUrl(entityType, '', params);
+        return this.fetch(url);
+    }
+
+    updateEntity(entityType, id, data) {
+        const url = this.generateUrl(entityType, id);
+        return this.fetch(url, {
+            method: 'put',
             headers: {
-                Authorization: 'Zoho-oauthtoken ' + accessToken
+                Authorization: 'Zoho-oauthtoken ' + this.getAccessToken(),
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify(data),
+            muteHttpExceptions: true
+        });
+    }
+
+    createEntity(entityType, data) {
+        const url = this.generateUrl(entityType);
+        return this.fetch(url, {
+            method: 'post',
+            headers: {
+                Authorization: 'Zoho-oauthtoken ' + this.getAccessToken(),
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify(data),
+            muteHttpExceptions: true
+        });
+    }
+
+    deleteEntity(entityType, id) {
+        const url = this.generateUrl(entityType, id);
+        return this.fetch(url, {
+            method: 'delete',
+            headers: {
+                Authorization: 'Zoho-oauthtoken ' + this.getAccessToken()
             },
             muteHttpExceptions: true
-        };
+        });
+    }
+    // --- Derived Convenience Methods ---
 
-        const responseObject = this.fetchWithTokenRefresh(url, options);
-        const responseText = responseObject.getContentText();
-        const response = JSON.parse(responseText); 
-        if (response.code != 0) {
-          throw new Error (`All Customers call failed with code: ${response.message}`); 
-        }
-        return {
-            code: response.code,
-            message: response.message, 
-            customers: response.contacts.filter(contact => contact.contact_type === 'customer')};
+    getAllCustomers() {
+        const response = this.getEntities('contacts', { contact_type: 'customer' });
+        return {code:response.code, message: response.message, customers: response.contacts}; 
     }
 
+    getCustomerById(contactId) {
+        const response = this.getEntity('contacts', contactId);
+        return {code:response.code, message: response.message, customer: response.contact}; 
+    }
 
-/**
- * Retrieves a single customer (contact) from Zoho Books by contact ID using the stored access token.
- * @param {string} organizationId - The Zoho Books organization ID.
- * @param {string} contactId - The Zoho Books contact (customer) ID.
- * @returns {Object} The response JSON containing the customer details.
- */
-getCustomerById(organizationId, contactId) {
-    const accessToken = this.getAccessToken();
-    if (!accessToken) {
-        throw new Error('No access token found. Please authenticate first.');
+    findCustomerByEmail(emailAddress) {
+        const response = this.getEntities('contacts', { email: emailAddress });
+        return {code:response.code, message: response.message, customers: response.contacts}; 
     }
-    const orgId = organizationId || this.authConfig.organizationId;
-    const apiBaseUrl = this.authConfig.apiBaseUrl || 'https://www.zohoapis.com/books/v3';
-    const url = `${apiBaseUrl}/contacts/${encodeURIComponent(contactId)}?organization_id=${encodeURIComponent(orgId)}`;
-    const options = {
-        method: 'get',
-        headers: {
-            Authorization: 'Zoho-oauthtoken ' + accessToken
-        },
-        muteHttpExceptions: true
-    };
-    const response = UrlFetchApp.fetch(url, options);
-    const code = response.getResponseCode();
-    const body = response.getContentText();
-    if (code < 200 || code >= 300) {
-        throw new Error(`Failed to fetch customer: ${code} - ${body}`);
+
+    getAllVendors(params = {}) {
+        const response =  this.getEntities('contacts', {...params, contact_type: 'vendor' });
+        return {code:response.code, message: response.message, vendors: response.contacts}; 
     }
-    return JSON.parse(body);
-}
- 
-/**
- * Finds a customer (contact) in Zoho Books by email address.
- * @param {string} organizationId - The Zoho Books organization ID.
- * @param {string} emailAddress - The email address to search for.
- * @returns {Object|null} The customer object if found, otherwise null.
- */
-findCustomerByEmail(organizationId, emailAddress) {
-    const accessToken = this.getAccessToken();
-    if (!accessToken) {
-        throw new Error('No access token found. Please authenticate first.');
+
+    getAllItems(params = {}) {
+        return this.getEntities('items',params);
     }
-    const orgId = organizationId || this.authConfig.organizationId;
-    const apiBaseUrl = this.authConfig.apiBaseUrl || 'https://www.zohoapis.com/books/v3';
-    const url = `${apiBaseUrl}/contacts?organization_id=${encodeURIComponent(orgId)}&email=${encodeURIComponent(emailAddress)}`;
-    const options = {
-        method: 'get',
-        headers: {
-            Authorization: 'Zoho-oauthtoken ' + accessToken
-        },
-        muteHttpExceptions: true
-    };
-    const response = UrlFetchApp.fetch(url, options);
-    const code = response.getResponseCode();
-    const body = response.getContentText();
-    if (code < 200 || code >= 300) {
-        throw new Error(`Failed to search customer by email: ${code} - ${body}`);
+
+    getItemByName(itemName) {
+        return this.getEntities('items', { item_name: itemName });
+    }   
+
+    getItemById(itemId) {
+        return this.getEntity('items', itemId);
     }
-    const data = JSON.parse(body);
-    if (data.contacts && data.contacts.length > 0) {
-        // Return the first matching customer
-        return data.contacts[0];
-    }
-    return null;
-}
 }
 
-function getZohoAPI() {
+function newZohoAPI() {
     return new ZohoAPI(getAuthConfig());
 }
 
@@ -265,7 +277,6 @@ function createRefreshToken() {
     const zohoAPI = new ZohoAPI(getAuthConfig());
     try {
         const tokens = zohoAPI.exchangeGrantTokenForToken(zohoAPI.authConfig.grantToken);
-     
         Logger.log('Access token stored successfully.');
     } catch (error) {
         Logger.log(`Error exchanging grant token: ${error.message}`);

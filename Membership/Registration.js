@@ -11,6 +11,13 @@ class Registration {
     this.waiverPdfLink = data.waiverPdfLink || '';
   }
 
+  static getPluralResourceName() {
+    return 'registrations';
+  }
+  static getSingularResourceName() {
+    return 'registration';
+  }
+
   // Method to validate dates; returns null if invalid
   validateDate(date) {
     const parsedDate = new Date(date);
@@ -29,10 +36,28 @@ class Registration {
   }
 
   static fromObject(data) {
-    return new Registration(data?{...data}:{}); 
+    return new Registration(data ? { ...data } : {});
   }
 
   static fromRow(row) {
-    return new Registration({...row, status: row.memberStatus}) ;
+    return new Registration(
+      {
+
+        status: row.cf_member_status || '',
+        level: Registration.getLevel(row.cf_member_level),
+        waiverSigned: row.cf_waiver_signed === 'TRUE',
+        waiverDate: row.cf_waiver_date ? new Date(row.cf_waiver_date) : null,
+        waiverPdfLink: row.cf_waiver_pdf_link || ''
+      }
+    );
+  }
+
+  static getLevel(levelString) {
+    for (const key in SharedConfig.levels) {
+      if (SharedConfig.levels[key] === levelString) {
+        return key;
+      }
+    }
+    return null; // Return null if no matching level is found
   }
 }

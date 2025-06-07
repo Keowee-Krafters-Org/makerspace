@@ -291,7 +291,7 @@ class TestData {
   }
 }
 function test_StorageManager_add() {
-  const storageManager = new StorageManager('tests');
+  const storageManager = new SheetStorageManager('tests');
   // Ensure the sheet is empty before the test
   const sheet = storageManager.getSheet();
 
@@ -308,7 +308,7 @@ function test_StorageManager_add() {
 }
 
 function test_StorageManager_getAll() {
-  const storageManager = new StorageManager('tests');
+  const storageManager = new SheetStorageManager('tests');
   const sheet = storageManager.getSheet();
   
   // Clear the sheet before the test

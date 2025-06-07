@@ -1,5 +1,6 @@
 class Member {
   constructor(data = {}) {
+    this.id = data.id || data.contactId || ''; // Add id/contactId support
     this.emailAddress = this.validateEmail(data.emailAddress || '');
     this.firstName = data.firstName || '';
     this.lastName = data.lastName || '';
@@ -9,6 +10,9 @@ class Member {
     this.login = Login.fromObject(data.login);
     this.registration = Registration.fromObject(data.registration);
   }
+
+  static getSingularResourceName() {return 'contact'};
+  static getPluralResourceName() {return 'contacts'};
 
   // Email validation method
   validateEmail(email) {
@@ -28,6 +32,7 @@ class Member {
 
   toObject() {
     return {
+      id: this.id,
       emailAddress: this.emailAddress,
       firstName: this.firstName,
       lastName: this.lastName,
@@ -40,6 +45,7 @@ class Member {
     const loginData = this.login.toObject(); 
     const registrationData = this.registration.toObject(); 
     return {
+      id: this.id,
       emailAddress: this.emailAddress,
       firstName: this.firstName,
       lastName: this.lastName,
@@ -58,19 +64,23 @@ class Member {
   static fromRow(row = {}) {
     return new Member({
       ...row,
+      id: row.id || row.contact_id || '',
+      firstName: row.first_name || '', 
+      lastName: row.last_name || '',
+      emailAddress: row.email || '', 
       login: Login.fromRow(row),
+      address: row.address || '',
       registration: Registration.fromRow(row)
     });
   }
 
   static fromObject(data = {}) {
-  const member = new Member({
-    ...data,
-    registration: Registration.fromObject(data.registration),
-    login: Login.fromObject(data.login)
-  });
-
-  return member;
-}
-
+    const member = new Member({
+      ...data,
+      id: data.id || data.contactId || '',
+      registration: Registration.fromObject(data.registration),
+      login: Login.fromObject(data.login)
+    });
+    return member;
+  }
 }

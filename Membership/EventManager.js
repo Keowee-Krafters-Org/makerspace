@@ -1,7 +1,7 @@
 class EventManager {
     
-    constructor() {
-        this.storageManager = new StorageManager('events');
+    constructor(storageManager) {
+        this.storageManager = storageManager;
     }
 
     getEventList() {

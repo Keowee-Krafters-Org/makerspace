@@ -33,24 +33,3 @@ function logout(emailAddress) {
     return JSON.stringify(Membership.memberLogout(emailAddress)); 
 }
 
-/**
- * Handles the redirect URI for Zoho authorization.
- */
-function zohoAuthorizationRedirectHandler(request) {
-  const zohoAPI = new ZohoAPI(authConfig)
-  const code = request.parameter.code;
-  if (!code) {
-    throw new Error('Authorization code not provided.');
-  }
-
-  // Exchange the authorization code for an access token
-  const tokenResponse = zohoAPI.exchangeCodeForToken(code);
-  if (!tokenResponse || !tokenResponse.access_token) {
-    throw new Error('Failed to retrieve access token.');
-  }
-
-  // Store the access token securely
-  zohoAPI.storeAccessToken(tokenResponse.access_token);
-
-  return HtmlService.createHtmlOutput('Authorization successful. You can close this window.');
-}
