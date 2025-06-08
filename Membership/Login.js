@@ -51,7 +51,7 @@ class Login {
     return new Login(data?{...data, authentication: data.authentication}:{}); 
   }
 
-  static fromRow(row) {
+  static fromRecord(row) {
     return new Login(
       {...row, 
       status: row.cf_login_status || 'UNVERIFIED',

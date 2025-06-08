@@ -278,13 +278,13 @@ class TestData {
     this.complete = data.complete;
   }
 
-  static fromRow(row) {
+  static fromRecord(row) {
     return new TestData(
       {...row}
     );
   }
 
-  toRow() {
+  toRecord() {
     return {
       ...this
   };

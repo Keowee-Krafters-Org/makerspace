@@ -11,10 +11,10 @@ class Registration {
     this.waiverPdfLink = data.waiverPdfLink || '';
   }
 
-  static getPluralResourceName() {
+  static getResourceNamePlural() {
     return 'registrations';
   }
-  static getSingularResourceName() {
+  static getResourceNameSingular() {
     return 'registration';
   }
 
@@ -39,7 +39,7 @@ class Registration {
     return new Registration(data ? { ...data } : {});
   }
 
-  static fromRow(row) {
+  static fromRecord(row) {
     return new Registration(
       {
 

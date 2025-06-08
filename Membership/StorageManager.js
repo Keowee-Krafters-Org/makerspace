@@ -1,89 +1,69 @@
 /**
- * @class IStorageManager
- * @description An abstract class that delegates to an implementor instance.
- * Pass the implementor instance to the constructor. Each method defers to the implementor.
+ * @class StorageManager
+ * @description Base class for storage managers (ZohoStorageManager, SheetStorageManager, etc).
+ * Provides common interface and utility methods for entity storage.
  */
 class StorageManager {
-    constructor(implementor) {
-        if (!implementor) {
-            throw new Error("Implementor instance required");
-        }
-        this.impl = implementor;
-    }
-
     /**
-     * Create an object from the given row data.
-     * @className {class} clazz - The class to create an instance from.
-     * @param {Array} row - The row data as an array.
-     * @returns {Object} - The row data as an object.
+     * @param {Function} clazz - The class constructor for the entity type managed by this storage manager.
      */
-
-    objectFromRow(clazz, row) {
-        const obj = {};
-        for (const key in clazz.colMap) {
-            if (clazz.colMap.hasOwnProperty(key)) {
-                const index = clazz.colMap[key];
-                obj[key] = row[index];
-            }
-        }
-        return clazz.fromRow(obj);
+    constructor(clazz) {
+        this.clazz = clazz;
     }
 
     /**
-     * Adds a record to the storage.
-     * @param {Object} record - The record to add.
-     * @returns {Object} The added record with an ID.
+     * Adds an entity to the storage.
+     * To be implemented by subclasses.
      */
-    add(record) {
-        return this.impl.add(record);
+    add(entity) {
+        throw new Error('add() must be implemented by subclass');
     }
+
     /**
-     * Retrieves a record by its ID.
-     * @param {string} id - The ID of the record to retrieve.
-     * @returns {Object} The retrieved record.
+     * Retrieves an entity by its ID.
+     * To be implemented by subclasses.
      */
     getById(id) {
-        return this.impl.getById(id);
+        throw new Error('getById() must be implemented by subclass');
     }
+
     /**
-     * Updates a record by its ID.
-     * @param {string} id - The ID of the record to update.
-     * @param {Object} updatedRecord - The updated record data.
-     * @returns {Object} The updated record.
+     * Updates an entity by its ID.
+     * To be implemented by subclasses.
      */
-    update(id, updatedRecord) {
-        return this.impl.update(id, updatedRecord);
+    update(id, updatedEntity) {
+        throw new Error('update() must be implemented by subclass');
     }
-    /** 
-     * Deletes a record by its ID.
-     * @param {string} id - The ID of the record to delete.
-     * @returns {boolean} True if the record was deleted, false otherwise.
+
+    /**
+     * Deletes an entity by its ID.
+     * To be implemented by subclasses.
      */
     delete(id) {
-        return this.impl.delete(id);
+        throw new Error('delete() must be implemented by subclass');
     }
+
     /**
-     * Retrieves all records.
-     * @returns {Array} An array of all records.
+     * Retrieves all entities.
+     * To be implemented by subclasses.
      */
     getAll() {
-        return this.impl.getAll();
+        throw new Error('getAll() must be implemented by subclass');
     }
+
     /**
-     * Retrieves records filtered by a predicate function.
-     * @param {Function} predicate - A function that takes a record and returns true if it matches the criteria.
-     * @returns {Array} An array of records that match the predicate.
+     * Retrieves entities filtered by a predicate function.
+     * To be implemented by subclasses.
      */
     getFiltered(predicate) {
-        return this.impl.getFiltered(predicate);
-    }   
+        throw new Error('getFiltered() must be implemented by subclass');
+    }
+
     /**
-     * Gets records using a single equality match pair
-     * @param {string} key - The key to match.
-     * @param {any} value - The value to match.
-     * @returns {Array} An array of records that match the key-value pair.  
+     * Gets entities using a single equality match pair.
+     * To be implemented by subclasses.
      */
     getByKeyValue(key, value) {
-        return this.impl.getByKeyValue(key, value);
+        throw new Error('getByKeyValue() must be implemented by subclass');
     }
 }

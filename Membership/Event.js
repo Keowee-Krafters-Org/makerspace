@@ -3,15 +3,18 @@ class Event {
 
         this.host = data.host || '';
         this.title = data.title || '';
+        this.type = data.type || 'Class'; // Default type is 'Class'
         this.date = data.startDate?new Date(data.startDate):data.preferredDate;
         this.location = data.location || '';
         this.attendees = [];
         this.id = data.id;
+        this.price = data.price || 0; // Default price is 0
         this.cost = data.cost; 
         this.description = data.description || '';
         this.sizeLimit = data.sizeLimit || 0;
         this.instructorName = data.instructorName || '';
         this.instructorEmail = data.instructorEmail || '';
+        this.costDescription = data.costDescription || '';
     }
 
     static isAvailable(event) {
@@ -117,13 +120,12 @@ class Event {
         return `${this.name} at ${this.location} on ${this.date.toDateString()}`;
     }
 
-    static fromRow(row) {
-        return new Event({...row}
-        );
+    static fromRecord(record) {
+        throw new Error('fromRecord method implemented in subclass');
     }
 
-    toRow() {
-        return {...this}; 
+    toRecord() {
+        throw new Error('toRecord method implemented in subclass');
     }
 
 }
