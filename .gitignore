@@ -50,6 +50,7 @@ jspm_packages/
 # Archives
 *.tgz
 *.zip
+*.bak
 
 # Optional REPL history
 .node_repl_history

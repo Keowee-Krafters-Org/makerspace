@@ -28,6 +28,6 @@
     "Membership.js",
     "EventManager.js",
     "UnitTests.js",
-    "IntegrationTests.js"
+    "ZohoIntegrationTests.js"
   ]
 }

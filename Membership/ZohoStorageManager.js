@@ -1,5 +1,5 @@
 /** 
- * Storage manage for Zoho Books and Zoho CRM.
+ * Storage manager for Zoho Books and Zoho CRM.
  * This class handles the storage and retrieval of entity data in Zoho Books and Zoho CRM.
  * It provides methods to add, update, delete, and retrieve entity records.
  * Conversion to and from entity objects is handled through the provided class methods.
@@ -14,6 +14,9 @@ class ZohoStorageManager extends StorageManager {
   constructor(clazz) {
     super(clazz);
     this.zohoAPI = ZohoAPI.newZohoAPI();
+    this.resourceName = this.clazz.getResourceNamePlural();
+    this.resourceNameSingular = this.clazz.getResourceNameSingular();
+    this.filter = this.clazz.getFilter();
   }
 
   /**
@@ -23,12 +26,11 @@ class ZohoStorageManager extends StorageManager {
    * @example
    */
   getAll(params = {}) {
-    const resourceName = this.clazz.getResourceNamePlural();
-    const response = this.zohoAPI.getEntities(resourceName, { contact_type: 'customer', ...params });
-    if (!response || !response[resourceName]) {
-      throw new Error(`No data found for resource: ${resourceName}`);
+    const response = this.zohoAPI.getEntities(this.resourceName,{...params, ...this.filter}); 
+    if (!response || !response[this.resourceName]) {
+      throw new Error(`No data found for resource: ${this.resourceName}`);
     }
-    const entities = response[resourceName].map(row => this.clazz.fromRecord(row));
+    const entities = response[this.resourceName].map(row => this.clazz.fromRecord(row));
     return new Response(response.message === 'success', entities, response.message);
   }
   /**
@@ -48,18 +50,28 @@ class ZohoStorageManager extends StorageManager {
    * @returns {Object} The retrieved entity record.
    */
   getById(id) {
-    const resourceName = this.clazz.getResourceNamePlural();
-    const response = this.zohoAPI.getEntity(resourceName, id);
-    if (!response || !response[this.clazz.getResourceNameSingular()]) {
+    const response = this.zohoAPI.getEntity(this.resourceName, id);
+    if (!response || !response[this.resourceNameSingular]) {
       return new Response(false, null, response ? response.message : 'Not found');
     }
-    const entity = this.clazz.fromRecord(response[this.clazz.getResourceNameSingular()]);
+    const entity = this.clazz.fromRecord(response[this.resourceNameSingular]);
     return new Response(true, entity, response.message);
   }
 
   update(id, updatedEntity) {
     // Implement update logic using this.zohoAPI
-    throw new Error('update() must be implemented');
+    const record = updatedEntity.toRecord();
+    const payload = {};
+    if (updatedEntity.id) {
+      delete updatedEntity.id; // Ensure id is not included in the update payload
+    }
+    payload[this.resourceNameSingular] = record;
+    const response = this.zohoAPI.updateEntity(this.resourceName, id, payload);
+    if (!response || !response[this.resourceNameSingular]) {
+      throw new Error(`Failed to update entity with ID: ${id} with: response.message`);
+    }
+    const updatedRecord = this.clazz.fromRecord(response[this.resourceNameSingular]);
+    return new Response(true, updatedRecord, response.message);
   }
 
   delete(id) {
@@ -67,8 +79,18 @@ class ZohoStorageManager extends StorageManager {
     throw new Error('delete() must be implemented');
   }
 
-  getFiltered(predicate) {
-    return this.getAll().filter(predicate);
+  getFiltered(predicate,params = {}, ) {
+    if (typeof predicate !== 'function') {
+      throw new Error('Predicate must be a function');
+    }
+    const allResponse = this.getAll( params);
+   
+    if (allResponse.error) {
+      throw new Error(allResponse.message || 'Error retrieving data');
+    }
+    // Filter the data using the provided predicate function
+    allResponse.data = allResponse.data.filter(predicate);
+    return allResponse;
   }
 
   getByKeyValue(key, value) {

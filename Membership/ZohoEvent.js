@@ -1,48 +1,60 @@
-class ZohoEvent  extends Event {    
+class ZohoEvent extends Event {
     constructor(data = {}) {
         super(data);
     }
 
     static getResourceNameSingular() { return 'item'; }
     static getResourceNamePlural() { return 'items'; }
+    static getFilter() { return { cf_type: 'Event', cf_event_type: 'Class' }; }
+
+    static getToRecordMap() {
+        return {
+            id: 'item_id',
+            title: 'name',
+            name: 'item_name',
+            date: 'cf_scheduled_date_unformatted',
+            cost: 'purchase_rate',
+            costDescription: 'purchase_description',
+            price: 'rate',
+            host: 'cf_host',
+            location: 'cf_location',
+            duration: 'cf_duration_hrs',
+            description: 'cf_event_description',
+            summary: 'description',
+            sizeLimit: 'cf_attendance_limit',
+            type: 'cf_event_type'
+        }
+    };
+
+    static getFromRecordMap() {
+        // Maps Zoho fields to Event properties for creating/updating records
+        // This is the reverse of getToRecordMap
+        // reverse the keys and values
+        const fromRecordMap = ZohoEvent.getToRecordMap();
+        const keys = Object.keys(fromRecordMap);
+        const values = Object.values(fromRecordMap);
+        const reversedMap = {};
+        for (let i = 0; i < keys.length; i++) {
+            reversedMap[values[i]] = keys[i];
+        }
+        // Return the reversed map
+        // This map is used to convert Event properties to Zoho fields for creating/updating records
+        return reversedMap
+    }
 
     static fromRecord(record) {
-        return new Event({
-            host: record.cf_host || '',
-            title: record.name || '',
-            id: record.item_id,
-            name: record.item_name || '',
-            date: record.cf_scheduled_date ? new Date(record.cf_scheduled_date) : new Date(),
-            cost: record.purchase_rate || 0,
-            costDescription: record.purchase_description || '',
-            price: record.price || 0,
-            host: record.cf_host || '',
-            location: record.cf_location || '',
-            duration: record.cf_duration_hrs || 0,
-            description: record.description || '',
-            sizeLimit: record.cf_attendance_limit || 0,
-            type: record.cf_type || '',
-            }
-        );
+        const data = ZohoEvent.convertRecordToData(record, ZohoEvent.getFromRecordMap());
+        // Create a new ZohoEvent instance from the record data
+        // Convert any dates from string to Date object
+        if (data.date) {
+            data.date = new Date(data.date);
+        }
+
+        return new ZohoEvent(data);
     }
 
     toRecord() {
-        return {
-            item_id: this.id,
-            name: this.name,
-            item_name: this.name,
-            event_date: this.date.toISOString(),
-            cf_host: this.host,
-            cf_location: this.location  ,
-            cf_duration_hrs: this.duration,
-            description: this.description,
-            cf_attendance_limit: this.sizeLimit,
-            cf_type: this.type,
-            purchase_rate: this.cost,
-            price: this.price,
-            purchase_description: this.costDescription
-
-        }; 
+        return this.convertDataToRecord(ZohoEvent.getToRecordMap())
     }
 
 }

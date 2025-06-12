@@ -55,7 +55,7 @@ class StorageManager {
      * Retrieves entities filtered by a predicate function.
      * To be implemented by subclasses.
      */
-    getFiltered(predicate) {
+    getFiltered(predicate, params = {}) {
         throw new Error('getFiltered() must be implemented by subclass');
     }
 

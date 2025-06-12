@@ -3,31 +3,26 @@
  */
 
 
-function makeResponse(success, data = {}, message, error) {
+function newResponse(success, data = {}, message, error) {
   return new Response(success, data, message, error);
 }
 
-function makeMember(data = {}) {
+function newMember(data = {}) {
   return new Member(data);
 }
 
-function makeLogin(data = {}) {
+function newLogin(data = {}) {
   return new Login(data);
 }
 
-function makeRegistration(data = {}) {
+function newRegistration(data = {}) {
   return new Registration(data);
 }
 
-function makeStorageManager(storageName) {
-  return new IStorageManager(new SheetStorageManager(storageName)); 
+function newEventManager() {
+  return new EventManager(new ZohoStorageManager(ZohoEvent));
 }
-
-
-function makeEventManager() {
-  return new EventManager(makeStorageManager('events'));
-}
-function makeEvent(data = {}) {
+function newEvent(data = {}) {
   return new Event(data);
 }
 

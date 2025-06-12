@@ -5,6 +5,7 @@ class ZohoMember extends Member {
 
   static getResourceNameSingular() { return 'contact'; }
   static getResourceNamePlural() { return 'contacts'; }
+  static getFilter() { return { contact_type: 'customer', cf_is_member: true }; } 
 
   static fromRecord(record = {}) {
     return new ZohoMember({

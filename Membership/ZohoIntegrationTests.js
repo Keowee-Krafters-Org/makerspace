@@ -40,14 +40,14 @@ function test_getAllMembers() {
     const storageManager = new ZohoStorageManager(ZohoMember);
     try {
         const response = storageManager.getAll({first_name: 'Testy'});
-        Logger.log('getAllMembers response:', response.message);
+        Logger.log(`getAllMembers response: ${response.message}`);
         const members = response.data;
         Logger.log(`Retrieved ${members.length} members.`);
         // Assert that members are retrieved
         assert('Members should not be null or undefined', members != undefined, true);
         assert(`${members.length} Members are retrieved`, members.length > 0, true);
     } catch (error) {
-        Logger.log('getAllMembers failed:', error.message);
+        Logger.log(`getAllMembers failed: ${error.message}`);
     }
 }   
 
@@ -65,12 +65,12 @@ function test_getMemberById() {
         const memberId = members[0].id;
         Logger.log(`Testing getMemberById with ID: ${memberId}`);
         const memberResponse = storageManager.getById(memberId);
-        Logger.log('getMemberById response:', memberResponse);
+        Logger.log(`getMemberById response: ${memberResponse}`);
         // Assert that the returned member matches the requested ID
         const returnedMember = memberResponse.data; 
         assert('getMemberById returns the correct member', returnedMember.id === memberId, true); 
     } catch (error) {
-        Logger.log('getMemberById failed:', error.message);
+        Logger.log(`getMemberById failed: ${error.message}`);
     }
 }
 
@@ -90,7 +90,7 @@ function test_findMemberByEmail() {
         const found = members.find(m => m.emailAddress === testEmail);
         assert('findMemberByEmail returns the correct member', found && found.emailAddress === testEmail, true);
     } catch (error) {
-        Logger.log('findMemberByEmail failed:', error.message);
+        Logger.log(`findMemberByEmail failed: ${error.message}`);
     }
 
     
@@ -105,14 +105,14 @@ function test_getAllEvents() {
     const storageManager = new ZohoStorageManager(ZohoEvent);
     try {
         const response = storageManager.getAll({ product_type: 'service' });
-        Logger.log('getAllEvents response:', response.message);
+        Logger.log(`getAllEvents response: ${response.message}`);
         const events = response.data;
         Logger.log(`Retrieved ${events.length} events.`);
         // Assert that events are retrieved
         assert('Events should not be null or undefined', events != undefined, true);
         assert(`${events.length} Events are retrieved`, events.length > 0, true);
     } catch (error) {
-        Logger.log('getAllEvents failed:', error.message);
+        Logger.log(`getAllEvents failed: ${error.message}`);
     }
 }
 
@@ -130,12 +130,12 @@ function test_getEventById() {
         const eventId = events[0].id;
         Logger.log(`Testing getEventById with ID: ${eventId}`);
         const eventResponse = storageManager.getById(eventId);
-        Logger.log('getEventById response:', eventResponse);
+        Logger.log(`getEventById response: ${eventResponse}`);
         // Assert that the returned event matches the requested ID
         const returnedEvent = eventResponse.data;
         assert('getEventById returns the correct event', returnedEvent.id === eventId, true);
     } catch (error) {
-        Logger.log('getEventById failed:', error.message);
+        Logger.log(`getEventById failed: ${error.message}`);
     }
 }
 
@@ -155,6 +155,9 @@ function test_findEventByName() {
         const found = events.find(e => e.name === testName);
         assert('findEventByName returns the correct event', found && found.name === testName, true);
     } catch (error) {
-        Logger.log('findEventByName failed:', error.message);
+        Logger.log(`findEventByName failed: ${error.message}`);
     }
+
+
 }
+
