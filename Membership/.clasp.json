@@ -12,5 +12,22 @@
   "jsonExtensions": [
     ".json"
   ],
-  "filePushOrder": []
+  "filePushOrder": [
+    "Login.js",
+    "Lookup.js",
+    "Member.js",
+    "ZohoMember.js",
+    "SheetMember.js",
+    "Event.js",
+    "ZohoEvent.js",
+    "SheetEvent.js",
+    "Response.js",
+    "StorageManager.js",
+    "ZohoStorageManager.js",
+    "SheetStorageManager.js",
+    "Membership.js",
+    "EventManager.js",
+    "UnitTests.js",
+    "ZohoIntegrationTests.js"
+  ]
 }

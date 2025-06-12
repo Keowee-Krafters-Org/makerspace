@@ -10,8 +10,8 @@ function doGet(e) {
 
 function getEventList() {
 
-  const eventManager = Membership.makeEventManager();
-  return JSON.stringify(Membership.makeResponse(true, eventManager.getUpcomingEvents())); 
+  const eventManager = Membership.newEventManager();
+  return JSON.stringify(eventManager.getUpcomingEvents()); 
 }
 
 function signup(formData) {

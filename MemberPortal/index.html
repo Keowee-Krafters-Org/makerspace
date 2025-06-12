@@ -195,7 +195,7 @@
       google.script.run.withSuccessHandler(config => {
         document.getElementById('app').innerHTML = getDashboardContent(user, config);
         document.getElementById('version').textContent = `Version: ${config.version.memberPortal}`;
-      }).getSharedConfig();
+      }).getConfig();
     }
 
     function requestToken() {

@@ -5,7 +5,7 @@ function getAllMembers() {
   const sheet = getRegistrySheet();
   const data = sheet.getDataRange().getValues();
   const colMap = getNamedColumnIndexMap(sheet);
-  return data.slice(1).map(row => Member.fromRow(objectFromRow(row, colMap)).toObject());
+  return data.slice(1).map(row => Member.fromRecord(objectFromRow(row, colMap)).toObject());
 }
 
 /** Create a data object (key/value pair) from the data array using the name to column index map */
@@ -130,7 +130,7 @@ function memberLookup(emailAddress) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][emailCol]?.toLowerCase() === emailAddress.toLowerCase()) {
       const rowObject = objectFromRow(data[i], columnIndexByName);
-      const member = Member.fromRow(rowObject);
+      const member = Member.fromRecord(rowObject);
       return new Lookup(
         true, i + 1, columnIndexByName, sheet, member);
       }
@@ -189,7 +189,7 @@ function updateMemberRecord(lookup, memberOrData) {
   const columnIndexByName = lookup.columnIndexByName;
   const row = lookup.rowIndex;
 
-  const data = memberOrData.toRow ? memberOrData.toRow() : Member.fromObject(memberOrData);
+  const data = memberOrData.toRecord ? memberOrData.toRecord() : Member.fromObject(memberOrData);
 
   for (const [key, value] of Object.entries(data)) {
     if (columnIndexByName[key] !== undefined && value !== undefined) {

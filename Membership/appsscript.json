@@ -1,6 +1,15 @@
 {
   "timeZone": "America/New_York",
-  "dependencies": {},
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "ZohoAPI",
+        "version": "0",
+        "libraryId": "15s7wHQQVgKV1mQP7PjZHfv9_nFH59NzDuVrzbsmgibukQIn7brL0BHTr",
+        "developmentMode": true
+      }
+    ]
+  },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"
 }

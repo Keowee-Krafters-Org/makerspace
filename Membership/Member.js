@@ -1,5 +1,6 @@
 class Member {
   constructor(data = {}) {
+    this.id = data.id || data.contactId || '';
     this.emailAddress = this.validateEmail(data.emailAddress || '');
     this.firstName = data.firstName || '';
     this.lastName = data.lastName || '';
@@ -10,7 +11,7 @@ class Member {
     this.registration = Registration.fromObject(data.registration);
   }
 
-  // Email validation method
+  // Common validation and utility methods
   validateEmail(email) {
     const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!isValid) {
@@ -28,49 +29,42 @@ class Member {
 
   toObject() {
     return {
+      id: this.id,
       emailAddress: this.emailAddress,
       firstName: this.firstName,
       lastName: this.lastName,
+      phoneNumber: this.phoneNumber,
+      address: this.address,
+      interests: this.interests,
       login: this.login.toObject(),
       registration: this.registration.toObject()
     };
   }
 
-  toRow() {
-    const loginData = this.login.toObject(); 
-    const registrationData = this.registration.toObject(); 
-    return {
-      emailAddress: this.emailAddress,
-      firstName: this.firstName,
-      lastName: this.lastName,
-      phoneNumber: this.phoneNumber,
-      level: registrationData.level,
-      interests: this.interests,
-      address: this.address,
-      status: loginData.status,
-      memberStatus: registrationData.status,
-      waiverSigned: registrationData.waiverSigned, 
-      waiverPdfLink: registrationData.waiverPdfLink,
-      waiverDate: registrationData.waiverDate
-    };
-  }
-
-  static fromRow(row = {}) {
+  static fromObject(data = {}) {
     return new Member({
-      ...row,
-      login: Login.fromRow(row),
-      registration: Registration.fromRow(row)
+      ...data,
+      id: data.id || data.contactId || '',
+      registration: Registration.fromObject(data.registration),
+      login: Login.fromObject(data.login)
     });
   }
 
-  static fromObject(data = {}) {
-  const member = new Member({
-    ...data,
-    registration: Registration.fromObject(data.registration),
-    login: Login.fromObject(data.login)
-  });
+  // Storage-agnostic extension points
+  static fromRecord(record) {
+    throw new Error('Implemented in subclass');
+  }
 
-  return member;
-}
+  toRecord() {
+    throw new Error('Implemented in subclass');
+  }
 
+  // Datasource-specific resource names
+  static getResourceNameSingular() {
+    throw new Error('Implemented in subclass');
+  }
+
+  static getResourceNamePlural() {
+    throw new Error('Implemented in subclass');
+  }
 }

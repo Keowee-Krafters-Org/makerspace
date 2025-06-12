@@ -1,25 +1,58 @@
 class Event {
     constructor(data = {}) {
+        
+        Object.keys(data).forEach( key =>  {
+            this[key] = data[key]; 
+        }); 
+    
+    }
 
-        this.host = data.host || '';
-        this.title = data.title || '';
-        this.date = data.startDate?new Date(data.startDate):data.preferredDate;
-        this.location = data.location || '';
+    newConstructor() {
+        this.host = undefined;
+        this.title = '';
+        this.type = 'Class'; // Default type is 'Class'
+        this.date = new Date();
+        this.location = '';
         this.attendees = [];
-        this.id = data.id;
-        this.cost = data.cost; 
-        this.description = data.description || '';
-        this.sizeLimit = data.sizeLimit || 0;
-        this.instructorName = data.instructorName || '';
-        this.instructorEmail = data.instructorEmail || '';
+        this.id = undefined;
+        this.price = 0; // Default price is 0
+        this.cost = undefined;
+        this.summary = '';
+        this.description = '';
+        this.sizeLimit = 0;
+        this.instructorName = '';
+        this.instructorEmail = '';
+        this.costDescription = '';
     }
 
-    static isAvailable(event) {
-        return !event.isFull();
+    convertDataToRecord(toRecordMap) {
+        const record = {};
+        Object.keys(this).forEach( key =>  {
+            record[toRecordMap[key]] = this[key]; 
+        }); 
     }
 
-    static isUpcoming(event) {
-        return event.isUpcoming();
+    static convertRecordToData(record = {}, fromRecordMap ) {
+        const data = {};
+        Object.keys(record).forEach(key => {
+            if (fromRecordMap[key]) {
+            data[fromRecordMap[key]] = record[key];
+            }
+        });
+        return data;
+    }
+
+    static getfromRecordMap() {
+        // Must be implemented in subclass
+        throw new Error('Must be implemented in subclass'); 
+    }
+
+    static getToRecordMap() {
+        // Must be implemented in subclass
+        throw new Error('Must be implemented in subclass');
+    }
+    isAvailable() {
+        return !this.isFull();
     }
 
     addAttendee(attendee) {
@@ -117,13 +150,12 @@ class Event {
         return `${this.name} at ${this.location} on ${this.date.toDateString()}`;
     }
 
-    static fromRow(row) {
-        return new Event({...row}
-        );
+    static fromRecord(record) {
+        throw new Error('fromRecord method implemented in subclass');
     }
 
-    toRow() {
-        return {...this}; 
+    toRecord() {
+        throw new Error('toRecord method implemented in subclass');
     }
 
 }

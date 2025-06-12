@@ -125,15 +125,15 @@
                 // Format the date for display
                 const dateObj = new Date(cls.date);
                 const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-                const spotsAvailable = cls.sizeLimit - cls.attendees.length;
+                const spotsAvailable = cls.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
                 card.innerHTML = `
                     <div>
                         <div class="class-title">${cls.title}</div>
                         <div class="class-desc">${cls.description}</div>
-                        <div class="class-info"><strong>Price:</strong> $${Number(cls.cost).toFixed(2)}</div>
+                        <div class="class-info"><strong>Price:</strong> $${Number(cls.price).toFixed(2)}</div>
                         <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
                         <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
-                        <div class="class-info"><strong>Instructor:</strong> ${cls.instructorName}</div>
+                        <div class="class-info"><strong>Instructor:</strong> ${cls.host}</div>
                         <div class="class-info"><strong>Max Attendees:</strong> ${cls.sizeLimit}</div>
                         <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
                         

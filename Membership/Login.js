@@ -51,8 +51,11 @@ class Login {
     return new Login(data?{...data, authentication: data.authentication}:{}); 
   }
 
-  static fromRow(row) {
-    return new Login({...row, authentication: parseAuthenticationEntry(row.authentication)}); 
+  static fromRecord(row) {
+    return new Login(
+      {...row, 
+      status: row.cf_login_status || 'UNVERIFIED',
+      authentication: parseAuthenticationEntry(row.cf_authentication) || {}}); 
   }
 }
 
