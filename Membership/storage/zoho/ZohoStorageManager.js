@@ -94,7 +94,10 @@ class ZohoStorageManager extends StorageManager {
   }
 
   getByKeyValue(key, value) {
-    return this.getAll().filter(entity => entity[key] === value);
+    const storageKey = this.clazz.getStorageKey(key);
+    return this.getAll({ [storageKey]: value, ...this.filter });
   }
+
+
 }
 

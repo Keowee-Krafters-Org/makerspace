@@ -179,8 +179,7 @@ class ZohoAPI {
             muteHttpExceptions: true
         }, options);
         const response = this.fetchWithTokenRefresh(url, options);
-
-        Logger.log(`Code: ${response.getResponseCode()}`);
+        
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
             return { code: response.getResponseCode, message: response.getContentText(), content: null };
         }

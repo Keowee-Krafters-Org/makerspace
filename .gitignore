@@ -89,5 +89,9 @@ __pycache__/
 *.py[cod]
 *.so
 
-# Sectret files
+# Secret files
 *secrets*
+# VS code files
+.vscode/
+# clasp files
+.clasp.json

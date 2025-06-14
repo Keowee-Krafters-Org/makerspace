@@ -55,8 +55,15 @@ class Login {
     return new Login(
       {...row, 
       status: row.cf_login_status || 'UNVERIFIED',
-      authentication: parseAuthenticationEntry(row.cf_authentication) || {}}); 
+      authentication: row.cf_authentication?Login.parseAuthenticationEntry(row.cf_authentication):{}
+    }); 
   }
+
+  static parseAuthenticationEntry(authenticationEntry) {
+  return (authenticationEntry && authenticationEntry != '') ?
+    JSON.parse(authenticationEntry) :
+    generateAuthentication();
+}
 }
 
 
