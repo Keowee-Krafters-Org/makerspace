@@ -6,19 +6,20 @@ class MembershipManager {
    * @param {StorageManager} storageManager - An instance of a storage manager (e.g., SheetStorageManager)
    */
   constructor(storageManager) {
-    this.storage = storageManager;
+    this.storageManager = storageManager;
   }
 
   getAllMembers() {
-    return this.storage.getAll().map(member => member.toObject());
+    return this.storageManager.getAll().map(member => member.toObject());
   }
 
-  updateMember(memberData) {
-    const member = Member.fromObject(memberData);
-    const found = this.storage.getByKeyValue('emailAddress', member.emailAddress)[0];
-    if (!found) throw new Error(`Member not found: ${member.emailAddress}`);
+  updateMember(member) {
+
+    if (!member) throw new Error(`Member not found: ${member.emailAddress}`);
+    if (!member.id) throw new Error(`Member ID missing: ${member.emailAddress}`);
+    if (!member.name) throw new Error(`Member name missing: ${member.name}`);
     try {
-      this.storage.update(found.id, member);
+      this.storageManager.update(member.id, member);
       return member;
     } catch (error) {
       console.error(`Failed to update member record for ${member.emailAddress}: ${error.message}`);
@@ -27,21 +28,21 @@ class MembershipManager {
   }
 
   loginMember(emailAddress) {
-    let member = this.storage.getByKeyValue('emailAddress', emailAddress)[0];
+    let member = this.memberLookup(emailAddress);
     let expired = true;
     const authentication = this.generateAuthentication();
     const authenticationEntry = JSON.stringify(authentication);
 
     if (!member) {
       this.addMember({ emailAddress });
-      member = this.storage.getByKeyValue('emailAddress', emailAddress)[0];
+      member = this.memberLookup(emailAddress);
       member.authentication = authenticationEntry;
-      member.memberStatus = "VERIFYING";
-      this.storage.update(member.id, member);
+      member.registration.status = "VERIFYING";
+      this.storageManager.update(member.id, member);
     } else {
       member.authentication = authenticationEntry;
-      member.memberStatus = "VERIFYING";
-      this.storage.update(member.id, member);
+      member.registration.status  = "VERIFYING";
+      this.storageManager.update(member.id, member);
     }
 
     if (member.login && member.login.authentication) {
@@ -50,8 +51,8 @@ class MembershipManager {
     }
 
     if (!expired && member.registration && member.registration.status === 'REGISTERED') {
-      member.memberStatus = 'VERIFIED';
-      this.storage.update(member.id, member);
+      member.registration.status = 'VERIFIED';
+      this.storageManager.update(member.id, member);
     }
 
     if (member.login && member.login.status === 'VERIFYING') {
@@ -68,14 +69,14 @@ class MembershipManager {
   }
 
   verifyMemberToken(emailAddress, userToken) {
-    const member = this.storage.getByKeyValue('emailAddress', emailAddress)[0];
+    const member = this.memberLookup(emailAddress);
     if (!member) {
       return { success: false, status: 'UNVERIFIED', message: 'Email record not found - please login again to correct' };
     }
 
     if (!member.login || !member.login.authentication) {
-      member.memberStatus = 'UNVERIFIED';
-      this.storage.update(member.id, member);
+      member.registration.status = 'UNVERIFIED';
+      this.storageManager.update(member.id, member);
       return { success: false, status: 'UNVERIFIED', message: 'Verification required. Please request a code.' };
     }
 
@@ -90,12 +91,12 @@ class MembershipManager {
     }
 
     if (member.login.status === 'VERIFYING' || member.login.status === 'TOKEN_EXPIRED') {
-      member.memberStatus = 'VERIFIED';
+      member.registration.status = 'VERIFIED';
       // Extend token expiration to 4 hours
       const newAuth = this.generateAuthentication(240);
       newAuth.token = authentication.token;
       member.authentication = JSON.stringify(newAuth);
-      this.storage.update(member.id, member);
+      this.storageManager.update(member.id, member);
     }
 
     if (member.login.status === 'REMOVE') {
@@ -106,7 +107,7 @@ class MembershipManager {
   }
 
   memberLookup(emailAddress) {
-    const response = this.storage.getByKeyValue('emailAddress', emailAddress);
+    const response = this.storageManager.getByKeyValue('emailAddress', emailAddress);
     if (response.length === 0) return null;
 
     const member = response.data[0];
@@ -117,29 +118,31 @@ class MembershipManager {
   addMember(memberData) {
     let member = this.memberLookup(memberData.emailAddress);
     if (member) return member;
-    member = this.storage.addMemberWithEmail(memberData.emailAddress);
+    member = this.storageManager.addMemberWithEmail(memberData.emailAddress);
     member.status = 'UNVERIFIED';
     member.timestamp = new Date();
-    this.storage.update(member.id, member);
+    this.storageManager.update(member.id, member);
     return member;
   }
 
   addMemberRegistration(memberData) {
-    if (!memberData.emailAddress) return;
-    let member = this.storage.getByKeyValue('emailAddress', memberData.emailAddress)[0];
-    if (member && member.login.status === 'VERIFIED') {
-      member.login.status = 'APPLIED';
+    let member = this.memberLookup(memberData.emailAddress);
+    if (!member) {
+      if (member && member.login.status === 'VERIFIED') {
+        member.login.status = 'APPLIED';
+      }
+      Object.assign(member, memberData);
+      this.storageManager.update(member.id, member);
     }
-    Object.assign(member, memberData);
-    this.storage.update(member.id, member);
-    return member.id;
+    return member;
   }
 
   setMemberStatus(id, status) {
-    const member = this.storage.getById(id);
-    if (member) {
+    const memberResponse = this.storageManager.getById(id);
+    if (memberResponse && memberResponse.success) {
+      const member = memberResponse.data;
       member.status = status;
-      this.storage.update(id, member);
+      this.storageManager.update(id, member);
     }
   }
 
@@ -153,16 +156,16 @@ class MembershipManager {
   }
 
   memberLogout(emailAddress) {
-    const member = this.storage.getByKeyValue('emailAddress', emailAddress)[0];
-    if (!member) return { success: false, status: 'NOT_FOUND' };
+    const member = this.memberLookup(emailAddress);
+    if (!member) return { success: false, message: 'Member not found' };
+
     member.status = 'UNVERIFIED';
-    this.storage.update(member.id, member);
-    SpreadsheetApp.flush();
+    this.storageManager.update(member.id, member);
     return { success: true, status: 'UNVERIFIED' };
   }
 
   getAuthentication(emailAddress) {
-    const member = this.storage.getByKeyValue('email_address', emailAddress)[0];
+    const member = this.memberLookup(emailAddress);
     if (!member) return null;
     return member.login.authentication || null;
   }

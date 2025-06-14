@@ -26,7 +26,7 @@ class ZohoStorageManager extends StorageManager {
    * @example
    */
   getAll(params = {}) {
-    const response = this.zohoAPI.getEntities(this.resourceName,{...params, ...this.filter}); 
+    const response = this.zohoAPI.getEntities(this.resourceName, { ...params, ...this.filter });
     if (!response || !response[this.resourceName]) {
       throw new Error(`No data found for resource: ${this.resourceName}`);
     }
@@ -60,12 +60,11 @@ class ZohoStorageManager extends StorageManager {
 
   update(id, updatedEntity) {
     // Implement update logic using this.zohoAPI
-    const record = updatedEntity.toRecord();
-    const payload = {};
     if (updatedEntity.id) {
       delete updatedEntity.id; // Ensure id is not included in the update payload
     }
-    payload[this.resourceNameSingular] = record;
+    
+    const payload = updatedEntity.toRecord();
     const response = this.zohoAPI.updateEntity(this.resourceName, id, payload);
     if (!response || !response[this.resourceNameSingular]) {
       throw new Error(`Failed to update entity with ID: ${id} with: response.message`);
@@ -79,12 +78,12 @@ class ZohoStorageManager extends StorageManager {
     throw new Error('delete() must be implemented');
   }
 
-  getFiltered(predicate,params = {}, ) {
+  getFiltered(predicate, params = {},) {
     if (typeof predicate !== 'function') {
       throw new Error('Predicate must be a function');
     }
-    const allResponse = this.getAll( params);
-   
+    const allResponse = this.getAll(params);
+
     if (allResponse.error) {
       throw new Error(allResponse.message || 'Error retrieving data');
     }

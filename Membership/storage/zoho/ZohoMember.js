@@ -46,6 +46,7 @@ class ZohoMember extends Member {
       id: 'contact_id',
       firstName: 'first_name',
       lastName: 'last_name',
+      name: 'contact_name',
       emailAddress: 'email',
       phoneNumber: 'phone',
       address: 'address',
@@ -59,9 +60,9 @@ class ZohoMember extends Member {
    * @returns {ZohoMember} A new ZohoMember instance with the converted data.
    */
   static fromRecord(record = {}) {
-    const data = this.convertRecordToData(record, this.getFromRecordMap());
-    data.login = Login.fromRecord(record);
-    data.registration = Registration.fromRecord(record);
+    const data = super.convertRecordToData(record, this.getFromRecordMap());
+    data.login = ZohoLogin.fromRecord(record);
+    data.registration = ZohoRegistration.fromRecord(record);
     data.id = record.id || record.contact_id || '';
     return new this(data);
   }
@@ -72,8 +73,12 @@ class ZohoMember extends Member {
    */
   toRecord() {
     const record = this.convertDataToRecord(this.constructor.getToRecordMap());
-    Object.assign(record, this.login ? this.login.toObject() : {});
-    Object.assign(record, this.registration ? this.registration.toObject() : {});
+    if (!record.name) {
+      // Default record name
+      record.contact_name = `${this.firstName} ${this.lastName}`;
+    }
+    Object.assign(record, this.login ? this.login.toRecord() : {});
+    Object.assign(record, this.registration ? this.registration.toRecord() : {});
     return record;
   }
 }

@@ -45,7 +45,7 @@ function deleteTestMember(emailAddress) {
   const member = membershipManager.memberLookup(emailAddress);
   if (member && member.id) {
     // Assuming storageManager has a delete method by id
-    membershipManager.storage.delete(member.id);
+    membershipManager.storageManager.delete(member.id);
     Logger.log(`Deleted test member: ${emailAddress}`);
   }
   SpreadsheetApp.flush();
@@ -104,13 +104,13 @@ function test_if_status_and_memberStatus_are_set_correctly() {
   const member = new Member(testMember);
   membershipManager.addMember(member);
 
-  let found = membershipManager.memberLookup(member.emailAddress);
-  assert('Initial status', 'UNVERIFIED', found.login.status);
+  let foundMember = membershipManager.memberLookup(member.emailAddress);
+  assert('Initial status', 'UNVERIFIED', foundMember.login.status);
 
-  membershipManager.setMemberStatus(found.id, "VERIFIED"); 
+  membershipManager.setMemberStatus(foundMember.id, "VERIFIED"); 
   membershipManager.addMemberRegistration(member); // Should promote memberStatus to APPLIED if VERIFIED
-  found = membershipManager.memberLookup(member.emailAddress);
-  assert('Member status', 'APPLIED', found.registration.status);
+  foundMember = membershipManager.memberLookup(member.emailAddress);
+  assert('Member status', 'APPLIED', foundMember.registration.status);
 
   deleteTestMember(member.emailAddress);
 }
@@ -159,9 +159,9 @@ function test_verifyToken_transitions_user_to_VERIFIED() {
 function test_getAllMembers_returns_members() {
   membershipManager.addMemberRegistration(Member.fromObject(testMember));
   const all = membershipManager.getAllMembers();
-  const found = all.find(m => m.emailAddress === testMember.emailAddress);
-  assert('Found registered member', true, !!found);
-  assert('First name matches', testMember.firstName, found.firstName);
+  const foundMember = all.find(m => m.emailAddress === testMember.emailAddress);
+  assert('Found registered member', true, !!foundMember);
+  assert('First name matches', testMember.firstName, foundMember.firstName);
   deleteTestMember(testMember.emailAddress);
 }
 
@@ -179,11 +179,13 @@ function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
 
 function test_whenMemberIsUpdated_thenMemberData_is_changed () {
   const originalMember = membershipManager.memberLookup(testMember.emailAddress); 
-  const memberChanges = Object.assign({}, originalMember); 
-  memberChanges.registration.waiverSigned = !originalMember.registration.waiverSigned; 
+  const memberChanges = new ZohoMember({id: originalMember.id, name: originalMember.name, registration: originalMember.registration}); 
+
+  memberChanges.registration.waiverSigned = originalMember.registration.waiverSigned===true?false:true; 
   memberChanges.phoneNumber = originalMember.phoneNumber.split('').reverse().join(''); 
-  memberChanges.registration.status = originalMember.registration.status.split('').reverse().join('');
-  memberChanges.registration.level = originalMember.registration.level === 2 ? 1 : 2; 
+ 
+  memberChanges.registration.status = originalMember.registration.status==='NEW'?'REGISTERED':'NEW';
+  memberChanges.registration.level = originalMember.registration.level === 'Interested Party' ? 'Active' : 'Interested Party'; 
   const updatedMember = membershipManager.updateMember(memberChanges); 
 
   assert('Phone number changed', memberChanges.phoneNumber, updatedMember.phoneNumber );

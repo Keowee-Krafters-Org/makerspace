@@ -1,9 +1,27 @@
-class Login {
+class Login extends Entity {
   constructor(data = {}) {
-    this.status = data.status || 'UNVERIFIED';
-    this.authentication = data.authentication || {};
-    this.errors = [];
+    super(data);
+    // Do not fully initialize here; allow partial instantiation for flexibility
+    this.status = data.status;
+    this.authentication = data.authentication;
+    this.errors = data.errors || [];
     this.found = data.hasOwnProperty('found') ? data.found : false;
+  }
+
+  /**
+   * Factory method for creating a fully initialized new Login.
+   * Ensures required fields have sensible defaults.
+   * @param {Object} data - Source object for initialization
+   * @returns {Login}
+   */
+  static createNew(data = {}) {
+    return new Login({
+      ...data,
+      status: typeof data.status === 'string' && data.status.trim() !== '' ? data.status : 'UNVERIFIED',
+      authentication: typeof data.authentication === 'object' ? data.authentication : {},
+      errors: Array.isArray(data.errors) ? data.errors : [],
+      found: !!data.found
+    });
   }
 
   // Method to add an error message to the errors list
@@ -18,14 +36,14 @@ class Login {
 
   // Method to check if the user is logged in
   isLoggedIn() {
-    return this.status === 'VERIFIED'; 
+    return this.status === 'VERIFIED';
   }
 
   // Method to check if the authentication is expired
   isExpired() {
-    const expiration = this.authentication.expiration;
+    const expiration = this.authentication && (this.authentication.expiration || this.authentication.expirationTime);
     if (!expiration) return false;
-    
+
     const expDate = new Date(expiration);
     return isNaN(expDate.getTime()) ? false : expDate < new Date();
   }
@@ -39,8 +57,11 @@ class Login {
 
   toObject() {
     return {
+      id: this.id,
       status: this.status,
-      authentication: this.authentication
+      authentication: this.authentication,
+      errors: this.errors,
+      found: this.found
     };
   }
 
@@ -48,23 +69,23 @@ class Login {
    * Create a Login from JSON object data
    */
   static fromObject(data) {
-    return new Login(data?{...data, authentication: data.authentication}:{}); 
-  }
-
-  static fromRecord(row) {
-    return new Login(
-      {...row, 
-      status: row.cf_login_status || 'UNVERIFIED',
-      authentication: row.cf_authentication?Login.parseAuthenticationEntry(row.cf_authentication):{}
-    }); 
+    return new Login(data ? { ...data } : {});
   }
 
   static parseAuthenticationEntry(authenticationEntry) {
-  return (authenticationEntry && authenticationEntry != '') ?
-    JSON.parse(authenticationEntry) :
-    generateAuthentication();
+    if (!authenticationEntry || authenticationEntry === '') return {};
+    try {
+      return typeof authenticationEntry === 'string'
+        ? JSON.parse(authenticationEntry)
+        : authenticationEntry;
+    } catch (e) {
+      return {};
+    }
+  }
 }
-}
+
+// Make the class globally accessible in Google Apps Script
+this.Login = Login;
 
 
 

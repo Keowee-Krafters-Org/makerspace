@@ -1,14 +1,6 @@
-class Registration {
+class Registration extends Entity {
   constructor(data = {}) {
-    this.level = data.level || 1;
-    // Initialize registration status; default to 'NEW' if not provided
-    this.status = data.status || 'NEW';
-    // Set waiverSigned; ensure it's a boolean; default to false
-    this.waiverSigned = typeof data.waiverSigned === 'boolean' ? data.waiverSigned : false;
-    // Set waiverDate; validate if it's a proper date
-    this.waiverDate = this.validateDate(data.waiverDate);
-    // Initialize waiverPdfLink; default to empty string if not provided
-    this.waiverPdfLink = data.waiverPdfLink || '';
+    super(data);
   }
 
   static getResourceNamePlural() {
@@ -27,6 +19,7 @@ class Registration {
   // Method to convert the current object state to a plain object, ensuring state encapsulation
   toObject() {
     return {
+      id: this.id,
       status: this.status,
       level: this.level,
       waiverSigned: this.waiverSigned,
@@ -36,20 +29,27 @@ class Registration {
   }
 
   static fromObject(data) {
-    return new Registration(data ? { ...data } : {});
+    return new this(data ? { ...data } : {});
   }
 
-  static fromRecord(row) {
-    return new Registration(
-      {
+  static getToRecordMap() {
+    return {
+      id: 'registration_id',
+      status: 'cf_member_status',
+      level: 'cf_member_level',
+      waiverSigned: 'cf_waiver_signed',
+      waiverDate: 'cf_waiver_date',
+      waiverPdfLink: 'cf_waiver_pdf_link'
+    };
+  }
 
-        status: row.cf_member_status || '',
-        level: Registration.getLevel(row.cf_member_level),
-        waiverSigned: row.cf_waiver_signed === 'TRUE',
-        waiverDate: row.cf_waiver_date ? new Date(row.cf_waiver_date) : null,
-        waiverPdfLink: row.cf_waiver_pdf_link || ''
-      }
-    );
+  // Inherit getFromRecordMap from Entity (auto-reverses getToRecordMap)
+
+  static fromRecord(row) {
+    const data = this.convertRecordToData(row, this.getFromRecordMap());
+    data.waiverSigned = data.waiverSigned === true || data.waiverSigned === 'TRUE';
+    data.waiverDate = data.waiverDate ? new Date(data.waiverDate) : null;
+    return new this(data);
   }
 
   static getLevel(levelString) {
