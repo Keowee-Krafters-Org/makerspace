@@ -38,7 +38,6 @@ class ZohoLogin extends Login {
   static getToRecordMap() {
     return {
       status: 'cf_login_status',
-      authentication: 'cf_authentication',
       lastLogin: 'cf_last_login'
       // Add other mappings as needed
     };
@@ -55,9 +54,9 @@ class ZohoLogin extends Login {
     const data = this.convertRecordToData(record, this.getFromRecordMap());
     if (data.lastLogin) data.lastLogin = new Date(data.lastLogin);
     // If authentication is stored as JSON string, parse it
-    if (typeof data.authentication === 'string') {
+    if (typeof record.cf_authentication === 'string') {
       try {
-        data.authentication = JSON.parse(data.authentication);
+        data.authentication = JSON.parse(record.cf_authentication);
       } catch (e) {
         // leave as string if not JSON
       }
@@ -71,10 +70,7 @@ class ZohoLogin extends Login {
    */
   toRecord() {
     const record = this.convertDataToRecord(this.constructor.getToRecordMap());
-    // If authentication is an object, stringify it for storage
-    if (record.authentication && typeof record.authentication === 'object') {
-      record.authentication = JSON.stringify(record.authentication);
-    }
+    record.cf_authentication = JSON.stringify(this.authentication);
     return record;
   }
 }

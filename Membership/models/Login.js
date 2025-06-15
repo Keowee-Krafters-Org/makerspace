@@ -42,7 +42,7 @@ class Login extends Entity {
   // Method to check if the authentication is expired
   isExpired() {
     const expiration = this.authentication && (this.authentication.expiration || this.authentication.expirationTime);
-    if (!expiration) return false;
+    if (!expiration) return true;
 
     const expDate = new Date(expiration);
     return isNaN(expDate.getTime()) ? false : expDate < new Date();

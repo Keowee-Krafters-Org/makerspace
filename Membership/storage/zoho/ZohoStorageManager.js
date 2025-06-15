@@ -69,8 +69,8 @@ class ZohoStorageManager extends StorageManager {
     if (!response || !response[this.resourceNameSingular]) {
       throw new Error(`Failed to update entity with ID: ${id} with: response.message`);
     }
-    const updatedRecord = this.clazz.fromRecord(response[this.resourceNameSingular]);
-    return new Response(true, updatedRecord, response.message);
+    const savedEntity = this.clazz.fromRecord(response[this.resourceNameSingular]);
+    return new Response(true, savedEntity, response.message);
   }
 
   delete(id) {

@@ -10,7 +10,7 @@ class MembershipManager {
   }
 
   getAllMembers() {
-    return this.storageManager.getAll().map(member => member.toObject());
+    return this.storageManager.getAll();
   }
 
   updateMember(member) {
@@ -29,34 +29,30 @@ class MembershipManager {
 
   loginMember(emailAddress) {
     let member = this.memberLookup(emailAddress);
+    // Assume expired or new login
     let expired = true;
-    const authentication = this.generateAuthentication();
-    const authenticationEntry = JSON.stringify(authentication);
-
     if (!member) {
-      this.addMember({ emailAddress });
-      member = this.memberLookup(emailAddress);
-      member.authentication = authenticationEntry;
-      member.registration.status = "VERIFYING";
-      this.storageManager.update(member.id, member);
-    } else {
-      member.authentication = authenticationEntry;
-      member.registration.status  = "VERIFYING";
-      this.storageManager.update(member.id, member);
+      member = this.addMember({ emailAddress });
     }
 
-    if (member.login && member.login.authentication) {
-      const expirationTime = member.login.authentication.expirationTime;
-      expired = new Date() > new Date(expirationTime);
+    if (member.login) {
+      // Has a login 
+      expired = member.login.isExpired();;
+    }
+
+    if (expired) {
+      member.login.authentication = this.generateAuthentication();
+      member.login.status = "VERIFYING";
+      this.storageManager.update(member.id, member);
     }
 
     if (!expired && member.registration && member.registration.status === 'REGISTERED') {
-      member.registration.status = 'VERIFIED';
+      member.login.status = 'VERIFIED';
       this.storageManager.update(member.id, member);
     }
 
     if (member.login && member.login.status === 'VERIFYING') {
-      this.sendEmail(emailAddress, 'Your MakeKeowee Login Code', `Your verification code is: ${authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`);
+      this.sendEmail(emailAddress, 'Your MakeKeowee Login Code', `Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`);
     }
 
     return new Response(true, member);
@@ -75,7 +71,7 @@ class MembershipManager {
     }
 
     if (!member.login || !member.login.authentication) {
-      member.registration.status = 'UNVERIFIED';
+      member.login.status = 'UNVERIFIED';
       this.storageManager.update(member.id, member);
       return { success: false, status: 'UNVERIFIED', message: 'Verification required. Please request a code.' };
     }
@@ -91,11 +87,11 @@ class MembershipManager {
     }
 
     if (member.login.status === 'VERIFYING' || member.login.status === 'TOKEN_EXPIRED') {
-      member.registration.status = 'VERIFIED';
+      member.login.status = 'VERIFIED';
       // Extend token expiration to 4 hours
       const newAuth = this.generateAuthentication(240);
       newAuth.token = authentication.token;
-      member.authentication = JSON.stringify(newAuth);
+      member.login.authentication = newAuth;
       this.storageManager.update(member.id, member);
     }
 
@@ -109,17 +105,16 @@ class MembershipManager {
   memberLookup(emailAddress) {
     const response = this.storageManager.getByKeyValue('emailAddress', emailAddress);
     if (response.length === 0) return null;
-
     const member = response.data[0];
     if (!member) return null;
-    return member;
+    return this.storageManager.getById(member.id).data;
   }
 
   addMember(memberData) {
     let member = this.memberLookup(memberData.emailAddress);
     if (member) return member;
     member = this.storageManager.addMemberWithEmail(memberData.emailAddress);
-    member.status = 'UNVERIFIED';
+    member.login.status = 'UNVERIFIED';
     member.timestamp = new Date();
     this.storageManager.update(member.id, member);
     return member;
@@ -129,7 +124,7 @@ class MembershipManager {
     let member = this.memberLookup(memberData.emailAddress);
     if (!member) {
       if (member && member.login.status === 'VERIFIED') {
-        member.login.status = 'APPLIED';
+        member.registration.status = 'APPLIED';
       }
       Object.assign(member, memberData);
       this.storageManager.update(member.id, member);
@@ -141,7 +136,7 @@ class MembershipManager {
     const memberResponse = this.storageManager.getById(id);
     if (memberResponse && memberResponse.success) {
       const member = memberResponse.data;
-      member.status = status;
+      member.login.status = status;
       this.storageManager.update(id, member);
     }
   }
@@ -159,9 +154,9 @@ class MembershipManager {
     const member = this.memberLookup(emailAddress);
     if (!member) return { success: false, message: 'Member not found' };
 
-    member.status = 'UNVERIFIED';
+    member.login.status = 'UNVERIFIED';
     this.storageManager.update(member.id, member);
-    return { success: true, status: 'UNVERIFIED' };
+    return { success: true, login: { status: 'UNVERIFIED' } };
   }
 
   getAuthentication(emailAddress) {

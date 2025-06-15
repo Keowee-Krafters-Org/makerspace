@@ -64,6 +64,10 @@ class ZohoMember extends Member {
     data.login = ZohoLogin.fromRecord(record);
     data.registration = ZohoRegistration.fromRecord(record);
     data.id = record.id || record.contact_id || '';
+    // If interests is a string, split it into an array
+    if (typeof record.cf_interests === 'string') {
+      data.interests = record.cf_interests.split(',').map(s => s.trim());
+    }
     return new this(data);
   }
 
@@ -73,10 +77,12 @@ class ZohoMember extends Member {
    */
   toRecord() {
     const record = this.convertDataToRecord(this.constructor.getToRecordMap());
+    // ...other fields...
     if (!record.name) {
       // Default record name
       record.contact_name = `${this.firstName} ${this.lastName}`;
     }
+    record.customer_name=this.name; 
     Object.assign(record, this.login ? this.login.toRecord() : {});
     Object.assign(record, this.registration ? this.registration.toRecord() : {});
     return record;

@@ -141,23 +141,26 @@ function test_when_user_logs_in__then_user_status_is_VERIFYING() {
 } 
 
 function test_verifyToken_transitions_user_to_VERIFIED() {
-  const emailAddress = testMember.emailAddress; 
-  let result = membershipManager.loginMember(emailAddress); 
-  assert("Status", "VERIFYING", result.data.login.status); 
-  const member = membershipManager.memberLookup(emailAddress); 
+  const emailAddress = testMember.emailAddress;
+  let member = membershipManager.memberLookup(emailAddress); 
+  member.login.status='VERIFYING'; 
+  member= membershipManager.updateMember(member); 
+  assert("Status", "VERIFYING", member.login.status); 
+  member = membershipManager.memberLookup(emailAddress); 
   const authentication = member.login.authentication;
   const token = authentication.token;
   result = membershipManager.verifyMemberToken(emailAddress, token);
 
-  const newAuthentication = membershipManager.getAuthentication(emailAddress);
 
   assert('Verification success', true, result.success);
+  const savedMember = result.data; 
+  const newAuthentication = savedMember.login.authentication;
   assert('Status updated to VERIFIED', 'VERIFIED', result.data.login.status);
   assertNotEqual('Expiration Changed', authentication.expirationTime, newAuthentication.expirationTime ); 
 }
 
 function test_getAllMembers_returns_members() {
-  membershipManager.addMemberRegistration(Member.fromObject(testMember));
+  //membershipManager.addMemberRegistration(Member.fromObject(testMember));
   const all = membershipManager.getAllMembers();
   const foundMember = all.find(m => m.emailAddress === testMember.emailAddress);
   assert('Found registered member', true, !!foundMember);

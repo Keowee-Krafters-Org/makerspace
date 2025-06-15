@@ -226,9 +226,9 @@ class ZohoAPI {
     getEntity(entityType, id, params = {}) {
         const url = this.generateUrl(entityType, id, params);
         const response = this.fetch(url);
-
+        
         // If the response contains an 'item' with 'custom_field_hash', convert each entry to a cf_xx field
-        if (response && response.item && response.item.custom_field_hash) {
+        if (response && response && response.item.custom_field_hash) {
             const hash = response.item.custom_field_hash;
             Object.keys(hash).forEach(apiName => {
                 // Only add if not already present as a top-level field
