@@ -123,7 +123,7 @@ function test_getAllCustomers() {
     mockUrlFetchAppSuccess(mockCustomers);
 
     try {
-        const result = zoho.getAllCustomers('123456789');
+        const result = zoho.getEntities('contacts', testEventFilter) ;
         assert(JSON.stringify(result) === JSON.stringify(mockCustomers), 'getAllCustomers returns correct data on success');
     } catch (e) {
         Logger.log('Test failed: getAllCustomers threw on success - ' + e.message);
@@ -132,7 +132,7 @@ function test_getAllCustomers() {
     // Failure case
     mockUrlFetchAppFailure(401, 'Unauthorized');
     try {
-        zoho.getAllCustomers('123456789');
+        zoho.getEntities('contacts', testEventFilter) ;
         Logger.log('Test failed: getAllCustomers did not throw on failure');
     } catch (e) {
         assert(e.message.includes('Failed to fetch customers'), 'getAllCustomers throws correct error on failure');

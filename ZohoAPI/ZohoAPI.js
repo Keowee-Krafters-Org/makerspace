@@ -179,7 +179,7 @@ class ZohoAPI {
             muteHttpExceptions: true
         }, options);
         const response = this.fetchWithTokenRefresh(url, options);
-        
+
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
             return { code: response.getResponseCode, message: response.getContentText(), content: null };
         }
@@ -226,28 +226,27 @@ class ZohoAPI {
     getEntity(entityType, id, params = {}) {
         const url = this.generateUrl(entityType, id, params);
         const response = this.fetch(url);
-        
-        // If the response contains an 'item' with 'custom_field_hash', convert each entry to a cf_xx field
-        if (response && response && response.item.custom_field_hash) {
-            const hash = response.item.custom_field_hash;
-            Object.keys(hash).forEach(apiName => {
-                // Only add if not already present as a top-level field
-                const cfKey = apiName;
-                if (!(cfKey in response.item) && !cfKey.endsWith('_unformatted')) {
-                    response.item[cfKey] = hash[apiName];
-                }
-            });
+        const entityTypeSingular = entityType.slice(0, -1); // Remove trailing 's' for singular form
+        if (!response || !response[entityTypeSingular]) {
+            throw new Error(`Entity ${entityTypeSingular} with ID ${id} not found.`);
         }
-
+        let entity = response[entityTypeSingular];
+        // Convert custom_field_hash to top-level cf_xx fields
+        entity = this.getCustomFields(entity);
+        // Remove the custom_field_hash to avoid confusion
+        // Ensure the response contains the singular form of the entity
+        response[entityTypeSingular] = entity; // Ensure the singular form is used in the response
         return response;
     }
 
     getEntities(entityType, params = {}) {
-        if( entityType === 'items') {
-            // Call getEntitiesWithCustomFields to ensure custom fields are handled correctly
-            return this.getEntitiesWithCustomFields(entityType, params);
-        }
-        return this.get(entityType, '', params); // Empty id for collection retrieval
+        // Use object destructuring to set default pagination values.
+        // If 'page' or 'per_page' are not provided in params, they default to 1 and 10.
+        // The '...rest' syntax collects any other parameters into a separate object.
+        const { page = 1, per_page = 10, ...rest } = params;
+        const queryParams = { page, per_page, ...rest };
+        const entitiesResponse = this.get(entityType, '', queryParams); // Empty ID for collection retrieval
+        return this.getCustomFieldsForList(entitiesResponse, entityType);
     }
 
     // Utility to package cf_xx fields into custom_fields array for Zoho API
@@ -287,61 +286,60 @@ class ZohoAPI {
     }
     // --- Derived Convenience Methods ---
 
-    getAllCustomers() {
-        const response = this.getEntities('contacts', { contact_type: 'customer' });
-        return { code: response.code, message: response.message, customers: response.contacts };
-    }
 
-    getCustomerById(contactId) {
-        const response = this.getEntity('contacts', contactId);
-        return { code: response.code, message: response.message, customer: response.contact };
-    }
-
-    findCustomerByEmail(emailAddress) {
-        const response = this.getEntities('contacts', { email: emailAddress });
-        return { code: response.code, message: response.message, customers: response.contacts };
-    }
-
-    getAllVendors(params = {}) {
-        const response = this.getEntities('contacts', { ...params, contact_type: 'vendor' });
-        return { code: response.code, message: response.message, vendors: response.contacts };
-    }
-
-    getAllItems(params = {}) {
-        return this.getEntities('items', params);
-    }
-
-    getItemByName(itemName) {
-        return this.getEntities('items', { item_name: itemName });
-    }
-
-    getItemById(itemId) {
-        return this.getEntity('items', itemId);
-   }
 
     /**
-     * Retrieves all entities and ensures custom fields (including multi-line) are set as top-level cf_xx fields.
-     * This works around the Zoho API bug where multi-line custom fields are not included in the list response.
+     * Ensures custom fields are set as top-level cf_xx fields for a list of entities.
+     * This method processes each entity in the list response and merges custom fields
+     * from the full record into the entity object.
+     * @param {Object} listResponse - The response object containing the list of entities.
      * @param {string} entityType - The Zoho entity type (e.g., 'items').
-     * @param {Object} params - Query parameters for the list API.
-     * @returns {success, <entityTypes>: [{entity}, {entity}] Array of entities with custom fields as top-level cf_xx fields.
+     * @returns {Object} The updated list response with entities having custom fields as top-level cf_xx fields.
      */
-    getEntitiesWithCustomFields(entityType, params = {}) {
-        const listResponse = this.get(entityType, '', params);
+    getCustomFieldsForList(listResponse, entityType) {
         const entities = listResponse[entityType] || [];
-
+       const entityTypeSingular = entityType.slice(0, -1); // Remove trailing 's' for singular form
+ 
         // For each entity, fetch the full record and merge custom fields
         listResponse[entityType] = entities.map(entity => {
-            const full = this.getEntity(entityType, entity.item_id || entity.id);
-            // Merge all top-level fields from the full entity into the list entity
-            if (full && full.item) {
-                return Object.assign({}, entity, full.item);
-            }
-            return entity;
+            const full = this.getEntity(entityType, entity[`${entityTypeSingular}_id`]);
+            return this.getCustomFields(full[entityTypeSingular]);
         });
-        return listResponse; 
-       }
+        return listResponse;
+    }
+    /**
+     * Processes the custom_field_hash object in the entity and promotes its fields
+     * to top-level fields in the entity object. This ensures custom fields are easily
+     * accessible as top-level properties.
+     * 
+     * @param {Object} entity - The entity object containing custom fields.
+     * @returns {Object} The updated entity object with custom fields as top-level properties.
+     */
+    getCustomFields(entity) {
+        if (entity.custom_field_hash) {
+            const hash = entity.custom_field_hash;
+
+            // Iterate over each key in the custom_field_hash
+            Object.keys(hash).forEach(apiName => {
+                // Promote the field to a top-level property if it doesn't already exist
+                const cfKey = apiName; // Use the API name directly as the top-level key
+                if (!(cfKey in entity) && !cfKey.endsWith('_unformatted')) {
+                    entity[cfKey] = hash[apiName];
+                }
+            });
+
+            // Remove the original custom_field_hash object to avoid redundancy
+            delete entity.custom_field_hash;
+
+            // Remove the custom_fields array if it exists, as we are using top-level fields
+            delete entity.custom_fields;
+        }
+
+        return entity;
+    }
 }
+
+
 
 function newZohoAPI() {
     return new ZohoAPI(getAuthConfig());

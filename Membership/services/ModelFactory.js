@@ -30,3 +30,6 @@ function newEvent(data = {}) {
   return new Event(data);
 }
 
+function newWaiverManager() {
+  return new WaiverManager(new FormStorageManager(FormWaiver), newMembershipManager() );
+}

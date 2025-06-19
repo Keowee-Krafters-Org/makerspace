@@ -13,23 +13,27 @@ function doGet() {
  * Sends a verification token to the user's email via Membership module.
  */
 function login(email) {
+  const membershipManager = Membership.newMembershipManager(); 
   if (Array.isArray(email)) {
     email = email[0];
   }
   email = String(email || '').trim();
   if (!email) throw new Error('No email provided.');
 
-  return JSON.stringify(Membership.loginMember(email));
+  return JSON.stringify(membershipManager.loginMember(email));
 }
 
 /**
  * Verifies a submitted token against the stored value via Membership module.
  */
 function verifyToken(email, userToken) {
-  return JSON.stringify(Membership.verifyMemberToken(email, userToken));
+  
+  const membershipManager = Membership.newMembershipManager(); 
+  return JSON.stringify(membershipManager.verifyMemberToken(email, userToken));
 }
 
 function logout(emailAddress) {
-    return JSON.stringify(Membership.memberLogout(emailAddress)); 
+   const membershipManager = Membership.newMembershipManager(); 
+    return JSON.stringify(membershipManager.memberLogout(emailAddress)); 
 }
 

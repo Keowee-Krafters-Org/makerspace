@@ -120,15 +120,18 @@ class MembershipManager {
     return member;
   }
 
+
   addMemberRegistration(memberData) {
+    let registeredMember = this.storageManager.create(memberData); 
     let member = this.memberLookup(memberData.emailAddress);
     if (!member) {
-      if (member && member.login.status === 'VERIFIED') {
-        member.registration.status = 'APPLIED';
-      }
-      Object.assign(member, memberData);
-      this.storageManager.update(member.id, member);
+      member = addMember(memberData);
     }
+    if (member && member.login.status === 'VERIFIED') {
+      member.registration.status = 'APPLIED';
+    }
+    Object.assign(registeredMember, member);
+    member = this.storageManager.update(member.id, registeredMember);
     return member;
   }
 

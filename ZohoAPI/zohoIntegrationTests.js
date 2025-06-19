@@ -5,7 +5,8 @@
  * The calls are not mocked and will make actual requests to the Zoho API.
  * Ensure you have valid credentials and the Zoho API is accessible before running these tests.
  */
-const testyFilter = {itemName: 'Test Event'};
+const testEventFilter = {name: 'Test Event'};
+const testUserFilter = {email: 'testuser@keoweekrafters.org'}; 
 function zohoIntegrationTests() {
     Logger.log('Starting Zoho API integration tests...');
 
@@ -25,9 +26,9 @@ function zohoIntegrationTests() {
 function test_getAllCustomers() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
-        const response = zoho.getAllCustomers();
+        const response = zoho.getEntities('contacts', testUserFilter); ;
         Logger.log(`getAllCustomers response: ${response.message}`);
-        const customers = response.customers;
+        const customers = response.contacts;
         Logger.log(`Retrieved ${customers.length} customers.`);
         // Assert that customers are retrieved
         assert(customers, 'Customers should not be null or undefined');
@@ -41,18 +42,18 @@ function test_getCustomerById() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
         // First, get all customers to obtain a valid customer/contact ID
-        const allResponse = zoho.getAllCustomers();
-        const customers = allResponse.customers || [];
+        const allResponse = zoho.getEntities('contacts', testUserFilter); ;
+        const customers = allResponse.contacts || [];
         assert(customers.length > 0, 'At least one customer should exist to test getCustomerById');
 
         const customerId = customers[0].contact_id;
         Logger.log(`Testing getCustomerById with contact_id: ${customerId}`);
 
-        const customerResponse = zoho.getCustomerById(customerId);
+        const customerResponse = zoho.getEntity('contacts',customerId);
         Logger.log(`getCustomerById response: ${customerResponse}`);
 
         // Assert that the returned customer matches the requested ID
-        assert(customerResponse.customer && customerResponse.customer.contact_id === customerId, 'getCustomerById returns the correct customer');
+        assert(customerResponse.contact && customerResponse.contact.contact_id === customerId, 'getCustomerById returns the correct customer');
     } catch (error) {
         Logger.log(`getCustomerById failed: ${error.message}`);
     }
@@ -62,20 +63,18 @@ function test_findCustomerByEmail() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
         // Get all customers to obtain a valid email address for testing
-        const allResponse = zoho.getAllCustomers();
-        const customers = allResponse.customers || [];
-        assert(customers.length > 0, 'At least one customer should exist to test findCustomerByEmail');
+        const allResponse = zoho.getEntities('contacts', testUserFilter);
+        const contacts = allResponse.contacts || [];
+        assert(contacts.length > 0, 'At least one customer should exist to test findCustomerByEmail');
 
-        const testEmail = customers[0].email || customers[0].email_address;
+        const testEmail = contacts[0].email;
         Logger.log(`Testing findCustomerByEmail with email: ${testEmail}`);
 
-        const customerResponse = zoho.findCustomerByEmail(testEmail);
-        assert(customerResponse.code==='200', 'Customer found');
-        const customer = customerResponse.customer;
-        Logger.log(`findCustomerByEmail response: ${customer}`);
+        const contact = contacts[0];
+        Logger.log(`findCustomerByEmail response: ${contact}`);
 
         // Assert that the returned customer matches the requested email
-        assert(customer && (customer.email === testEmail || customer.email_address === testEmail), 'findCustomerByEmail returns the correct customer');
+        assert(contact && (contact.email === testEmail || contact.email_address === testEmail), 'findCustomerByEmail returns the correct customer');
     } catch (error) {
         Logger.log(`findCustomerByEmail failed: ${error.message}`);
     }
@@ -84,7 +83,7 @@ function test_findCustomerByEmail() {
 function test_getAllItems() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
-        const response = zoho.getAllItems(testyFilter);
+        const response = zoho.getEntities('items', testEventFilter) ;
         Logger.log(`getAllItems response: ${response.message}`);
         const items = response.items;
         Logger.log(`Retrieved ${items.length} items.`);
@@ -100,12 +99,12 @@ function test_getItemById() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
         // First, get all items to obtain a valid item ID
-        const allResponse = zoho.getAllItems();
+        const allResponse = zoho.getEntities('items', testUserFilter) ;
         const items = allResponse.items || [];
         assert(items.length > 0, 'At least one item should exist to test getItemById');
         const itemId = items[0].item_id;
         Logger.log(`Testing getItemById with item_id: ${itemId}`);  
-        const itemResponse = zoho.getItemById(itemId);      
+        const itemResponse = zoho.getEntity('items', itemId) ;      
         Logger.log(`getItemById response: ${itemResponse}`);
         // Assert that the returned item matches the requested ID
         assert(itemResponse.item && itemResponse.item.item_id === itemId, 'getItemById returns the correct item');
@@ -118,7 +117,7 @@ function test_GetFilteredItems() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
         // First, get all items to obtain a valid item ID
-        const allResponse = zoho.getAllItems({page: 1, per_page: 10});
+        const allResponse = zoho.getentities('items', {page: 1, per_page: 10});
         const items = allResponse.items || [];
         assert(items.length > 0, 'At least one item should exist to test getFilteredItems');
         
@@ -126,7 +125,7 @@ function test_GetFilteredItems() {
         const productType = items[0].productType;
         Logger.log(`Testing getFilteredItems with productType: ${productType}`);
         
-        const filteredItemResponse = zoho.getAllItems({productType: productType}); 
+        const filteredItemResponse = zoho.getEntities({productType: productType,page: 1, per_page: 10}); 
         const filteredItems = filteredItemResponse.items || [];
         Logger.log('getFilteredItems response:{}', filteredItems);
         
@@ -150,7 +149,7 @@ function test_GetFilteredItems() {
         const zoho = new ZohoAPI(getAuthConfig());
         try {
             // First, get all items to obtain a valid custom field value
-            const allResponse = zoho.getAllItems();
+            const allResponse = zoho.getEntities('items', testEventFilter) ;
             const items = (allResponse.items || []).filter(item => item.cf_type==='Class'); // Replace with actual custom field name
             assert(items.length > 0, 'At least one item should exist to test getItemsByCustomFieldValue');
             

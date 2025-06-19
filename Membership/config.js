@@ -24,6 +24,8 @@ var SharedConfig = {
       }
     },
     waiver: {
+      templateId: '1MM_WM4uJkr1y331nnpSbRXwB2zC4P2rQJUxHpobZicc',
+      destinationFolderId: '1dsvx-cjL26GXZYXN0GvE9iOjw38Kl3zV',
       url: 'https://docs.google.com/forms/d/e/1FAIpQLSdxOIk93s3tWhT8-8_q36__YBjWE20UL7qPYBnJWE2rd2KRdw/viewform?usp=pp_url',
       entryMap: {
         firstName: 'entry.2005620554',
