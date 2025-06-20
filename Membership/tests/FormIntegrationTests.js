@@ -2,10 +2,10 @@
  * Tests for the Membership Form and Waiver forms using FormStoragerManger and WaiverManager.
 * @file FormTests.js
 */
-const WAIVER_ID = '1MM_WM4uJkr1y331nnpSbRXwB2zC4P2rQJUxHpobZicc';
+const WAIVER_ID = SharedConfig.forms.waiver.formId;
 function test_when_waiverFormSubmitted_then_documentGenerated() {
-    const formStorageManager = new FormStorageManager(FormWaiver);
-    const waiverManager = new WaiverManager(formStorageManager);
+    const formStorageManager= new FormStorageManager(FormWaiver);
+    const waiverManager = newWaiverManager();
     
     // Locate the waiver form by its ID
     const waiverForm = formStorageManager.getById(WAIVER_ID);
@@ -13,7 +13,7 @@ function test_when_waiverFormSubmitted_then_documentGenerated() {
         throw new Error(`Waiver form with ID ${WAIVER_ID} not found.`);
     }   
     
-    const waiver = waiverManager.generateWaiverDocument(waiverForm);
+    const waiver = waiverManager.generateWaiverDocument(testMember.emailAddress);
     console.log('Waiver document generated successfully.');
 
     const pdfFile = waiverManager.getWaiverPdf(waiver.id);

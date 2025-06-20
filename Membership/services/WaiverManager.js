@@ -1,7 +1,7 @@
 class WaiverManager {
     constructor(storageManageManager, membershipManager) {
-        this.destinationFolderId = SharedConfig.waiver.destinationFolderId;
-        this.templateId = SharedConfig.waiver.templateId;
+        this.destinationFolderId = SharedConfig.forms.waiver.destinationFolderId;
+        this.templateId = SharedConfig.forms.waiver.templateId;
         this.membershipManager = membershipManager;
         this.storageManager = storageManageManager;
     }
@@ -9,11 +9,12 @@ class WaiverManager {
      * Generate the document from the waiver form
      * Note: Any change to the form or the document must be synchronized with this function
      */
-    generateWaiverDocument(waiverDate) {
+    generateWaiverDocument(email) {
+               
+        const responses = this.storageManager.getResponseByEmail(email); 
 
         const firstName = responses['First Name'];
         const lastName = responses['Last Name'];
-        const email = responses['Email'];
         const signature = responses['Signature'];
         const formattedDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 
@@ -34,19 +35,15 @@ class WaiverManager {
         const pdfFile = DriveApp.getFolderById(this.destinationFolderId).createFile(pdf);
         const pdfUrl = pdfFile.getUrl();
         DriveApp.getFileById(copy.getId()).setTrashed(true);
+        const message = `Thank you for completing the waiver. A copy is attached for your records.\n\nMakeKeowee Team`; 
+        this.sendEmail(
+            email,`Your MakeKeowee Liability Waiver`, message,
+            {attachments: [pdf]}
+        );
 
-        this.sendEmail({
-            to: email,
-            subject: `Your MakeKeowee Liability Waiver`,
-            body: `Thank you for completing the waiver. A copy is attached for your records.\n\nMakeKeowee Team`,
-            attachments: [pdf]
-        });
-
-        this.sendEmail({
-            to: ADMIN_EMAIL,
-            subject: `New Waiver Submitted by ${firstName} ${lastName}`,
-            body: `Name: ${firstName} ${lastName}\nEmail: ${email}\nDate: ${formattedDate}\nPDF: ${pdfUrl}`
-        });
+        this.sendEmail(
+            SharedConfig.emailAddress.admin,`New Waiver Submitted by ${firstName} ${lastName}`,`Name: ${firstName} ${lastName}\nEmail: ${email}\nDate: ${formattedDate}\nPDF: ${pdfUrl}`
+        );
 
         const member = this.membershipManager.getMemberByEmail(email);
         if (member) {

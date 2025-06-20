@@ -6,6 +6,9 @@ class FormWaiver extends Waiver{
   static getResourceNameSingular() { return 'waiver'; }
   static getResourceNamePlural() { return 'waivers'; }  
 
+  static getFormId() {
+    return SharedConfig.forms.waiver.formId; 
+  }
     /**
    * Maps Zoho CRM record fields to ZohoMember data fields.
    * @returns {Object} The mapping object for Zoho CRM record fields.
