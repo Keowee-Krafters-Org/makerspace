@@ -4,13 +4,14 @@
  * @extends Entity
  */
 class Waiver extends Entity{
-  constructor(waiverData) {
+  constructor(waiverData = {}) {
     super(waiverData);
   }
    
   static createNew(waiverData = {}) {
     return new Waiver({
       ...waiverData,
+      timestamp: waiverData.timestamp || new Date(), 
       id: waiverData.id || '',
       pdfLink: waiverData.pdfLink || '',
       firstName: waiverData.firstName || '',

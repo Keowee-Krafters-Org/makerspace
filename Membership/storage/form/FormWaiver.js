@@ -21,6 +21,7 @@ class FormWaiver extends Waiver{
       lastName: 'Last Name',
       signature: 'Signature',
       emailAddress: 'Email Address',
+      timestamp: 'timestamp'
     };
   }
 

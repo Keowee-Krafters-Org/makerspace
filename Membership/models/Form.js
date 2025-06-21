@@ -12,8 +12,9 @@ class Form extends Entity {
     static getToRecordMap() {
         return {
             id: 'id',
-            title: (form) => form.title,
-            description: (form) => form.description
+            title: (form) => form.getTitle,
+            description: (form) => form.getDescription,
+            responseItems: (form) => form.getResponseItems
         };
     }
 }

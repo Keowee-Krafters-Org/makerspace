@@ -10,13 +10,17 @@ class WaiverManager {
      * Note: Any change to the form or the document must be synchronized with this function
      */
     generateWaiverDocument(email) {
-               
-        const responses = this.storageManager.getResponseByEmail(email); 
 
-        const firstName = responses['First Name'];
-        const lastName = responses['Last Name'];
-        const signature = responses['Signature'];
-        const formattedDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        const response = this.storageManager.getResponseByEmail(email);
+        const itemResponses = this.storageManager.getResponseData(response);
+        const waiver = FormWaiver.fromRecord(itemResponses);
+
+        const firstName = waiver.firstName;
+        const lastName = waiver.lastName;
+        const signature = waiver.signature;
+        const timestamp = waiver.timestamp;
+
+        const formattedDate = Utilities.formatDate(new Date(timestamp), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 
         // Create and personalize the Google Doc
         const copy = DriveApp.getFileById(this.templateId)
@@ -34,25 +38,35 @@ class WaiverManager {
         const pdf = copy.getAs(MimeType.PDF);
         const pdfFile = DriveApp.getFolderById(this.destinationFolderId).createFile(pdf);
         const pdfUrl = pdfFile.getUrl();
+        waiver.pdfLink = pdfUrl;
+        waiver.emailAddress = email;
+
         DriveApp.getFileById(copy.getId()).setTrashed(true);
-        const message = `Thank you for completing the waiver. A copy is attached for your records.\n\nMakeKeowee Team`; 
-        this.sendEmail(
-            email,`Your MakeKeowee Liability Waiver`, message,
-            {attachments: [pdf]}
+        const message = `Thank you for completing the waiver. A copy is attached for your records.\n\nMakeKeowee Team`;
+        this.membershipManager.sendEmail({
+            emailAddress: email,
+            title: `Your MakeKeowee Liability Waiver`, message,
+            attachments: [pdf]
+        }
         );
 
-        this.sendEmail(
-            SharedConfig.emailAddress.admin,`New Waiver Submitted by ${firstName} ${lastName}`,`Name: ${firstName} ${lastName}\nEmail: ${email}\nDate: ${formattedDate}\nPDF: ${pdfUrl}`
+        this.membershipManager.sendEmail({
+            emailAddress: SharedConfig.emailAddress.admin,
+            title: `New Waiver Submitted by ${firstName} ${lastName}`,
+            message: `Name: ${firstName} ${lastName}\nEmail: ${email}\nDate: ${formattedDate}\nPDF: ${pdfUrl}`
+        }
         );
 
-        const member = this.membershipManager.getMemberByEmail(email);
+        const member = this.membershipManager.memberLookup(email);
         if (member) {
-            member.registration.pdfLink = pdfUrl;
-            member.waiverSigned = true;
+            member.registration.waiverPdfLink = pdfUrl;
+            member.registration.waiverSigned = true;
             this.membershipManager.updateMember(member);
         } else {
             console.warn(`Member not found for email: ${email}. Waiver will not be associated with a member.`);
         }
+        return waiver;
+
     }
 
     /**
@@ -71,21 +85,6 @@ class WaiverManager {
         this.waivers = this.waivers.filter(waiver => waiver.id !== id);
     }
 
-    /** Send and email
-     * Note: refactor this to use the EmailManager
-     * @param {string} emailAddress - The email address to send the waiver to.
-     * @param {string} title - The subject of the email.
-     * @param {string} message - The body of the email.
-     * @returns {void}
-     * @throws {Error} If the email address is invalid or if sending fails.
-     */
-    sendEmail(emailAddress, title, message) {
-        console.info(`Sending waiver to: ${emailAddress}`);
-        GmailApp.sendEmail(emailAddress, title, message, {
-            from: 'noreply@keoweekrafters.org',
-            name: 'KeoweeKrafters',
-            noReply: true
-        });
-    }
+
 }
 

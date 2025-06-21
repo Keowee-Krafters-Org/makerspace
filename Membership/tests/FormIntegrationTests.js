@@ -16,11 +16,10 @@ function test_when_waiverFormSubmitted_then_documentGenerated() {
     const waiver = waiverManager.generateWaiverDocument(testMember.emailAddress);
     console.log('Waiver document generated successfully.');
 
-    const pdfFile = waiverManager.getWaiverPdf(waiver.id);
+    const pdfFile = waiver.pdfLink;
     if (!pdfFile) {
         throw new Error(`PDF file for waiver with ID ${waiver.id} not found.`);
     }   
-
 }
 
 /**

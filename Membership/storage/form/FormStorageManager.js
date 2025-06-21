@@ -56,7 +56,7 @@ class FormStorageManager extends StorageManager {
     getResponseByEmail(email) {
         // Check if the form is collecting email addresses
         const form = this.form; 
-        if (form.emailCollectionType != 'DO_NOT_COLLECT') {
+        if (form.getEmailCollectionType() != 'DO_NOT_COLLECT') {
             const responses = form.getResponses();
             for (const response of responses) {
                 if (response.getRespondentEmail && response.getRespondentEmail() === email) {
@@ -78,6 +78,22 @@ class FormStorageManager extends StorageManager {
             }
         }
         return null;
+    }
+
+    /**
+     * Transform the responseItems from a straight array to an object
+     * @param {*} response 
+     * @returns {Object} An object mapping question titles to answers, plus a timestamp
+     */
+    getResponseData(response) {
+        const itemResponseArray = response.getItemResponses();
+        const itemResponses = {};
+        for (const item of itemResponseArray) {
+            // Use the question title as the key and the response as the value
+            itemResponses[item.getItem().getTitle()] = item.getResponse();
+        }
+        itemResponses.timestamp = response.getTimestamp();
+        return itemResponses;
     }
 
 }

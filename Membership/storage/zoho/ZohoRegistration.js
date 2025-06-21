@@ -39,6 +39,7 @@ class ZohoRegistration extends Registration {
     return {
       status: 'cf_registration_status',
       waiverSigned: 'cf_waiver_signed',
+      waiverPdfLink: 'cf_waiver_pdf_link', 
       date: 'cf_registration_date',
       level: 'cf_member_level'
       // Add other mappings as needed

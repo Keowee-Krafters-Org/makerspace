@@ -52,7 +52,10 @@ class MembershipManager {
     }
 
     if (member.login && member.login.status === 'VERIFYING') {
-      this.sendEmail(emailAddress, 'Your MakeKeowee Login Code', `Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`);
+      this.membershipManager.sendEmail({
+        emailAddress:emailAddress, 
+        title: 'Your MakeKeowee Login Code',
+        message:`Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`});
     }
 
     return new Response(true, member);
@@ -144,11 +147,22 @@ class MembershipManager {
     }
   }
 
-  sendEmail(emailAddress, title, message) {
-    console.info(`Sending token to: ${emailAddress}`);
-    GmailApp.sendEmail(emailAddress, title, message, {
+  /**
+   * Send an email based on the emailPacket
+   * The packet contains: 
+   * emailAddress
+   * title, 
+   * message,
+   * attachments (optional)
+   * @param {*} emailPacket 
+   */
+  sendEmail(emailPacket) {
+
+    console.info(`Sending email ${emailPacket.title} to: ${emailPacket.emailAddress}`);
+    GmailApp.sendEmail(emailPacket.emailAddress, emailPacket.title, emailPacket.message, {
       from: 'noreply@keoweekrafters.org',
       name: 'KeoweeKrafters',
+      attachments: emailPacket.attachments || [], 
       noReply: true
     });
   }
