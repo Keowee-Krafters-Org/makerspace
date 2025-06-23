@@ -41,7 +41,10 @@ class ZohoStorageManager extends StorageManager {
   add(entity) {
     // Implementation for adding a entity to Zoho Books and Zoho CRM
     // This would typically involve making API calls to Zoho services
-    return this.zohoAPI.add(entity);
+    delete entity.id; 
+    const entityData=entity.toRecord(); 
+    const response =  this.zohoAPI.post(this.clazz.getResourceNamePlural(),  entityData);
+    return this.clazz.fromRecord(response[this.resourceNameSingular]);
   }
 
   /**
@@ -75,7 +78,7 @@ class ZohoStorageManager extends StorageManager {
 
   delete(id) {
     // Implement delete logic using this.zohoAPI
-    throw new Error('delete() must be implemented');
+    this.zohoAPI.deleteEntity(id); 
   }
 
   getFiltered(predicate, params = {},) {
@@ -98,7 +101,7 @@ class ZohoStorageManager extends StorageManager {
   }
 
   create(data = {}) {
-    return new this.clazz(data); 
+    return this.clazz.createNew(data); 
   }
 
 }

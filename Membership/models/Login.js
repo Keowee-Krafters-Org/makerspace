@@ -15,7 +15,7 @@ class Login extends Entity {
    * @returns {Login}
    */
   static createNew(data = {}) {
-    return new Login({
+    return new this({
       ...data,
       status: typeof data.status === 'string' && data.status.trim() !== '' ? data.status : 'UNVERIFIED',
       authentication: typeof data.authentication === 'object' ? data.authentication : {},
@@ -69,7 +69,7 @@ class Login extends Entity {
    * Create a Login from JSON object data
    */
   static fromObject(data) {
-    return new Login(data ? { ...data } : {});
+    return new this(data ? { ...data } : {});
   }
 
   static parseAuthenticationEntry(authenticationEntry) {

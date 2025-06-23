@@ -61,6 +61,7 @@ class WaiverManager {
         if (member) {
             member.registration.waiverPdfLink = pdfUrl;
             member.registration.waiverSigned = true;
+            member.registration.status = 'PENDING'; 
             this.membershipManager.updateMember(member);
         } else {
             console.warn(`Member not found for email: ${email}. Waiver will not be associated with a member.`);

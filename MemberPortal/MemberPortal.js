@@ -19,8 +19,9 @@ function login(email) {
   }
   email = String(email || '').trim();
   if (!email) throw new Error('No email provided.');
-
-  return JSON.stringify(membershipManager.loginMember(email));
+  const response = membershipManager.loginMember(email); 
+  delete response.data.login.authentication.token; 
+  return JSON.stringify(response);
 }
 
 /**
@@ -29,7 +30,9 @@ function login(email) {
 function verifyToken(email, userToken) {
   
   const membershipManager = Membership.newMembershipManager(); 
-  return JSON.stringify(membershipManager.verifyMemberToken(email, userToken));
+  const response = membershipManager.verifyMemberToken(email, userToken);
+  delete response.data.login.authentication.token;
+  return JSON.stringify(response);
 }
 
 function logout(emailAddress) {

@@ -52,7 +52,7 @@ class MembershipManager {
     }
 
     if (member.login && member.login.status === 'VERIFYING') {
-      this.membershipManager.sendEmail({
+      this.sendEmail({
         emailAddress:emailAddress, 
         title: 'Your MakeKeowee Login Code',
         message:`Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`});
@@ -101,7 +101,6 @@ class MembershipManager {
     if (member.login.status === 'REMOVE') {
       return new Response(false, member.toObject(), 'Access denied. Please contact administrator.');
     }
-
     return new Response(true, member.toObject());
   }
 
@@ -116,14 +115,14 @@ class MembershipManager {
   addMember(memberData) {
     let member = this.memberLookup(memberData.emailAddress);
     if (member) return member;
-    member = this.storageManager.addMemberWithEmail(memberData.emailAddress);
-    member.login.status = 'UNVERIFIED';
-    member.timestamp = new Date();
-    this.storageManager.update(member.id, member);
-    return member;
+    member = this.storageManager.create(memberData);
+    const newMember = this.storageManager.add(member);
+    return newMember;
   }
 
-
+  getMember(memberId) {
+    return (ZohoStorageManager.getById(memberId)); 
+  }
   addMemberRegistration(memberData) {
     let registeredMember = this.storageManager.create(memberData); 
     let member = this.memberLookup(memberData.emailAddress);
@@ -180,5 +179,9 @@ class MembershipManager {
     const member = this.memberLookup(emailAddress);
     if (!member) return null;
     return member.login.authentication || null;
+  }
+
+  deleteMember(member) {
+    this.storageManager.delete(member.id); 
   }
 }

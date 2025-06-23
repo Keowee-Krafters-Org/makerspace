@@ -12,19 +12,20 @@ const assert = (label, expected, actual) => {
     };
 
 
-const TEST_EMAIL = 'oopscope@gmail.com'; 
+const TEST_EMAIL = 'testuser@keoweekrafters.org'; 
 function test_when_user_logs_in__then_email_is_sent() {
+  const membershipManager = Membership.newMembershipManager();
   const email=TEST_EMAIL;
   const response= login(email);
   console.log(response); 
 }
 
 function test_when_valied_token_is_verified__then_member_is_verified() {
-  const userToken='134561'
+  const userToken='728170'
   const email=TEST_EMAIL;
-  const response = verifyToken(email,userToken);
+  const response = JSON.parse(verifyToken(email,userToken));
   console.log(response)
-  assert("Status", 'VERIFIED',response.status)
+  assert("Status", 'VERIFIED',response.data.login.status)
 }
 
 function test_when_not_verified_user_is_sent_email() {

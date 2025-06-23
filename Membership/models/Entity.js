@@ -83,9 +83,7 @@ class Entity {
         return Object.fromEntries(Object.entries(toMap).map(([k, v]) => [v, k]));
     }
 
-    static getToRecordMap() {
-        throw new Error('getToRecordMap must be implemented in subclass');
-    }
+ 
 
     touch() {
         this.updatedAt = new Date();
@@ -97,10 +95,10 @@ class Entity {
 
     // Abstract methods for storage mapping
     static fromRecord(record) {
-        throw new Error(`${this.name}.fromRecord must be implemented in subclass`);
+        return new this(this.convertRecordToData(record,this.getFromRecordMap())); 
     }
 
     toRecord() {
-        throw new Error(`${this.constructor.name}.toRecord must be implemented in subclass`);
+         return this.convertDataToRecord(this.constructor.getToRecordMap())
     }
 }

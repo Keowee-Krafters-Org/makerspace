@@ -71,7 +71,6 @@
 </head>
 
 <body>
-  <div id="spinner" class="spinner"></div>
   <div id="app"></div>
 
   <script>
@@ -139,7 +138,7 @@
             const registrationUrl = buildPrefilledFormUrl(config.forms.registration, member);
             content += `<p>You're almost done! Please complete your registration below.</p>
               <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p>`;
-
+            content += `AND then <p> <a href="${loginUrl}>Refresh the page to continue"</a></p>`; 
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
             const level = parseInt(member.registration.level || 0);
@@ -194,7 +193,7 @@
     function renderDashboard(user) {
       google.script.run.withSuccessHandler(config => {
         document.getElementById('app').innerHTML = getDashboardContent(user, config);
-        document.getElementById('version').textContent = `Version: ${config.version.memberPortal}`;
+        document.getElementById('version').textContent = `Version: ${config.version}`;
       }).getConfig();
     }
 
@@ -301,6 +300,7 @@
     renderDashboard({ login: { status: 'UNVERIFIED' } });
   </script>
   <h5>
+  <div id="spinner" class="spinner"></div>
     <p id="version"></p>
   </h5>
 </body>

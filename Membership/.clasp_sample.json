@@ -1,0 +1,50 @@
+{
+  "scriptId": "your script id",
+  "rootDir": "",
+  "projectId": "your project id",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ],
+  "htmlExtensions": [
+    ".html"
+  ],
+  "jsonExtensions": [
+    ".json"
+  ],
+  "filePushOrder": [
+    "appsscript.json",
+    "config.js",
+    "models/Entity.js",
+    "models/Contact.js", 
+    "models/Event.js",
+    "models/Login.js",
+    "models/Lookup.js",
+    "models/Form.js", 
+    "models/Waiver.js",
+    "models/Member.js",
+    "models/Response.js",
+    "models/Registration.js",
+    "storage/StorageManager.js",
+    "storage/zoho/zohoFieldMap.js",
+    "storage/zoho/ZohoRegistration.js",
+    "storage/zoho/ZohoLogin.js",
+    "storage/zoho/ZohoEvent.js",
+    "storage/zoho/ZohoMember.js",
+    "storage/zoho/ZohoStorageManager.js",
+    "storage/zoho/ZohoContact.js",
+    "storage/sheet/SheetEvent.js",
+    "storage/sheet/SheetMember.js",
+    "storage/sheet/SheetStorageManager.js",
+    "storage/form/FormWaiver.js",
+    "storage/form/FormStorageManager.js",
+    "services/MembershipManager.js",
+    "services/EventManager.js",
+    "services/WaiverManager.js",
+    "services/ModelFactory.js",
+    "tests/MembershipIntegrationTests.js",
+    "tests/ZohoIntegrationTests.js",
+    "tests/EventManagerIntegrationTests.js",
+    "tests/FormIntegrationTests.js"
+  ]
+}

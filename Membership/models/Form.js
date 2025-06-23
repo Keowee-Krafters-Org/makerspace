@@ -9,6 +9,10 @@ class Form extends Entity {
         super(formData);
     }
 
+    /**
+     * 
+     * @returns the map of the class fields to the external record
+     */
     static getToRecordMap() {
         return {
             id: 'id',

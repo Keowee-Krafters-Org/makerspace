@@ -9,32 +9,42 @@ class ZohoMember extends Member {
    * Initializes a ZohoMember instance with the provided data.
    * @param {Object} [data={}] - The data to initialize the ZohoMember instance.
    */
-  constructor(data = {}) {  
+  constructor(data = {}) {
     super(data);
   }
 
+
+
+  static createNew(data = {}) {
+    const member = super.createNew(data);
+    member.name = `${member.firstName} ${member.lastName}`
+    member.contacts = data.contacts || [];
+    member.login = ZohoLogin.fromObject(data.login || { status: 'UNVERIFIED' }),
+      member.registration = ZohoRegistration.fromObject(data.registration || { status: 'NEW' })
+    return member;
+  }
   /**
    * Retrieves the singular resource name for Zoho CRM.
    * @returns {string} The singular resource name ('contact').
    */
-  static getResourceNameSingular() { 
-    return 'contact'; 
+  static getResourceNameSingular() {
+    return 'contact';
   }
 
   /**
    * Retrieves the plural resource name for Zoho CRM.
    * @returns {string} The plural resource name ('contacts').
    */
-  static getResourceNamePlural() { 
-    return 'contacts'; 
+  static getResourceNamePlural() {
+    return 'contacts';
   }
 
   /**
    * Retrieves the filter criteria for fetching member records from Zoho CRM.
    * @returns {Object} The filter criteria object.
    */
-  static getFilter() { 
-    return { contact_type: 'customer', cf_is_member: true }; 
+  static getFilter() {
+    return { contact_type: 'customer', cf_is_member: true };
   }
 
   /**
@@ -44,13 +54,12 @@ class ZohoMember extends Member {
   static getToRecordMap() {
     return {
       id: 'contact_id',
+      primaryContactId: 'primary_contact_id',
+      name: 'contact_name',
       firstName: 'first_name',
       lastName: 'last_name',
-      name: 'contact_name',
       emailAddress: 'email',
-      phoneNumber: 'phone',
-      address: 'address',
-      interests: 'cf_interests'
+      contacts: 'contact_persons'
     };
   }
 
@@ -68,6 +77,7 @@ class ZohoMember extends Member {
     if (typeof record.cf_interests === 'string') {
       data.interests = record.cf_interests.split(',').map(s => s.trim());
     }
+    data.contacts = record.contact_persons ? record.contact_persons.map(c => ZohoContact.fromRecord(c)) : [];
     return new this(data);
   }
 
@@ -78,11 +88,22 @@ class ZohoMember extends Member {
   toRecord() {
     const record = this.convertDataToRecord(this.constructor.getToRecordMap());
     // ...other fields...
-    if (!record.name) {
+    if (!record.contact_name) {
       // Default record name
       record.contact_name = `${this.firstName} ${this.lastName}`;
     }
-    record.customer_name=this.name; 
+    record.customer_name = this.name;
+    record.contact_type = 'customer';
+    record.customer_sub_type = 'individual';
+    // Use the root data to create the contacts list
+    // This is needed for Zoho contact posts and puts
+    record.contact_persons = this.contacts && this.contacts.length > 0? this.contacts.map(c => c.toRecord()) : [
+      {
+        first_name: this.firstName, 
+        last_name: this.lastName, 
+        email: this.emailAddress
+      }
+    ];
     Object.assign(record, this.login ? this.login.toRecord() : {});
     Object.assign(record, this.registration ? this.registration.toRecord() : {});
     return record;

@@ -23,7 +23,9 @@ const testEmailAddress = 'testuser@keoweekrafters.org';
 
 
 const testMemberMinimum = {
-  emailAddress: testEmailAddress
+  emailAddress: testEmailAddress, 
+  firstName: 'Testy', 
+  lastName: 'User'
 };
 
 const testMember = {
@@ -40,14 +42,14 @@ const testMember = {
 // Use ModelFactory to get a MembershipManager instance
 const membershipManager = newMembershipManager();
 
-function deleteTestMember(emailAddress) {
-  const member = membershipManager.memberLookup(emailAddress);
+function deleteTestMember() {
+  const member = membershipManager.memberLookup(testMember.emailAddress);
   if (member && member.id) {
     // Assuming storageManager has a delete method by id
     membershipManager.storageManager.delete(member.id);
     Logger.log(`Deleted test member: ${emailAddress}`);
   }
-  SpreadsheetApp.flush();
+
 }
 
 function test_if_member_registers__then_member_data_is_complete() {
@@ -80,6 +82,7 @@ function test_if_member_is_added_member_is_found() {
     assert("Record", true, !!member);
     assert('Email', testMemberMinimum.emailAddress, member.emailAddress);
     Logger.log('All fields verified successfully');
+    membershipManager.delete(member); 
   } catch (err) {
     Logger.log('addMember failed: ' + err);
   } finally {

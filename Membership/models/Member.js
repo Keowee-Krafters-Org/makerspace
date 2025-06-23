@@ -9,19 +9,16 @@ class Member extends Entity {
     super(data)
   }
 
-   // Use this only for new members (not for updates)
+  // Use this only for new members (not for updates)
   static createNew(data = {}) {
-    return new Member({
-      ...data,
-      id: data.id || data.contactId || '', // or generate new ID if needed
+    return new this({
+      id: data.id || '', // or generate new ID if needed
       emailAddress: data.emailAddress || '',
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
+      firstName: data.firstName || 'New',
+      lastName: data.lastName || 'Member',
       phoneNumber: data.phoneNumber || '',
       address: data.address || '',
-      interests: data.interests || '',
-      login: Login.fromObject(data.login || {}),
-      registration: Registration.fromObject(data.registration || {})
+      interests: data.interests || ''
     });
   }
   // Common validation and utility methods
@@ -62,15 +59,5 @@ class Member extends Entity {
       login: Login.fromObject(data.login)
     });
   }
-
-  // Storage-agnostic extension points
-  static fromRecord(record) {
-    throw new Error('Implemented in subclass');
-  }
-
-  toRecord() {
-    throw new Error('Implemented in subclass');
-  }
-
 
 }
