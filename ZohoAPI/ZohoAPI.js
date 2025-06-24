@@ -303,7 +303,7 @@ class ZohoAPI {
         // For each entity, fetch the full record and merge custom fields
         listResponse[entityType] = entities.map(entity => {
             const full = this.getEntity(entityType, entity[`${entityTypeSingular}_id`]);
-            return this.getCustomFields(full[entityTypeSingular]);
+            return full[entityTypeSingular]; 
         });
         return listResponse;
     }
@@ -320,11 +320,11 @@ class ZohoAPI {
             const hash = entity.custom_field_hash;
 
             // Iterate over each key in the custom_field_hash
-            Object.keys(hash).forEach(apiName => {
+            Object.keys(hash).forEach(cfKey => {
                 // Promote the field to a top-level property if it doesn't already exist
-                const cfKey = apiName; // Use the API name directly as the top-level key
-                if (!(cfKey in entity) && !cfKey.endsWith('_unformatted')) {
-                    entity[cfKey] = hash[apiName];
+                 // Use the API name directly as the top-level key
+                if (!(cfKey in entity) && !cfKey.endsWith('_unformatted') || cfKey.includes('date')) {
+                    entity[cfKey] = hash[cfKey];
                 }
             });
 

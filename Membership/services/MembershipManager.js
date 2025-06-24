@@ -115,7 +115,7 @@ class MembershipManager {
   addMember(memberData) {
     let member = this.memberLookup(memberData.emailAddress);
     if (member) return member;
-    member = this.storageManager.create(memberData);
+    member = this.storageManager.createNew(memberData);
     const newMember = this.storageManager.add(member);
     return newMember;
   }
@@ -129,10 +129,10 @@ class MembershipManager {
     if (!member) {
       member = addMember(memberData);
     }
+    Object.assign( member, registeredMember);
     if (member && member.login.status === 'VERIFIED') {
-      member.registration.status = 'APPLIED';
+      registeredMember.registration.status = 'APPLIED';
     }
-    Object.assign(registeredMember, member);
     member = this.storageManager.update(member.id, registeredMember);
     return member;
   }

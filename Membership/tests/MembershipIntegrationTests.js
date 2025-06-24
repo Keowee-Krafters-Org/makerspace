@@ -25,16 +25,14 @@ const testEmailAddress = 'testuser@keoweekrafters.org';
 const testMemberMinimum = {
   emailAddress: testEmailAddress, 
   firstName: 'Testy', 
-  lastName: 'User'
-};
-
-const testMember = {
-  emailAddress: testEmailAddress,
-  firstName: 'Testy',
   lastName: 'User',
   phoneNumber: '123-456-7890',
   address: '123 Mock St, Faketown',
   interests: ['Woodworking, Quilting'],
+};
+
+const testMember = {
+  ...testMemberMinimum,
   login: {status: 'UNVERIFIED'},
   registration: {status: 'NEW', level: 'Active'}
 };
@@ -54,7 +52,9 @@ function deleteTestMember() {
 
 function test_if_member_registers__then_member_data_is_complete() {
   try {
-    membershipManager.addMemberRegistration(testMember);
+    const registeredMember = testMemberMinimum;
+    registeredMember.registration = ZohoRegistration.createNew({level: 'Active'}); 
+    membershipManager.addMemberRegistration(registeredMember);
     const member = membershipManager.memberLookup(testMember.emailAddress);
     assert('Email', testMember.emailAddress, member.emailAddress);
     assert('First Name', testMember.firstName, member.firstName);

@@ -1,11 +1,3 @@
-const TEMPLATE_ID = '1MM_WM4uJkr1y331nnpSbRXwB2zC4P2rQJUxHpobZicc';
-const DESTINATION_FOLDER_ID = '1dsvx-cjL26GXZYXN0GvE9iOjw38Kl3zV';
-const REGISTRY_SHEET_ID = '1VOY4Xv8wqn0P0SjeGX1612c0uMmgJxH4NHItY4pLHUM';
-const REGISTRY_SHEET_NAME = 'Member Registry';
-const ADMIN_EMAIL = 'secretary@keoweekrafters.org';
-
-
-
 /**
  * Generate the document from the waiver form
  * Note: Any change to the form or the document must be synchronized with this function
@@ -20,14 +12,18 @@ const ADMIN_EMAIL = 'secretary@keoweekrafters.org';
  */
 function generateWaiverDocument(e) {
   const response = e.response;
-   // Get the responder's email address
-  let email = null;
+  const itemResponses = response.getItemResponses();
+  const responses = {};
 
-  // If the form collects email automatically
-  if (typeof response.getRespondentEmail === 'function') {
-    email = response.getRespondentEmail();
-  }
+  itemResponses.forEach(itemResponse => {
+    const itemTitle = itemResponse.getItem().getTitle();
+    const value = itemResponse.getResponse();
+    responses[itemTitle] = value;
+  });
 
+  const email = responses['Email'];
+
+  Logger.log(JSON.stringify(responses)); 
   const waiverManager = Membership.newWaiverManager();
   const result = waiverManager.generateWaiverDocument(email);
   return result;

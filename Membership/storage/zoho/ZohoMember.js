@@ -59,6 +59,7 @@ class ZohoMember extends Member {
       firstName: 'first_name',
       lastName: 'last_name',
       emailAddress: 'email',
+      phoneNumber: 'phone', 
       contacts: 'contact_persons'
     };
   }
@@ -86,24 +87,32 @@ class ZohoMember extends Member {
    * @returns {Object} The Zoho CRM record object.
    */
   toRecord() {
-    const record = this.convertDataToRecord(this.constructor.getToRecordMap());
-    // ...other fields...
-    if (!record.contact_name) {
-      // Default record name
-      record.contact_name = `${this.firstName} ${this.lastName}`;
+    const primaryContact = new ZohoContact ({
+      firstName: this.firstName, 
+      lastName: this.lastName, 
+      emailAddress: this.emailAddress,
+      phoneNumber: this.phoneNumber
+    }); 
+    // Append contacts items past index 1 to the contacts array
+    if (Array.isArray(this.contacts) && this.contacts.length > 1) {
+      this.contacts = [primaryContact, ...this.contacts.slice(1)];
+    } else {
+      this.contacts = [primaryContact];
     }
+    this.name = `${this.firstName} ${this.lastName}`;
+    const record = this.convertDataToRecord(this.constructor.getToRecordMap());
+
     record.customer_name = this.name;
     record.contact_type = 'customer';
     record.customer_sub_type = 'individual';
     // Use the root data to create the contacts list
-    // This is needed for Zoho contact posts and puts
-    record.contact_persons = this.contacts && this.contacts.length > 0? this.contacts.map(c => c.toRecord()) : [
-      {
-        first_name: this.firstName, 
-        last_name: this.lastName, 
-        email: this.emailAddress
-      }
-    ];
+    // Append contacts items past index 1 to the contacts array
+    if (Array.isArray(this.contacts) && this.contacts.length > 1) {
+      this.contacts = [primaryContact, ...this.contacts.slice(0)];
+    } else {
+      this.contacts = [primaryContact];
+    }
+    record.contact_persons = this.contacts.map(c => c.toRecord())
     Object.assign(record, this.login ? this.login.toRecord() : {});
     Object.assign(record, this.registration ? this.registration.toRecord() : {});
     return record;

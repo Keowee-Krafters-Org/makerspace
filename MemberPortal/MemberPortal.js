@@ -40,3 +40,13 @@ function logout(emailAddress) {
     return JSON.stringify(membershipManager.memberLogout(emailAddress)); 
 }
 
+function getLevelNumber(levelString) {
+  const levels = getConfig(); 
+  for (const key in levels) {
+    if (levels[key] === levelString) {
+      return key;
+    }
+  }
+  return null; // Return null if no matching level is found
+}
+

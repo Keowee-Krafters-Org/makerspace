@@ -6,10 +6,10 @@ function test_when_form_is_submitted__then_waiver_is_generated() {
     // Simulate form submission
     const formResponse = {
         response: {
-            getRespondentEmail: () => 'testuser@keoweekrafters.org',
             getItemResponses: () => [
                 { getItem: () => ({ getId: () => '1', getTitle: () => 'Signature' }), getResponse: () => 'Test Signature' },
-                { getItem: () => ({ getId: () => '2', getTitle: () => 'Date' }), getResponse: () => '2023-10-01' }
+                { getItem: () => ({ getId: () => '2', getTitle: () => 'Date' }), getResponse: () => '2023-10-01' },
+                { getItem: () => ({ getId: () => '3', getTitle: () => 'Email'}), getResponse: () => 'testuser@keoweekrafters.org'}
             ], 
             getId: () => 'response123'
         }

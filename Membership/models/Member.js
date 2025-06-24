@@ -11,11 +11,14 @@ class Member extends Entity {
 
   // Use this only for new members (not for updates)
   static createNew(data = {}) {
+    // Generate a unique name
+    const lastName = data.lastName || `Member_${Math.floor(1000 + Math.random() * 9000)}`; 
     return new this({
       id: data.id || '', // or generate new ID if needed
       emailAddress: data.emailAddress || '',
       firstName: data.firstName || 'New',
-      lastName: data.lastName || 'Member',
+      lastName: lastName,
+      name: `${data.firstName} ${lastName}`, 
       phoneNumber: data.phoneNumber || '',
       address: data.address || '',
       interests: data.interests || ''

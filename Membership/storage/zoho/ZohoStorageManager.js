@@ -100,9 +100,15 @@ class ZohoStorageManager extends StorageManager {
     return this.getAll({ [storageKey]: value, ...this.filter });
   }
 
-  create(data = {}) {
+  createNew(data = {}) {
     return this.clazz.createNew(data); 
   }
+
+  create(data = {}) {
+    return new this.clazz(data); 
+  }
+
+
 
 }
 
