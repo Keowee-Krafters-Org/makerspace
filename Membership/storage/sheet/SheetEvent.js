@@ -1,3 +1,7 @@
+/**
+ * Class representing an Event stored in a Google Sheet.
+ * Extends the base Event class.
+ */
 class SheetEvent extends Event {
     constructor(data = {}) {
 

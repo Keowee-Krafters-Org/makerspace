@@ -5,7 +5,7 @@ class ZohoEvent extends Event {
 
     static getResourceNameSingular() { return 'item'; }
     static getResourceNamePlural() { return 'items'; }
-    static getFilter() { return { cf_type: 'Event', cf_event_type: 'Class' }; }
+    static getFilter() { return { type: 'Event', eventType: 'Class', enabled: 'true' }; }
 
     static getToRecordMap() {
         return {
@@ -22,25 +22,12 @@ class ZohoEvent extends Event {
             description: 'cf_event_description',
             summary: 'description',
             sizeLimit: 'cf_attendance_limit',
-            type: 'cf_event_type'
+            type: 'cf_type',
+            eventType: 'cf_event_type', 
+            enabled: 'cf_enabled'
         }
     };
 
-    static getFromRecordMap() {
-        // Maps Zoho fields to Event properties for creating/updating records
-        // This is the reverse of getToRecordMap
-        // reverse the keys and values
-        const fromRecordMap = ZohoEvent.getToRecordMap();
-        const keys = Object.keys(fromRecordMap);
-        const values = Object.values(fromRecordMap);
-        const reversedMap = {};
-        for (let i = 0; i < keys.length; i++) {
-            reversedMap[values[i]] = keys[i];
-        }
-        // Return the reversed map
-        // This map is used to convert Event properties to Zoho fields for creating/updating records
-        return reversedMap
-    }
 
     static fromRecord(record) {
         const data = ZohoEvent.convertRecordToData(record, ZohoEvent.getFromRecordMap());

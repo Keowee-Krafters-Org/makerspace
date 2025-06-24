@@ -13,23 +13,40 @@ function doGet() {
  * Sends a verification token to the user's email via Membership module.
  */
 function login(email) {
+  const membershipManager = Membership.newMembershipManager(); 
   if (Array.isArray(email)) {
     email = email[0];
   }
   email = String(email || '').trim();
   if (!email) throw new Error('No email provided.');
-
-  return JSON.stringify(Membership.loginMember(email));
+  const response = membershipManager.loginMember(email); 
+  delete response.data.login.authentication.token; 
+  return JSON.stringify(response);
 }
 
 /**
  * Verifies a submitted token against the stored value via Membership module.
  */
 function verifyToken(email, userToken) {
-  return JSON.stringify(Membership.verifyMemberToken(email, userToken));
+  
+  const membershipManager = Membership.newMembershipManager(); 
+  const response = membershipManager.verifyMemberToken(email, userToken);
+  delete response.data.login.authentication.token;
+  return JSON.stringify(response);
 }
 
 function logout(emailAddress) {
-    return JSON.stringify(Membership.memberLogout(emailAddress)); 
+   const membershipManager = Membership.newMembershipManager(); 
+    return JSON.stringify(membershipManager.memberLogout(emailAddress)); 
+}
+
+function getLevelNumber(levelString) {
+  const levels = getConfig(); 
+  for (const key in levels) {
+    if (levels[key] === levelString) {
+      return key;
+    }
+  }
+  return null; // Return null if no matching level is found
 }
 

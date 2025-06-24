@@ -1,4 +1,5 @@
 // SheetMember: handles mapping to/from sheet rows
+
 class SheetMember extends Member {
   constructor(data = {}) {
     super(data);

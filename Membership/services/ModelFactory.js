@@ -22,7 +22,14 @@ function newRegistration(data = {}) {
 function newEventManager() {
   return new EventManager(new ZohoStorageManager(ZohoEvent));
 }
+
+function newMembershipManager() {
+  return new MembershipManager(new ZohoStorageManager(ZohoMember));
+}
 function newEvent(data = {}) {
   return new Event(data);
 }
 
+function newWaiverManager() {
+  return new WaiverManager(new FormStorageManager(FormWaiver), newMembershipManager() );
+}

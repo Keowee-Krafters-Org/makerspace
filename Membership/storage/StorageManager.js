@@ -66,4 +66,8 @@ class StorageManager {
     getByKeyValue(key, value) {
         throw new Error('getByKeyValue() must be implemented by subclass');
     }
+
+    create(data = {}) {
+      throw new Error('create() must be implemented by subclass');
+    }
 }

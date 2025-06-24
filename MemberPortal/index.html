@@ -71,7 +71,6 @@
 </head>
 
 <body>
-  <div id="spinner" class="spinner"></div>
   <div id="app"></div>
 
   <script>
@@ -139,17 +138,17 @@
             const registrationUrl = buildPrefilledFormUrl(config.forms.registration, member);
             content += `<p>You're almost done! Please complete your registration below.</p>
               <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p>`;
-
+            content += `AND then <p> <a href="${loginUrl}>Refresh the page to continue"</a></p>`;
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
-            const level = parseInt(member.registration.level || 0);
+            const levelNumber = getLevelNumber(config, member.registration.level);
 
-            if (level >= 1) {
+            if (levelNumber >= 1) {
               content += `<ul>
                 <li><a href="https://sites.google.com/keoweekrafters.org/makekeowee/schedule-of-classes-and-events" target="_blank">View the Schedule of Classes and Events</a></li>`;
             }
 
-            if (level >= 2) {
+            if (levelNumber >= 2) {
               if (config?.forms?.volunteer?.url && config?.forms?.volunteer?.entryMap) {
                 const volunteerUrl = buildPrefilledFormUrl(config.forms.volunteer, member);
                 content += `<li><a href="${volunteerUrl}" target="_blank">Volunteer Hours Form</a></li>`;
@@ -158,11 +157,11 @@
                 <li><a href="https://drive.google.com/drive/folders/YOUR_SHARED_FOLDER" target="_blank">Shared Member Documents</a></li>`;
             }
 
-            if (level >= 10) {
+            if (levelNumber >= 10) {
               content += `<li><strong><a href="https://script.google.com/a/macros/keoweekrafters.org/s/AKfycbzlHKHF6RB8g1P3NyjEMMXfpGDtT_WO2CDkb7K_nB7ybQXNj_VwjhGXirWl54RXf9r3/exec?emailAddress=${member.emailAddress}">Member Admin</a></strong></li>`;
             }
 
-            if (level >= 20) {
+            if (levelNumber >= 20) {
               content += `<li><strong>Admin Dashboard</strong></li>`;
             }
 
@@ -177,7 +176,7 @@
             content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>`;
 
           } else {
-            content += `<p>Your membership status is ${member.login.status.toLowerCase()}.</p>`;
+            content += `<p>Your membership status is ${member.regisrtation.status.toLowerCase()}.</p>`;
           }
 
           content += `<button onclick="logout()">Logout</button>`;
@@ -194,7 +193,7 @@
     function renderDashboard(user) {
       google.script.run.withSuccessHandler(config => {
         document.getElementById('app').innerHTML = getDashboardContent(user, config);
-        document.getElementById('version').textContent = `Version: ${config.version.memberPortal}`;
+        document.getElementById('version').textContent = `Version: ${config.version}`;
       }).getConfig();
     }
 
@@ -240,7 +239,7 @@
 
         const response = JSON.parse(res);
         if (!response.success) {
-          
+
           document.getElementById('error').textContent = response.message;
           return;
         }
@@ -293,14 +292,27 @@
     function logout() {
       showSpinner();
       google.script.run.withSuccessHandler(() => {
-        renderDashboard({ login: { status: 'UNVERIFIED' } }); 
+        renderDashboard({ login: { status: 'UNVERIFIED' } });
         hideSpinner();
       }).logout(email);
     }
 
+    /**
+     * Convert the level tet to the equivelent number
+     */
+    function getLevelNumber(config,levelString) {
+      const levels = config.levels;
+      for (const key in levels) {
+        if (levels[key] === levelString) {
+          return key;
+        }
+      }
+      return null; // Return null if no matching level is found
+    }
     renderDashboard({ login: { status: 'UNVERIFIED' } });
   </script>
   <h5>
+    <div id="spinner" class="spinner"></div>
     <p id="version"></p>
   </h5>
 </body>

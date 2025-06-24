@@ -1,16 +1,29 @@
-class Member {
+/**
+ * Member.js
+ * Represents a member with personal details, login, and registration info.
+ * Extends the base Entity class.
+ * @extends Entity
+ */
+class Member extends Entity {
   constructor(data = {}) {
-    this.id = data.id || data.contactId || '';
-    this.emailAddress = this.validateEmail(data.emailAddress || '');
-    this.firstName = data.firstName || '';
-    this.lastName = data.lastName || '';
-    this.phoneNumber = data.phoneNumber || '';
-    this.address = data.address || '';
-    this.interests = data.interests || '';
-    this.login = Login.fromObject(data.login);
-    this.registration = Registration.fromObject(data.registration);
+    super(data)
   }
 
+  // Use this only for new members (not for updates)
+  static createNew(data = {}) {
+    // Generate a unique name
+    const lastName = data.lastName || `Member_${Math.floor(1000 + Math.random() * 9000)}`; 
+    return new this({
+      id: data.id || '', // or generate new ID if needed
+      emailAddress: data.emailAddress || '',
+      firstName: data.firstName || 'New',
+      lastName: lastName,
+      name: `${data.firstName} ${lastName}`, 
+      phoneNumber: data.phoneNumber || '',
+      address: data.address || '',
+      interests: data.interests || ''
+    });
+  }
   // Common validation and utility methods
   validateEmail(email) {
     const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -50,21 +63,4 @@ class Member {
     });
   }
 
-  // Storage-agnostic extension points
-  static fromRecord(record) {
-    throw new Error('Implemented in subclass');
-  }
-
-  toRecord() {
-    throw new Error('Implemented in subclass');
-  }
-
-  // Datasource-specific resource names
-  static getResourceNameSingular() {
-    throw new Error('Implemented in subclass');
-  }
-
-  static getResourceNamePlural() {
-    throw new Error('Implemented in subclass');
-  }
 }

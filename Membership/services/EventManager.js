@@ -10,6 +10,7 @@ class EventManager {
 
     getUpcomingEvents(params = {}) {
         const response = this.storageManager.getFiltered(event => event.isUpcoming(), params);
+        response.data = response.data.sort((a, b) => a.date - b.date);
         return response;
     }
     getAvailableEvents() {
