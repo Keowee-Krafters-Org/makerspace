@@ -44,7 +44,7 @@ class ZohoMember extends Member {
    * @returns {Object} The filter criteria object.
    */
   static getFilter() {
-    return { contact_type: 'customer', cf_is_member: true };
+    return { contactType: 'customer', isMember: true };
   }
 
   /**
@@ -60,7 +60,9 @@ class ZohoMember extends Member {
       lastName: 'last_name',
       emailAddress: 'email',
       phoneNumber: 'phone', 
-      contacts: 'contact_persons'
+      contacts: 'contact_persons',
+      contactType: 'contact_type',
+      isMember: 'cf_is_member'
     };
   }
 

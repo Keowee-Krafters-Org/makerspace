@@ -5,7 +5,7 @@ class ZohoEvent extends Event {
 
     static getResourceNameSingular() { return 'item'; }
     static getResourceNamePlural() { return 'items'; }
-    static getFilter() { return { cf_type: 'Event', cf_event_type: 'Class', cf_enabled: 'true' }; }
+    static getFilter() { return { type: 'Event', eventType: 'Class', enabled: 'true' }; }
 
     static getToRecordMap() {
         return {
@@ -22,8 +22,9 @@ class ZohoEvent extends Event {
             description: 'cf_event_description',
             summary: 'description',
             sizeLimit: 'cf_attendance_limit',
-            type: 'cf_event_type', 
-            past: 'cf_enabled'
+            type: 'cf_type',
+            eventType: 'cf_event_type', 
+            enabled: 'cf_enabled'
         }
     };
 
