@@ -88,6 +88,41 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .class-card form {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 12px 16px;
+      align-items: center;
+      padding: 16px 0;
+    }
+
+    .class-card label {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .class-card input[type="text"],
+    .class-card input[type="number"],
+    .class-card input[type="datetime-local"],
+    .class-card textarea {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1em;
+      width: 100%;
+    }
+
+    .class-card textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .class-card .signup-btn {
+      grid-column: span 2;
+      margin-top: 12px;
+    }
+
   </style>
 </head>
 <body>
@@ -227,12 +262,14 @@
       showSpinner();
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
+        showSpinner();
         google.script.run.withSuccessHandler(res => {
           const response = JSON.parse(res);
           const classes = response.data;
           renderClasses(classes);
         }).getEventList();
 
+        showSpinner();
         google.script.run.withSuccessHandler(config => {
           sharedConfig = config;
           document.getElementById('version').textContent = `Version: ${config.version}`;
@@ -245,106 +282,87 @@
       }
     }
 
-    function editEvent(cls) {
+    function addLabeledField(form, labelText, inputElement) {
+  const label = document.createElement('label');
+  label.textContent = labelText;
+  form.appendChild(label);
+  form.appendChild(inputElement);
+}
+
+function createInput(id, value = '', type = 'text') {
+  const input = document.createElement('input');
+  input.type = type;
+  input.id = id;
+  input.value = value;
+  return input;
+}
+
+function createMoneyInput(id, value = 0) {
+  const input = createInput(id, value, 'number');
+  input.step = '0.01';
+  return input;
+}
+
+function createCheckbox(id, checked = false) {
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.id = id;
+  input.checked = checked;
+  return input;
+}
+
+function createTextarea(id, value = '') {
+  const textarea = document.createElement('textarea');
+  textarea.id = id;
+  textarea.textContent = value;
+  return textarea;
+}
+
+function createButton(text, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'signup-btn';
+  button.textContent = text;
+  button.onclick = onClick;
+  return button;
+}
+
+function editEvent(cls) {
   const container = document.getElementById('classes');
   container.innerHTML = '';
 
   const form = document.createElement('form');
   form.className = 'class-card';
-  const titleInput = document.createElement('input');
-  titleInput.type = 'text';
-  titleInput.id = 'edit-title';
-  titleInput.value = cls.title;
 
-  const dateInput = document.createElement('input');
-  dateInput.type = 'datetime-local';
-  dateInput.id = 'edit-date';
-  dateInput.value = formatDateForInput(cls.date);
+  
 
-  const locationInput = document.createElement('input');
-  locationInput.type = 'text';
-  locationInput.id = 'edit-location';
-  locationInput.value = cls.location;
+  const saveBtn = createButton('Save Changes', () => saveEvent(cls.id));
 
-  const descInput = document.createElement('textarea');
-  descInput.id = 'edit-desc';
-  descInput.textContent = cls.description;
-
-  const enabledInput = document.createElement('input');
-  enabledInput.type = 'checkbox';
-  enabledInput.id = 'edit-enabled';
-  enabledInput.checked = cls.enabled === true;
-
-  const hostInput = document.createElement('input');
-  hostInput.type = 'text';
-  hostInput.id = 'edit-host';
-  hostInput.value = cls.host || '';
-
-  const priceInput = document.createElement('input');
-  priceInput.type = 'number';
-  priceInput.step = '0.01';
-  priceInput.id = 'edit-price';
-  priceInput.value = cls.price || 0;
-
-  const sizeInput = document.createElement('input');
-  sizeInput.type = 'number';
-  sizeInput.id = 'edit-size';
-  sizeInput.value = cls.sizeLimit || 0;
-
-  const saveBtn = document.createElement('button');
-  saveBtn.type = 'button';
-  saveBtn.className = 'signup-btn';
-  saveBtn.textContent = 'Save Changes';
-  saveBtn.onclick = () => saveEvent(cls.id);
-
-  form.appendChild(document.createTextNode('Enabled: '));
-  form.appendChild(enabledInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Title: '));
-  form.appendChild(titleInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Date: '));
-  form.appendChild(dateInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Location: '));
-  form.appendChild(locationInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Host: '));
-  form.appendChild(hostInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Price: $'));
-  form.appendChild(priceInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Max Attendees: '));
-  form.appendChild(sizeInput);
-  form.appendChild(document.createElement('br'));
-
-  form.appendChild(document.createTextNode('Description: '));
-  form.appendChild(descInput);
-  form.appendChild(document.createElement('br'));
+  addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
+  addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
+  addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
+  addLabeledField(form, 'Location:', createInput('edit-location', cls.location));
+  addLabeledField(form, 'Host:', createInput('edit-host', cls.host || ''));
+  addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.price || 0));
+  addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.sizeLimit || 0, 'number'));
+  addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.enabled === true));
 
   form.appendChild(saveBtn);
   container.appendChild(form);
 }
 
 function saveEvent(eventId) {
-  const updated = {
+  const updated = JSON.stringify({
     id: eventId,
     enabled: document.getElementById('edit-enabled').checked,
     title: document.getElementById('edit-title').value,
-    date: document.getElementById('edit-date').value.replace('T', ' '),
+    date: new Date(document.getElementById('edit-date').value),
     location: document.getElementById('edit-location').value,
     host: document.getElementById('edit-host').value,
     price: parseFloat(document.getElementById('edit-price').value),
     sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
     description: document.getElementById('edit-desc').value,
-  };
+  });
 
   showSpinner();
   google.script.run
@@ -355,7 +373,7 @@ function saveEvent(eventId) {
     })
     .withFailureHandler(err => {
       hideSpinner();
-      alert("Failed to update event.");
+      alert(`Failed to update event. ${err}`);
       console.error(err);
     })
     .updateEvent(updated);
@@ -373,6 +391,7 @@ function formatDateForInput(date) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  showSpinner();
       document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
       loadEvents();
     });

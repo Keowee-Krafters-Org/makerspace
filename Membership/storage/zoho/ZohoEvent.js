@@ -39,6 +39,7 @@ class ZohoEvent extends Event {
       data.date = new Date(record.cf_scheduled_date_unformatted);
     }
 
+    
     if (data._attendees) {
       data.attendees = JSON.parse(data._attendees);
     }

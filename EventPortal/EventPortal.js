@@ -47,3 +47,11 @@ function getMember(memberId) {
   const membershipManager = Membership.newMembershipManager(); 
   return membershipManager.getMember(memberId);
 }
+
+function updateEvent(eventData) {
+  const event = JSON.parse(eventData); 
+  const eventManager = Membership.newEventManager();
+  const eventInstance = eventManager.createEvent(event); 
+  const response = eventManager.updateEvent(eventInstance);
+  return JSON.stringify(response);
+}

@@ -40,7 +40,8 @@ class EventManager {
         this.storageManager.save(event);
         return { success: true, message: 'Event added successfully!', eventId: event.id };
     }
-    updateEvent(eventId, updatedData) {
+    updateEvent(updatedData) {
+        const eventId = updatedData.id; 
         return this.storageManager.update(eventId, updatedData);
     }
     deleteEvent(eventId) {
@@ -50,6 +51,10 @@ class EventManager {
         }
         this.storageManager.delete(eventId);
         return { success: true, message: 'Event deleted successfully!' };
+    }
+
+    createEvent(data = {}) {
+        return this.storageManager.create(data);
     }
 
     /**

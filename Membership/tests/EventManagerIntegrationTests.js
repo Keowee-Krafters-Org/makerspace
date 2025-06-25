@@ -123,11 +123,11 @@ function test_updateEvent() {
 
         // Now, update the event
         const updatedData = new ZohoEvent({name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
-        const response = eventManager.updateEvent(eventId, updatedData);
-        Logger.log(`updateEvent response: ${response.message}`);
+        const response = eventManager.updateEvent( updatedData);
+        Logger.log(` response: ${response.message}`);
         assert('Event should be updated successfully', response.success, true);
     } catch (error) {
-        Logger.log(`updateEvent failed: ${error.message}`);
+        Logger.log(` failed: ${error.message}`);
     }
 }
 
