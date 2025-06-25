@@ -5,7 +5,8 @@
  * @example
  * eventManagerIntegrationTests();  
  */
-
+const TEST_EVENT_NAME = 'Test Event'; 
+const TEST_USER_EMAIL = 'testuser@keoweekrafters.org'; 
 function eventManagerIntegrationTests() {
     Logger.log('Starting EventManager integration tests...');
 
@@ -162,4 +163,23 @@ function test_deleteEvent() {
     } catch (error) {
         Logger.log(`deleteEvent failed: ${error.message}`);
     }
+}
+
+function test_when_member_signs_up_for_event__then_event_is_updated() {
+    const membershipManager = newMembershipManager(); 
+    const member = membershipManager.memberLookup(TEST_USER_EMAIL); 
+    const eventManager = newEventManager(); 
+  assert('Found member', member != undefined, true);
+
+  const testMemberId = member.id; 
+  const eventResponse = eventManager.getEventList({name: TEST_EVENT_NAME}); 
+  assert('Event found',true, eventResponse.success != undefined && eventResponse.data  != undefined); 
+
+  const testEvent = eventResponse.data[0]; 
+  const testEventId = testEvent.id;   // Replace with a valid test event ID
+
+  const confirmation  = eventManager.signup(testEventId, testMemberId);
+
+  Logger.log(JSON.stringify(confirmation));
+
 }

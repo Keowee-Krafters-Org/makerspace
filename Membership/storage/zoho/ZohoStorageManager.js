@@ -26,18 +26,23 @@ class ZohoStorageManager extends StorageManager {
    * @example
    */
   getAll(params = {}) {
-    const toRecordMap = this.clazz.getToRecordMap();
-    const zohoFilter = {};
-    const filter = this.filter;
-    Object.entries(filter).forEach(([key, value]) => {
-      zohoFilter[toRecordMap[key]] = value;
-    });
-    const response = this.zohoAPI.getEntities(this.resourceName, { ...params, ...zohoFilter });
+
+    const zohoParams = this.convertParams({ ...params, ...this.filter }); 
+    const response = this.zohoAPI.getEntities(this.resourceName, zohoParams);
     if (!response || !response[this.resourceName]) {
       throw new Error(`No data found for resource: ${this.resourceName}`);
     }
     const entities = response[this.resourceName].map(row => this.clazz.fromRecord(row));
     return new Response(response.message === 'success', entities, response.message);
+  }
+
+  convertParams(params) {
+    const toRecordMap = this.clazz.getToRecordMap();
+    const zohoParams = {};
+    Object.entries(params).forEach(([key, value]) => {
+      zohoParams[toRecordMap[key]] = value;
+    });
+    return zohoParams;
   }
   /**
    * Adds a new entity record to Zoho Books and Zoho CRM.
@@ -47,9 +52,9 @@ class ZohoStorageManager extends StorageManager {
   add(entity) {
     // Implementation for adding a entity to Zoho Books and Zoho CRM
     // This would typically involve making API calls to Zoho services
-    delete entity.id; 
-    const entityData=entity.toRecord(); 
-    const response =  this.zohoAPI.post(this.clazz.getResourceNamePlural(),  entityData);
+    delete entity.id;
+    const entityData = entity.toRecord();
+    const response = this.zohoAPI.post(this.clazz.getResourceNamePlural(), entityData);
     return this.clazz.fromRecord(response[this.resourceNameSingular]);
   }
 
@@ -72,11 +77,11 @@ class ZohoStorageManager extends StorageManager {
     if (updatedEntity.id) {
       delete updatedEntity.id; // Ensure id is not included in the update payload
     }
-    
+
     const payload = updatedEntity.toRecord();
     const response = this.zohoAPI.updateEntity(this.resourceName, id, payload);
     if (!response || !response[this.resourceNameSingular]) {
-      throw new Error(`Failed to update entity with ID: ${id} with: response.message`);
+      throw new Error(`Failed to update entity with ID: ${id} with: ${response.message}`);
     }
     const savedEntity = this.clazz.fromRecord(response[this.resourceNameSingular]);
     return new Response(true, savedEntity, response.message);
@@ -84,7 +89,7 @@ class ZohoStorageManager extends StorageManager {
 
   delete(id) {
     // Implement delete logic using this.zohoAPI
-    this.zohoAPI.deleteEntity(id); 
+    this.zohoAPI.deleteEntity(id);
   }
 
   getFiltered(predicate, params = {},) {
@@ -102,19 +107,16 @@ class ZohoStorageManager extends StorageManager {
   }
 
   getByKeyValue(key, value) {
-    const storageKey = this.clazz.getStorageKey(key);
-    return this.getAll({ [storageKey]: value, ...this.filter });
+    return this.getAll({ [key]: value});
   }
 
   createNew(data = {}) {
-    return this.clazz.createNew(data); 
+    return this.clazz.createNew(data);
   }
 
   create(data = {}) {
-    return new this.clazz(data); 
+    return new this.clazz(data);
   }
-
-
 
 }
 

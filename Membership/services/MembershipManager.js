@@ -121,7 +121,7 @@ class MembershipManager {
   }
 
   getMember(memberId) {
-    return (ZohoStorageManager.getById(memberId)); 
+    return (this.storageManager.getById(memberId)); 
   }
   addMemberRegistration(memberData) {
     let registeredMember = this.storageManager.create(memberData); 

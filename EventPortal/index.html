@@ -1,184 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>MakeKeowee Scheduled Class</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f4;
-            margin: 0;
-        }
+  <meta charset="UTF-8">
+  <title>MakeKeowee Scheduled Class</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+    }
 
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
-        }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+    }
 
-        h1 {
-            text-align: center;
-            color: #333;
-        }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
 
-        .classes-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-top: 32px;
-        }
+    .classes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
 
-        .class-card {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+    .class-card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
 
-        .class-title {
-            font-size: 1.3em;
-            margin-bottom: 8px;
-            color: #1a4d2e;
-        }
+    .class-title {
+      font-size: 1.3em;
+      margin-bottom: 8px;
+      color: #1a4d2e;
+    }
 
-        .class-desc {
-            margin-bottom: 12px;
-            color: #444;
-        }
+    .class-desc {
+      margin-bottom: 12px;
+      color: #444;
+    }
 
-        .class-info {
-            margin-bottom: 16px;
-            color: #555;
-        }
+    .class-info {
+      margin-bottom: 16px;
+      color: #555;
+    }
 
-        .signup-btn {
-            background: #1a4d2e;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 18px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+    .signup-btn {
+      background: #1a4d2e;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
-        .signup-btn:hover {
-            background: #26734d;
-        }
+    .signup-btn:hover {
+      background: #26734d;
+    }
 
-        .spinner {
-            display: none;
-            margin: 20px auto;
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #3367d6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
+    .spinner {
+      margin: 20px auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3367d6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+    .hidden {
+      display: none;
+    }
 
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
-
 <body>
-    <div id="spinner" class="spinner"></div>
-    <div class="container">
-        <h1>MakeKeowee Classes</h1>
-        <div id="classes" class="classes-grid"></div>
-    </div>
-    <script>
+<script type="application/json" id="member-data">
+  <?!= JSON.stringify(member) ?>
+</script>
+<script>
+  const currentMember = JSON.parse(document.getElementById('member-data').textContent);
+  console.log("Injected member:", currentMember);
+  window.currentMemberId = currentMember.id;
+</script>
 
-        let sharedConfig = {};
+  <div id="spinner" class="spinner hidden"></div>
+  <div class="container">
+    <h1>MakeKeowee Classes</h1>
+    <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
+    <div id="classes" class="classes-grid"></div>
+  </div>
 
-        function showSpinner() {
-            document.getElementById('spinner').style.display = 'block';
-        }
+  <script>
+    let sharedConfig = {};
 
-        function hideSpinner() {
-            document.getElementById('spinner').style.display = 'none';
-        }
-        // Render classes from Google Apps Script response
-        function renderClasses(classes) {
-            const container = document.getElementById('classes');
-            container.innerHTML = '';
-            if (!classes || !classes.length) {
-                container.innerHTML = '<p>No classes available at this time.</p>';
-                return;
-            }
-            classes.forEach(cls => {
-                const card = document.createElement('div');
-                card.className = 'class-card';
-                // Format the date for display
-                const dateObj = new Date(cls.date);
-                const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-                const spotsAvailable = cls.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
-                card.innerHTML = `
-                    <div>
-                        <div class="class-title">${cls.title}</div>
-                        <div class="class-desc">${cls.description}</div>
-                        <div class="class-info"><strong>Price:</strong> $${Number(cls.price).toFixed(2)}</div>
-                        <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
-                        <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
-                        <div class="class-info"><strong>Instructor:</strong> ${cls.host}</div>
-                        <div class="class-info"><strong>Max Attendees:</strong> ${cls.sizeLimit}</div>
-                        <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
-                        
-                    </div>
-                    <button class="signup-btn" onclick="signUp('${cls.id}')">Sign Me Up</button>
-                `;
-                container.appendChild(card);
-            });
-        }
+    function showSpinner() {
+      document.getElementById('spinner').classList.remove('hidden');
+    }
 
-        // Signup handler (calls Apps Script function)
-        function signUp(classId) {
-            google.script.run.signUp(classId);
-        }
+    function hideSpinner() {
+      document.getElementById('spinner').classList.add('hidden');
+    }
 
-        function loadEvents() {
-            // Fetch and render classes on page load using Apps Script
-            showSpinner();
-            document.addEventListener('DOMContentLoaded', () => {
-                if (typeof google !== 'undefined' && google.script && google.script.run) {
-                    google.script.run.withSuccessHandler(res => {
-                        const response = JSON.parse(res);
-                        const classes = response.data;
-                        renderClasses(classes);
-                    }).getEventList()
+    function renderClasses(classes) {
+      const container = document.getElementById('classes');
+      container.innerHTML = '';
+      if (!classes || !classes.length) {
+        container.innerHTML = '<p>No classes available at this time.</p>';
+        return;
+      }
 
-                } else {
-                    document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
-                }
-            });
+      classes.forEach(cls => {
+        const card = document.createElement('div');
+        card.className = 'class-card';
 
-            google.script.run.withSuccessHandler(config => {
-                sharedConfig = config;
-                document.getElementById('version').textContent = `Version: ${config.version}`;
-                //populateLevelDropdown();
-                hideSpinner();
-            }).getConfig();
+        const infoDiv = document.createElement('div');
+        infoDiv.innerHTML = generateClassDiv(cls);
+        card.appendChild(infoDiv);
 
-        }
-        loadEvents(); 
-    </script>
-    <h5>
-        <p id="version"></p>
-    </h5>
+        const btn = document.createElement('button');
+        btn.className = 'signup-btn';
+        btn.textContent = 'More...';
+        btn.onclick = () => renderClass(cls);
+        card.appendChild(btn);
 
+        container.appendChild(card);
+      });
+    }
+
+    function renderClass(cls) {
+      const container = document.getElementById('classes');
+      container.innerHTML = '';
+
+      const card = document.createElement('div');
+      card.className = 'class-card';
+
+      const infoDiv = document.createElement('div');
+      infoDiv.innerHTML = generateClassDiv(cls);
+      card.appendChild(infoDiv);
+
+      const btn = document.createElement('button');
+      btn.className = 'signup-btn';
+      btn.textContent = 'Sign Me Up';
+      btn.onclick = () => signup(cls.id, currentMember.id);
+      card.appendChild(btn);
+
+      const confirmation = document.createElement('div');
+      confirmation.id = 'confirmation-message';
+      confirmation.style.textAlign = 'center';
+      confirmation.style.color = 'green';
+      confirmation.style.marginTop = '20px';
+      card.appendChild(confirmation);
+
+      container.appendChild(card);
+    }
+
+    function generateClassDiv(cls) {
+      const dateObj = new Date(cls.date);
+      const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+      const spotsAvailable = cls.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
+      return `
+        <div class="class-title">${cls.title}</div>
+        <div class="class-desc">${cls.description}</div>
+        <div class="class-info"><strong>Price:</strong> $${Number(cls.price).toFixed(2)}</div>
+        <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
+        <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
+        <div class="class-info"><strong>Instructor:</strong> ${cls.host}</div>
+        <div class="class-info"><strong>Max Attendees:</strong> ${cls.sizeLimit}</div>
+        <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
+      `;
+    }
+
+    function getCurrentMemberId() {
+      return window.currentMemberId || '';
+    }
+
+    function signup(classId, memberId) {
+      showSpinner();
+      google.script.run
+        .withSuccessHandler(response => {
+          hideSpinner();
+          const msg = response && response.message ? response.message : "Signup complete.";
+          document.getElementById('confirmation-message').textContent = msg;
+        })
+        .withFailureHandler(error => {
+          hideSpinner();
+          document.getElementById('confirmation-message').textContent = 'Signup failed. Please try again.';
+          console.error(error);
+        })
+        .signup(classId, memberId);
+    }
+
+    function loadEvents() {
+      showSpinner();
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(res => {
+          const response = JSON.parse(res);
+          const classes = response.data;
+          renderClasses(classes);
+        }).getEventList();
+
+        google.script.run.withSuccessHandler(config => {
+          sharedConfig = config;
+          document.getElementById('version').textContent = `Version: ${config.version}`;
+          hideSpinner();
+        }).getConfig();
+
+      } else {
+        document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
+        hideSpinner();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
+      loadEvents();
+    });
+  </script>
+
+  <h5><p id="version"></p></h5>
 </body>
-
 </html>
