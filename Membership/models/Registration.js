@@ -53,11 +53,6 @@ class Registration extends Entity {
   }
 
   static getLevel(levelString) {
-    for (const key in SharedConfig.levels) {
-      if (SharedConfig.levels[key] === levelString) {
-        return key;
-      }
-    }
-    return null; // Return null if no matching level is found
+    return SharedConfig.levels[levelString];
   }
 }

@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..27',
+  version: 'SNAPSHOT-..28',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -41,19 +41,19 @@ var SharedConfig = {
     from: 'noreply@keoweekrafters.org'
   },
   levels: {
-    1: 'Interested Party',
-    2: 'Active',
-    3: 'Full Access',
-    4: 'Lifetime',
-    5: 'Instructor',
-    6: 'Workshop Supervisor',
-    10: 'Board',
-    11: 'President',
-    12: 'Vice President',
-    13: 'Secretary',
-    14: 'Treasurer',
-    15: 'Advisor',
-    30: 'Administrator'
+    'Interested Party': 1,
+    'Active': 2,
+    'Full Access': 3,
+    'Lifetime': 4,
+    'Instructor': 5,
+    'Workshop Supervisor': 6,
+    'Board': 10,
+    'President': 11,
+    'Vice President': 12,
+    'Secretary': 13,
+    'Treasurer': 14,
+    'Advisor': 15,
+    'Administrator': 30
   }
 };
 

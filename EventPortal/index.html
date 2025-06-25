@@ -160,6 +160,14 @@
       btn.onclick = () => signup(cls.id, currentMember.id);
       card.appendChild(btn);
 
+      if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'signup-btn';
+        editBtn.textContent = 'Edit Event';
+        editBtn.onclick = () => editEvent(cls);
+        card.appendChild(editBtn);
+      }
+
       const confirmation = document.createElement('div');
       confirmation.id = 'confirmation-message';
       confirmation.style.textAlign = 'center';
@@ -191,25 +199,28 @@
     }
 
     function signup(classId, memberId) {
-      showSpinner();
-      google.script.run
-        .withSuccessHandler(res => {
-            hideSpinner();
-            let msg =''; 
-            const response = JSON.parse(res); 
-            if (response.success) {
-                msg = response && response.message ? response.message : "Signup complete.";
-            } else {
-                msg = response.error; 
-            }
-          document.getElementById('confirmation-message').textContent = msg;
-        })
-        .withFailureHandler(error => {
-          hideSpinner();
-          document.getElementById('confirmation-message').textContent = 'Signup failed. Please try again.';
-          console.error(error);
-        })
-        .signup(classId, memberId);
+  showSpinner();
+  google.script.run
+    .withSuccessHandler(res => {
+      hideSpinner();
+      const confirmation = document.getElementById('confirmation-message');
+      let msg = '';
+      let isSuccess = false;
+
+      try {
+        const response = JSON.parse(res);
+        isSuccess = response.success;
+        msg = response.success
+          ? (response.message || "Signup complete.")
+          : (response.error || "You may already be signed up for this event.");
+      } catch (err) {
+        msg = "Unexpected error during signup.";
+        console.error("Parse error:", err);
+      }
+
+      confirmation.textContent = msg;
+      confirmation.style.color = isSuccess ? 'green' : 'red';
+    }).signup(classId, memberId);
     }
 
     function loadEvents() {
@@ -234,13 +245,140 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function editEvent(cls) {
+  const container = document.getElementById('classes');
+  container.innerHTML = '';
+
+  const form = document.createElement('form');
+  form.className = 'class-card';
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'edit-title';
+  titleInput.value = cls.title;
+
+  const dateInput = document.createElement('input');
+  dateInput.type = 'datetime-local';
+  dateInput.id = 'edit-date';
+  dateInput.value = formatDateForInput(cls.date);
+
+  const locationInput = document.createElement('input');
+  locationInput.type = 'text';
+  locationInput.id = 'edit-location';
+  locationInput.value = cls.location;
+
+  const descInput = document.createElement('textarea');
+  descInput.id = 'edit-desc';
+  descInput.textContent = cls.description;
+
+  const enabledInput = document.createElement('input');
+  enabledInput.type = 'checkbox';
+  enabledInput.id = 'edit-enabled';
+  enabledInput.checked = cls.enabled === true;
+
+  const hostInput = document.createElement('input');
+  hostInput.type = 'text';
+  hostInput.id = 'edit-host';
+  hostInput.value = cls.host || '';
+
+  const priceInput = document.createElement('input');
+  priceInput.type = 'number';
+  priceInput.step = '0.01';
+  priceInput.id = 'edit-price';
+  priceInput.value = cls.price || 0;
+
+  const sizeInput = document.createElement('input');
+  sizeInput.type = 'number';
+  sizeInput.id = 'edit-size';
+  sizeInput.value = cls.sizeLimit || 0;
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'signup-btn';
+  saveBtn.textContent = 'Save Changes';
+  saveBtn.onclick = () => saveEvent(cls.id);
+
+  form.appendChild(document.createTextNode('Enabled: '));
+  form.appendChild(enabledInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Title: '));
+  form.appendChild(titleInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Date: '));
+  form.appendChild(dateInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Location: '));
+  form.appendChild(locationInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Host: '));
+  form.appendChild(hostInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Price: $'));
+  form.appendChild(priceInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Max Attendees: '));
+  form.appendChild(sizeInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(document.createTextNode('Description: '));
+  form.appendChild(descInput);
+  form.appendChild(document.createElement('br'));
+
+  form.appendChild(saveBtn);
+  container.appendChild(form);
+}
+
+function saveEvent(eventId) {
+  const updated = {
+    id: eventId,
+    enabled: document.getElementById('edit-enabled').checked,
+    title: document.getElementById('edit-title').value,
+    date: document.getElementById('edit-date').value.replace('T', ' '),
+    location: document.getElementById('edit-location').value,
+    host: document.getElementById('edit-host').value,
+    price: parseFloat(document.getElementById('edit-price').value),
+    sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
+    description: document.getElementById('edit-desc').value,
+  };
+
+  showSpinner();
+  google.script.run
+    .withSuccessHandler(res => {
+      hideSpinner();
+      alert("Event updated.");
+      loadEvents();
+    })
+    .withFailureHandler(err => {
+      hideSpinner();
+      alert("Failed to update event.");
+      console.error(err);
+    })
+    .updateEvent(updated);
+}
+
+function formatDateForInput(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
       loadEvents();
     });
   </script>
 
-  <div id="spinner" class="spinner"></div>
+  <div id="spinner" class="spinner hidden"></div>
   <h5><p id="version"></p></h5>
 </body>
 </html>
