@@ -71,6 +71,7 @@
     }
 
     .spinner {
+      display: none;
       margin: 20px auto;
       border: 6px solid #f3f3f3;
       border-top: 6px solid #3367d6;
@@ -80,10 +81,9 @@
       animation: spin 1s linear infinite;
     }
 
-    .hidden {
+      .hidden {
       display: none;
     }
-
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -100,7 +100,6 @@
   window.currentMemberId = currentMember.id;
 </script>
 
-  <div id="spinner" class="spinner hidden"></div>
   <div class="container">
     <h1>MakeKeowee Classes</h1>
     <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
@@ -194,9 +193,15 @@
     function signup(classId, memberId) {
       showSpinner();
       google.script.run
-        .withSuccessHandler(response => {
-          hideSpinner();
-          const msg = response && response.message ? response.message : "Signup complete.";
+        .withSuccessHandler(res => {
+            hideSpinner();
+            let msg =''; 
+            const response = JSON.parse(res); 
+            if (response.success) {
+                msg = response && response.message ? response.message : "Signup complete.";
+            } else {
+                msg = response.error; 
+            }
           document.getElementById('confirmation-message').textContent = msg;
         })
         .withFailureHandler(error => {
@@ -235,6 +240,7 @@
     });
   </script>
 
+  <div id="spinner" class="spinner"></div>
   <h5><p id="version"></p></h5>
 </body>
 </html>
