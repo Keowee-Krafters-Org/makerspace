@@ -1,6 +1,7 @@
 /**
  * Open the index page
  */
+const modelFactory = Membership.newModelFactory();
 function doGet(e) {
   const memberId = e.parameter.memberId;
   if (!memberId) {
@@ -29,12 +30,12 @@ function doGet(e) {
 }
 
 function getEventList() {
-  const eventManager = Membership.newEventManager();
+  const eventManager = Membership.modelFactory.newEventManager();
   return JSON.stringify(eventManager.getUpcomingEvents()); 
 }
 
 function signup(classId, memberId) {
-  const eventManager = Membership.newEventManager(); 
+  const eventManager = Membership.modelFactory.newEventManager(); 
   const response = eventManager.signup( classId, memberId ); 
   return JSON.stringify(response);
 }
@@ -44,13 +45,21 @@ function getSharedConfig() {
 }
 
 function getMember(memberId) {
-  const membershipManager = Membership.newMembershipManager(); 
+  const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
   return membershipManager.getMember(memberId);
+}
+
+function createEvent(eventData) {
+  const event = JSON.parse(eventData);
+  const eventManager = Membership.modelFactory.newEventManager();
+  const eventInstance = eventManager.createEvent(event);
+  const response = eventManager.addEvent(eventInstance); // assumes addEvent creates a new record and calendar event
+  return JSON.stringify(response);
 }
 
 function updateEvent(eventData) {
   const event = JSON.parse(eventData); 
-  const eventManager = Membership.newEventManager();
+  const eventManager = Membership.modelFactory.newEventManager();
   const eventInstance = eventManager.createEvent(event); 
   const response = eventManager.updateEvent(eventInstance);
   return JSON.stringify(response);

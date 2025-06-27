@@ -7,6 +7,8 @@
  */
 const TEST_EVENT_NAME = 'Test Event'; 
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org'; 
+const modelFactory = newModelFactory();
+
 function eventManagerIntegrationTests() {
     Logger.log('Starting EventManager integration tests...');
 
@@ -20,13 +22,8 @@ function eventManagerIntegrationTests() {
     Logger.log('EventManager integration tests completed.');
 }
 
-/**
- * Test for retrieving the event list from EventManager.
- * This test checks if the API can successfully retrieve a list of events.
- * @returns {void}
- */
 function test_getEventList() {
-    const eventManager = newEventManager();
+    const eventManager = modelFactory.newEventManager();
     try {
         const response = eventManager.getEventList();
         Logger.log(`getEventList response: ${response.message}`);
@@ -39,13 +36,8 @@ function test_getEventList() {
     }
 }
 
-/**
- * Test for retrieving upcoming events from EventManager.
- * This test checks if the API can successfully retrieve a list of upcoming events.
- * @returns {void}
- */
 function test_getUpcomingEvents() {
-    const eventManager = newEventManager();
+    const eventManager = modelFactory.newEventManager();
     try {
         const response = eventManager.getUpcomingEvents();
         Logger.log(`getUpcomingEvents response: ${response.message}`);
@@ -58,13 +50,8 @@ function test_getUpcomingEvents() {
     }
 }
 
-/**
- * Test for retrieving available events from EventManager.
- * This test checks if the API can successfully retrieve a list of available events.
- * @returns {void}
- */
 function test_getAvailableEvents() {
-    const eventManager = newEventManager();
+    const eventManager = modelFactory.newEventManager();
     try {
         const response = eventManager.getAvailableEvents();
         Logger.log(`getAvailableEvents response: ${response.message}`);
@@ -77,16 +64,12 @@ function test_getAvailableEvents() {
     }
 }
 
-/**
- * Test for adding a new event to EventManager.
- * This test checks if the API can successfully add a new event.
- * @returns {void}
- */
 function test_addEvent() {
-    const eventManager = newEventManager();
+    const eventManager = modelFactory.eventManager();
+    const calendarManager = modelFactory.calendarManager();
     try {
         const eventData = {
-            name: 'Test Event',
+            title: 'Test Event',
             date: new Date(),
             location: 'Test Location',
             sizeLimit: 100,
@@ -103,25 +86,25 @@ function test_addEvent() {
         Logger.log(`addEvent response: ${response.message}`);
         assert('Event should be added successfully', response.success, true);
         assert('Event ID should be returned', response.eventId != undefined, true);
+        assert('Calendar ID should be returned', response.calendarId != undefined, true);
+
+        // Validate the calendar event was created
+        const calendarEvent = calendarManager.calendar.getEventById(response.calendarId);
+        assert('Calendar event should exist', calendarEvent != null, true);
+        assert('Calendar event title matches', calendarEvent.getTitle(), eventData.title);
+        Logger.log('Calendar event verification passed.');
     } catch (error) {
         Logger.log(`addEvent failed: ${error.message}`);
     }
 }
 
-/**
- * Test for updating an existing event in EventManager.
- * This test checks if the API can successfully update an existing event.
- * @returns {void}
- */
 function test_updateEvent() {
-    const eventManager = newEventManager();
+    const eventManager = modelFactory.newEventManager();
     try {
-        // First, find the test event to update
         const originalResponse = eventManager.getEventList({ name: 'Test Event' });
         const originalEvent = originalResponse.data[0]; 
         const eventId = originalEvent.id;
 
-        // Now, update the event
         const updatedData = new ZohoEvent({name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
         const response = eventManager.updateEvent( updatedData);
         Logger.log(` response: ${response.message}`);
@@ -131,15 +114,9 @@ function test_updateEvent() {
     }
 }
 
-/**
- * Test for deleting an event from EventManager.
- * This test checks if the API can successfully delete an event.
- * @returns {void}
- */
 function test_deleteEvent() {
-    const eventManager = newEventManager();
+    const eventManager = modelFactory.newEventManager();
     try {
-        // First, add a new event to delete
         const addResponse = eventManager.addEvent({
             name: 'Delete Test Event',
             date: new Date(),
@@ -156,7 +133,6 @@ function test_deleteEvent() {
         });
         const eventId = addResponse.eventId;
 
-        // Now, delete the event
         const response = eventManager.deleteEvent(eventId);
         Logger.log(`deleteEvent response: ${response.message}`);
         assert('Event should be deleted successfully', response.success, true);
@@ -166,20 +142,19 @@ function test_deleteEvent() {
 }
 
 function test_when_member_signs_up_for_event__then_event_is_updated() {
-    const membershipManager = newMembershipManager(); 
+    const membershipManager = modelFactory.newMembershipManager(); 
     const member = membershipManager.memberLookup(TEST_USER_EMAIL); 
-    const eventManager = newEventManager(); 
-  assert('Found member', member != undefined, true);
+    const eventManager = modelFactory.newEventManager(); 
+    assert('Found member', member != undefined, true);
 
-  const testMemberId = member.id; 
-  const eventResponse = eventManager.getEventList({name: TEST_EVENT_NAME}); 
-  assert('Event found',true, eventResponse.success != undefined && eventResponse.data  != undefined); 
+    const testMemberId = member.id; 
+    const eventResponse = eventManager.getEventList({name: TEST_EVENT_NAME}); 
+    assert('Event found',true, eventResponse.success != undefined && eventResponse.data  != undefined); 
 
-  const testEvent = eventResponse.data[0]; 
-  const testEventId = testEvent.id;   // Replace with a valid test event ID
+    const testEvent = eventResponse.data[0]; 
+    const testEventId = testEvent.id; 
 
-  const confirmation  = eventManager.signup(testEventId, testMemberId);
+    const confirmation  = eventManager.signup(testEventId, testMemberId);
 
-  Logger.log(JSON.stringify(confirmation));
-
+    Logger.log(JSON.stringify(confirmation));
 }

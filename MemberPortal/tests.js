@@ -1,5 +1,5 @@
 // Tests
-
+const modelFactory = newModelFactory();
 /** 
  * Assert block for tests
  */
@@ -14,7 +14,7 @@ const assert = (label, expected, actual) => {
 
 const TEST_EMAIL = 'testuser@keoweekrafters.org'; 
 function test_when_user_logs_in__then_email_is_sent() {
-  const membershipManager = Membership.newMembershipManager();
+  const membershipManager = Membership.modelFactory.newMembershipManager();
   const email=TEST_EMAIL;
   const response= login(email);
   console.log(response); 

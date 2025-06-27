@@ -1,7 +1,8 @@
 class EventManager {
 
-    constructor(storageManager) {
+    constructor(storageManager, calendarManager = new CalendarManager()) {
         this.storageManager = storageManager;
+        this.calendarManager = calendarManager;
     }
 
     getEventList(params = {}) {
@@ -36,11 +37,26 @@ class EventManager {
         return this.storageManager.getFiltered(event => event.attendees.includes(attendeeEmail));
     }
     addEvent(eventData) {
+        try {
+            const calendarId = this.calendarManager.createEvent(eventData);
+            eventData.calendarId = calendarId;
+        } catch (err) {
+            console.error('Failed to create calendar event:', err);
+            return { success: false, message: 'Failed to create calendar event.', error: err.toString() };
+        }
         const event = new Event(eventData);
-        this.storageManager.save(event);
-        return { success: true, message: 'Event added successfully!', eventId: event.id };
+                this.storageManager.save(event);
+                return { success: true, message: 'Event added successfully!', eventId: event.id, calendarId: eventData.calendarId };
     }
     updateEvent(updatedData) {
+        try {
+            if (updatedData.calendarId) {
+                this.calendarManager.updateEvent(updatedData.calendarId, updatedData);
+            }
+        } catch (err) {
+            console.error('Failed to update calendar event:', err);
+            return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
+        }
         const eventId = updatedData.id; 
         return this.storageManager.update(eventId, updatedData);
     }

@@ -7,6 +7,11 @@ var SharedConfig = {
   ...config,
   loginTokenExpirationMinutes: 15,
   sessionTokenExpirationMinutes: 60 * 24,
+  services: {
+    calendar: {
+      defaultCalendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com'
+    }
+  },
   forms: {
     registration: {
       url: 'https://docs.google.com/forms/d/e/1FAIpQLScEGclpyk12DVBPD3chZq1Xuds1NXEPwlRZopvb8tbN5NR3FQ/viewform?usp=pp_url',

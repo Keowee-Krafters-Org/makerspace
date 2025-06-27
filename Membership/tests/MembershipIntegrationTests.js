@@ -1,3 +1,4 @@
+const modelFactory = newModelFactory();
 /** 
  * Assert block for tests
  */
@@ -38,7 +39,7 @@ const testMember = {
 };
 
 // Use ModelFactory to get a MembershipManager instance
-const membershipManager = newMembershipManager();
+const membershipManager = modelFactory.newMembershipManager();
 
 function deleteTestMember() {
   const member = membershipManager.memberLookup(testMember.emailAddress);

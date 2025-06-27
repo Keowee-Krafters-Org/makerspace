@@ -336,7 +336,8 @@ function editEvent(cls) {
 
   
 
-  const saveBtn = createButton('Save Changes', () => saveEvent(cls.id));
+  const isNew = !cls.id;
+  const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? createEvent() : saveEvent(cls.id));
 
   addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
   addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
@@ -379,6 +380,33 @@ function saveEvent(eventId) {
     .updateEvent(updated);
 }
 
+function createEvent() {
+  const newEvent = JSON.stringify({
+    enabled: document.getElementById('edit-enabled').checked,
+    title: document.getElementById('edit-title').value,
+    date: new Date(document.getElementById('edit-date').value),
+    location: document.getElementById('edit-location').value,
+    host: document.getElementById('edit-host').value,
+    price: parseFloat(document.getElementById('edit-price').value),
+    sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
+    description: document.getElementById('edit-desc').value,
+  });
+
+  showSpinner();
+  google.script.run
+    .withSuccessHandler(res => {
+      hideSpinner();
+      alert("Event created.");
+      loadEvents();
+    })
+    .withFailureHandler(err => {
+      hideSpinner();
+      alert(`Failed to create event. ${err}`);
+      console.error(err);
+    })
+    .createEvent(newEvent);
+}
+
 function formatDateForInput(date) {
   if (!date) return '';
   const d = new Date(date);
@@ -391,6 +419,13 @@ function formatDateForInput(date) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
+    const newBtn = document.createElement('button');
+    newBtn.className = 'signup-btn';
+    newBtn.textContent = 'New Class';
+    newBtn.onclick = () => editEvent({});
+    document.querySelector('.container').prepend(newBtn);
+  }
   showSpinner();
       document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
       loadEvents();

@@ -1,6 +1,7 @@
 // Google Apps Script Web App for Member Login via Email Verification with Dashboard
 // Sheet must have named ranges including 'emailAddress', 'firstName', 'lastName', 'status', 'timestamp', and 'authentication'
 
+const modelFactory = Membership.newModelFactory();
 /**
  * Render the member portal interface, injecting any authenticated user info.
  */
@@ -13,7 +14,7 @@ function doGet() {
  * Sends a verification token to the user's email via Membership module.
  */
 function login(email) {
-  const membershipManager = Membership.newMembershipManager(); 
+  const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
   if (Array.isArray(email)) {
     email = email[0];
   }
@@ -29,14 +30,14 @@ function login(email) {
  */
 function verifyToken(email, userToken) {
   
-  const membershipManager = Membership.newMembershipManager(); 
+  const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
   const response = membershipManager.verifyMemberToken(email, userToken);
   delete response.data.login.authentication.token;
   return JSON.stringify(response);
 }
 
 function logout(emailAddress) {
-   const membershipManager = Membership.newMembershipManager(); 
+   const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
     return JSON.stringify(membershipManager.memberLogout(emailAddress)); 
 }
 
