@@ -28,7 +28,7 @@ function doGet(e) {
 
   const config = getSharedConfig(); 
   // Require admin-level access
-  if (lookup.level < config.levels.Administrator) {
+  if (config.levels[lookup.level] < config.levels.Administrator) {
     return HtmlService.createHtmlOutput('Access denied. Not an admin.');
   }
 

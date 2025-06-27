@@ -73,16 +73,10 @@ class Event extends Entity {
         this.sizeLimit = limit;
     }
 
-    getDetails() {
+    toObject() {
         return {
-            id: this.id,
-            title: this.title,
-            date: this.date,
-            host: this.host,
-            location: this.location,
-            attendees: this.attendees,
-            description: this.description,
-            sizeLimit: this.sizeLimit
+            ...this,
+            isAvailable: this.isAvailable(),
         };
     }
 

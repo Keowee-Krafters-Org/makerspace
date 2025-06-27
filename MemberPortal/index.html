@@ -301,13 +301,8 @@
      * Convert the level tet to the equivelent number
      */
     function getLevelNumber(config,levelString) {
-      const levels = config.levels;
-      for (const key in levels) {
-        if (levels[key] === levelString) {
-          return key;
-        }
-      }
-      return null; // Return null if no matching level is found
+      return config.levels[levelString];
+      
     }
     renderDashboard({ login: { status: 'UNVERIFIED' } });
   </script>

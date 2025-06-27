@@ -178,7 +178,7 @@
     function populateLevelDropdown() {
       const select = document.getElementById('editLevel');
       select.innerHTML = '';
-      Object.entries(sharedConfig.levels || {}).forEach(([value, label]) => {
+      Object.entries(sharedConfig.levels || {}).forEach(([label, value]) => {
         const option = document.createElement('option');
         option.value = value;
         option.textContent = label;

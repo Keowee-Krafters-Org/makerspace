@@ -8,7 +8,11 @@
 class Entity {
     constructor(data = {}) {
         Object.keys(data).forEach(key => {
-            this[key] = data[key];
+            let value = data[key]; 
+            if (key.includes('date')) {
+                value = new Date(value); 
+            }
+            this[key] = value;
         });
         this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
         this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
