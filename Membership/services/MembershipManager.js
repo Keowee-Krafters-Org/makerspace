@@ -184,4 +184,8 @@ class MembershipManager {
   deleteMember(member) {
     this.storageManager.delete(member.id); 
   }
+
+  getHosts() {
+    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.host); 
+  }
 }

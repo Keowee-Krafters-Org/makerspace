@@ -14,7 +14,7 @@ function doGet() {
  * Sends a verification token to the user's email via Membership module.
  */
 function login(email) {
-  const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
+  const membershipManager = modelFactory.membershipManager(); 
   if (Array.isArray(email)) {
     email = email[0];
   }
@@ -30,14 +30,14 @@ function login(email) {
  */
 function verifyToken(email, userToken) {
   
-  const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
+  const membershipManager = modelFactory.membershipManager(); 
   const response = membershipManager.verifyMemberToken(email, userToken);
   delete response.data.login.authentication.token;
   return JSON.stringify(response);
 }
 
 function logout(emailAddress) {
-   const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
+   const membershipManager = modelFactory.membershipManager(); 
     return JSON.stringify(membershipManager.memberLogout(emailAddress)); 
 }
 

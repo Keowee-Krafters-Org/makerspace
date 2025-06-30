@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..34',
+  version: 'SNAPSHOT-..38',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -49,9 +49,9 @@ var SharedConfig = {
     'Interested Party': 1,
     'Active': 2,
     'Full Access': 3,
-    'Lifetime': 4,
-    'Instructor': 5,
-    'Workshop Supervisor': 6,
+    'Lifetime': 4,    
+    'Host': 5,
+    'Instructor': 6,
     'Board': 10,
     'President': 11,
     'Vice President': 12,

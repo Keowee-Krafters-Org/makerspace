@@ -323,7 +323,7 @@ class ZohoAPI {
             Object.keys(hash).forEach(cfKey => {
                 // Promote the field to a top-level property if it doesn't already exist
                  // Use the API name directly as the top-level key
-                if (!(cfKey in entity) && !cfKey.endsWith('_unformatted') || cfKey.includes('date')) {
+                if (!(cfKey in entity)) {
                     entity[cfKey] = hash[cfKey];
                 }
             });

@@ -7,7 +7,7 @@
  */
 const TEST_EVENT_NAME = 'Test Event'; 
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org'; 
-const modelFactory = newModelFactory();
+
 
 function eventManagerIntegrationTests() {
     Logger.log('Starting EventManager integration tests...');
@@ -23,7 +23,7 @@ function eventManagerIntegrationTests() {
 }
 
 function test_getEventList() {
-    const eventManager = modelFactory.newEventManager();
+    const eventManager = modelFactory.eventManager();
     try {
         const response = eventManager.getEventList();
         Logger.log(`getEventList response: ${response.message}`);
@@ -37,7 +37,7 @@ function test_getEventList() {
 }
 
 function test_getUpcomingEvents() {
-    const eventManager = modelFactory.newEventManager();
+    const eventManager = modelFactory.eventManager();
     try {
         const response = eventManager.getUpcomingEvents();
         Logger.log(`getUpcomingEvents response: ${response.message}`);
@@ -51,7 +51,7 @@ function test_getUpcomingEvents() {
 }
 
 function test_getAvailableEvents() {
-    const eventManager = modelFactory.newEventManager();
+    const eventManager = modelFactory.eventManager();
     try {
         const response = eventManager.getAvailableEvents();
         Logger.log(`getAvailableEvents response: ${response.message}`);
@@ -72,24 +72,23 @@ function test_addEvent() {
             title: 'Test Event',
             date: new Date(),
             location: 'Test Location',
-            sizeLimit: 100,
-            host: 'Test Host',
+            sizeLimit: 10,
+            host: {name: 'Test Host', id: '5636475000000431013'},
             description: 'This is a test event.',
-            price: 0,
-            cost: 0,
+            price: 20,
+            cost: 5,
             type: 'Class',
-            instructorName: 'Test Instructor',
-            instructorEmail: '',
             costDescription: 'Free event'
         };
         const response = eventManager.addEvent(eventData);
         Logger.log(`addEvent response: ${response.message}`);
         assert('Event should be added successfully', response.success, true);
-        assert('Event ID should be returned', response.eventId != undefined, true);
-        assert('Calendar ID should be returned', response.calendarId != undefined, true);
+        const event = response.data; 
+        assert('Event ID should be returned', event.id != undefined, true);
+        assert('Calendar ID should be returned', event.calendarId != undefined, true);
 
         // Validate the calendar event was created
-        const calendarEvent = calendarManager.calendar.getEventById(response.calendarId);
+        const calendarEvent = calendarManager.calendar.getEventById(event.calendarId);
         assert('Calendar event should exist', calendarEvent != null, true);
         assert('Calendar event title matches', calendarEvent.getTitle(), eventData.title);
         Logger.log('Calendar event verification passed.');
@@ -99,7 +98,7 @@ function test_addEvent() {
 }
 
 function test_updateEvent() {
-    const eventManager = modelFactory.newEventManager();
+    const eventManager = modelFactory.eventManager();
     try {
         const originalResponse = eventManager.getEventList({ name: 'Test Event' });
         const originalEvent = originalResponse.data[0]; 
@@ -115,7 +114,7 @@ function test_updateEvent() {
 }
 
 function test_deleteEvent() {
-    const eventManager = modelFactory.newEventManager();
+    const eventManager = modelFactory.eventManager();
     try {
         const addResponse = eventManager.addEvent({
             name: 'Delete Test Event',
@@ -142,9 +141,9 @@ function test_deleteEvent() {
 }
 
 function test_when_member_signs_up_for_event__then_event_is_updated() {
-    const membershipManager = modelFactory.newMembershipManager(); 
+    const membershipManager = modelFactory.membershipManager(); 
     const member = membershipManager.memberLookup(TEST_USER_EMAIL); 
-    const eventManager = modelFactory.newEventManager(); 
+    const eventManager = modelFactory.eventManager(); 
     assert('Found member', member != undefined, true);
 
     const testMemberId = member.id; 

@@ -23,6 +23,7 @@ function doGet(e) {
   delete member.login.authentication.token;
   const template = HtmlService.createTemplateFromFile('index');
   template.member = member // inject member directly
+  template.sharedConfig = modelFactory.config;
   
   return template.evaluate()
     .setTitle('Event Signup')
@@ -30,12 +31,12 @@ function doGet(e) {
 }
 
 function getEventList() {
-  const eventManager = Membership.modelFactory.newEventManager();
+  const eventManager = modelFactory.eventManager();
   return JSON.stringify(eventManager.getUpcomingEvents()); 
 }
 
 function signup(classId, memberId) {
-  const eventManager = Membership.modelFactory.newEventManager(); 
+  const eventManager = modelFactory.eventManager(); 
   const response = eventManager.signup( classId, memberId ); 
   return JSON.stringify(response);
 }
@@ -45,13 +46,13 @@ function getSharedConfig() {
 }
 
 function getMember(memberId) {
-  const membershipManager = Membership.modelFactory.modelFactory.newMembershipManager(); 
+  const membershipManager = modelFactory.membershipManager(); 
   return membershipManager.getMember(memberId);
 }
 
 function createEvent(eventData) {
   const event = JSON.parse(eventData);
-  const eventManager = Membership.modelFactory.newEventManager();
+  const eventManager = modelFactory.eventManager();
   const eventInstance = eventManager.createEvent(event);
   const response = eventManager.addEvent(eventInstance); // assumes addEvent creates a new record and calendar event
   return JSON.stringify(response);
@@ -59,7 +60,7 @@ function createEvent(eventData) {
 
 function updateEvent(eventData) {
   const event = JSON.parse(eventData); 
-  const eventManager = Membership.modelFactory.newEventManager();
+  const eventManager = modelFactory.eventManager();
   const eventInstance = eventManager.createEvent(event); 
   const response = eventManager.updateEvent(eventInstance);
   return JSON.stringify(response);

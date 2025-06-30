@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>MakeKeowee Scheduled Class</title>
@@ -81,12 +82,18 @@
       animation: spin 1s linear infinite;
     }
 
-      .hidden {
+    .hidden {
       display: none;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .class-card form {
@@ -122,18 +129,24 @@
       grid-column: span 2;
       margin-top: 12px;
     }
-
   </style>
 </head>
+
 <body>
-<script type="application/json" id="member-data">
+  <script type="application/json" id="member-data">
   <?!= JSON.stringify(member) ?>
 </script>
-<script>
-  const currentMember = JSON.parse(document.getElementById('member-data').textContent);
-  console.log("Injected member:", currentMember);
-  window.currentMemberId = currentMember.id;
+<script type="application/json" id="shared-config">
+  <?!= JSON.stringify(sharedConfig) ?>
 </script>
+  <script>
+    const currentMember = JSON.parse(document.getElementById('member-data').textContent);
+    console.log("Injected member:", currentMember);
+    const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
+    console.log("Config:", sharedConfig); 
+    window.currentMemberId = currentMember.id;
+    window.sharedConfig = sharedConfig; 
+  </script>
 
   <div class="container">
     <h1>MakeKeowee Classes</h1>
@@ -142,7 +155,6 @@
   </div>
 
   <script>
-    let sharedConfig = {};
 
     function showSpinner() {
       document.getElementById('spinner').classList.remove('hidden');
@@ -223,7 +235,7 @@
         <div class="class-info"><strong>Price:</strong> $${Number(cls.price).toFixed(2)}</div>
         <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
         <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
-        <div class="class-info"><strong>Instructor:</strong> ${cls.host}</div>
+        <div class="class-info"><strong>Instructor:</strong> ${cls.host.name}</div>
         <div class="class-info"><strong>Max Attendees:</strong> ${cls.sizeLimit}</div>
         <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
       `;
@@ -234,47 +246,41 @@
     }
 
     function signup(classId, memberId) {
-  showSpinner();
-  google.script.run
-    .withSuccessHandler(res => {
-      hideSpinner();
-      const confirmation = document.getElementById('confirmation-message');
-      let msg = '';
-      let isSuccess = false;
+      showSpinner();
+      google.script.run
+        .withSuccessHandler(res => {
+          hideSpinner();
+          const confirmation = document.getElementById('confirmation-message');
+          let msg = '';
+          let isSuccess = false;
 
-      try {
-        const response = JSON.parse(res);
-        isSuccess = response.success;
-        msg = response.success
-          ? (response.message || "Signup complete.")
-          : (response.error || "You may already be signed up for this event.");
-      } catch (err) {
-        msg = "Unexpected error during signup.";
-        console.error("Parse error:", err);
-      }
+          try {
+            const response = JSON.parse(res);
+            isSuccess = response.success;
+            msg = response.success
+              ? (response.message || "Signup complete.")
+              : (response.error || "You may already be signed up for this event.");
+          } catch (err) {
+            msg = "Unexpected error during signup.";
+            console.error("Parse error:", err);
+          }
 
-      confirmation.textContent = msg;
-      confirmation.style.color = isSuccess ? 'green' : 'red';
-    }).signup(classId, memberId);
+          confirmation.textContent = msg;
+          confirmation.style.color = isSuccess ? 'green' : 'red';
+        }).signup(classId, memberId);
     }
 
     function loadEvents() {
-      showSpinner();
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         showSpinner();
+
         google.script.run.withSuccessHandler(res => {
           const response = JSON.parse(res);
           const classes = response.data;
           renderClasses(classes);
-        }).getEventList();
-
-        showSpinner();
-        google.script.run.withSuccessHandler(config => {
-          sharedConfig = config;
-          document.getElementById('version').textContent = `Version: ${config.version}`;
           hideSpinner();
-        }).getConfig();
+        }).getEventList();
 
       } else {
         document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
@@ -283,156 +289,159 @@
     }
 
     function addLabeledField(form, labelText, inputElement) {
-  const label = document.createElement('label');
-  label.textContent = labelText;
-  form.appendChild(label);
-  form.appendChild(inputElement);
-}
+      const label = document.createElement('label');
+      label.textContent = labelText;
+      form.appendChild(label);
+      form.appendChild(inputElement);
+    }
 
-function createInput(id, value = '', type = 'text') {
-  const input = document.createElement('input');
-  input.type = type;
-  input.id = id;
-  input.value = value;
-  return input;
-}
+    function createInput(id, value = '', type = 'text') {
+      const input = document.createElement('input');
+      input.type = type;
+      input.id = id;
+      input.value = value;
+      return input;
+    }
 
-function createMoneyInput(id, value = 0) {
-  const input = createInput(id, value, 'number');
-  input.step = '0.01';
-  return input;
-}
+    function createMoneyInput(id, value = 0) {
+      const input = createInput(id, value, 'number');
+      input.step = '0.01';
+      return input;
+    }
 
-function createCheckbox(id, checked = false) {
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.id = id;
-  input.checked = checked;
-  return input;
-}
+    function createCheckbox(id, checked = false) {
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.id = id;
+      input.checked = checked;
+      return input;
+    }
 
-function createTextarea(id, value = '') {
-  const textarea = document.createElement('textarea');
-  textarea.id = id;
-  textarea.textContent = value;
-  return textarea;
-}
+    function createTextarea(id, value = '') {
+      const textarea = document.createElement('textarea');
+      textarea.id = id;
+      textarea.textContent = value;
+      return textarea;
+    }
 
-function createButton(text, onClick) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'signup-btn';
-  button.textContent = text;
-  button.onclick = onClick;
-  return button;
-}
+    function createButton(text, onClick) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'signup-btn';
+      button.textContent = text;
+      button.onclick = onClick;
+      return button;
+    }
 
-function editEvent(cls) {
-  const container = document.getElementById('classes');
-  container.innerHTML = '';
+    function editEvent(cls) {
+      const container = document.getElementById('classes');
+      container.innerHTML = '';
 
-  const form = document.createElement('form');
-  form.className = 'class-card';
+      const form = document.createElement('form');
+      form.className = 'class-card';
 
-  
 
-  const isNew = !cls.id;
-  const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? createEvent() : saveEvent(cls.id));
 
-  addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
-  addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
-  addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
-  addLabeledField(form, 'Location:', createInput('edit-location', cls.location));
-  addLabeledField(form, 'Host:', createInput('edit-host', cls.host || ''));
-  addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.price || 0));
-  addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.sizeLimit || 0, 'number'));
-  addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.enabled === true));
+      const isNew = !cls.id;
+      const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? createEvent() : saveEvent(cls.id));
 
-  form.appendChild(saveBtn);
-  container.appendChild(form);
-}
+      addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
+      addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
+      addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
+      addLabeledField(form, 'Location:', createInput('edit-location', cls.location));
+      addLabeledField(form, 'Host:', createInput('edit-host', cls.host || ''));
+      addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.price || 0));
+      addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.sizeLimit || 0, 'number'));
+      addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.enabled === true));
 
-function saveEvent(eventId) {
-  const updated = JSON.stringify({
-    id: eventId,
-    enabled: document.getElementById('edit-enabled').checked,
-    title: document.getElementById('edit-title').value,
-    date: new Date(document.getElementById('edit-date').value),
-    location: document.getElementById('edit-location').value,
-    host: document.getElementById('edit-host').value,
-    price: parseFloat(document.getElementById('edit-price').value),
-    sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
-    description: document.getElementById('edit-desc').value,
-  });
+      form.appendChild(saveBtn);
+      container.appendChild(form);
+    }
 
-  showSpinner();
-  google.script.run
-    .withSuccessHandler(res => {
-      hideSpinner();
-      alert("Event updated.");
-      loadEvents();
-    })
-    .withFailureHandler(err => {
-      hideSpinner();
-      alert(`Failed to update event. ${err}`);
-      console.error(err);
-    })
-    .updateEvent(updated);
-}
+    function saveEvent(eventId) {
+      const updated = JSON.stringify({
+        id: eventId,
+        enabled: document.getElementById('edit-enabled').checked,
+        title: document.getElementById('edit-title').value,
+        date: new Date(document.getElementById('edit-date').value),
+        location: document.getElementById('edit-location').value,
+        host: document.getElementById('edit-host').value,
+        price: parseFloat(document.getElementById('edit-price').value),
+        sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
+        description: document.getElementById('edit-desc').value,
+      });
 
-function createEvent() {
-  const newEvent = JSON.stringify({
-    enabled: document.getElementById('edit-enabled').checked,
-    title: document.getElementById('edit-title').value,
-    date: new Date(document.getElementById('edit-date').value),
-    location: document.getElementById('edit-location').value,
-    host: document.getElementById('edit-host').value,
-    price: parseFloat(document.getElementById('edit-price').value),
-    sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
-    description: document.getElementById('edit-desc').value,
-  });
+      showSpinner();
+      google.script.run
+        .withSuccessHandler(res => {
+          hideSpinner();
+          alert("Event updated.");
+          loadEvents();
+        })
+        .withFailureHandler(err => {
+          hideSpinner();
+          alert(`Failed to update event. ${err}`);
+          console.error(err);
+        })
+        .updateEvent(updated);
+    }
 
-  showSpinner();
-  google.script.run
-    .withSuccessHandler(res => {
-      hideSpinner();
-      alert("Event created.");
-      loadEvents();
-    })
-    .withFailureHandler(err => {
-      hideSpinner();
-      alert(`Failed to create event. ${err}`);
-      console.error(err);
-    })
-    .createEvent(newEvent);
-}
+    function createEvent() {
+      const newEvent = JSON.stringify({
+        enabled: document.getElementById('edit-enabled').checked,
+        title: document.getElementById('edit-title').value,
+        date: new Date(document.getElementById('edit-date').value),
+        location: document.getElementById('edit-location').value,
+        host: document.getElementById('edit-host').value,
+        price: parseFloat(document.getElementById('edit-price').value),
+        sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
+        description: document.getElementById('edit-desc').value,
+      });
 
-function formatDateForInput(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-}
+      showSpinner();
+      google.script.run
+        .withSuccessHandler(res => {
+          hideSpinner();
+          alert("Event created.");
+          loadEvents();
+        })
+        .withFailureHandler(err => {
+          hideSpinner();
+          alert(`Failed to create event. ${err}`);
+          console.error(err);
+        })
+        .createEvent(newEvent);
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
-    const newBtn = document.createElement('button');
-    newBtn.className = 'signup-btn';
-    newBtn.textContent = 'New Class';
-    newBtn.onclick = () => editEvent({});
-    document.querySelector('.container').prepend(newBtn);
-  }
-  showSpinner();
+    function formatDateForInput(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
+        const newBtn = document.createElement('button');
+        newBtn.className = 'signup-btn';
+        newBtn.textContent = 'New Class';
+        newBtn.onclick = () => editEvent({});
+        document.querySelector('.container').prepend(newBtn);
+      }
+      showSpinner();
       document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
       loadEvents();
     });
   </script>
 
   <div id="spinner" class="spinner hidden"></div>
-  <h5><p id="version"></p></h5>
+  <h5>
+    <p id="version"></p>
+  </h5>
 </body>
+
 </html>
