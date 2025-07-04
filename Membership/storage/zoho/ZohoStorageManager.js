@@ -89,7 +89,7 @@ class ZohoStorageManager extends StorageManager {
 
   delete(id) {
     // Implement delete logic using this.zohoAPI
-    this.zohoAPI.deleteEntity(id);
+    return this.zohoAPI.deleteEntity(this.resourceName,id);
   }
 
   getFiltered(predicate, params = {},) {

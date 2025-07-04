@@ -5,9 +5,27 @@
  * @example
  * eventManagerIntegrationTests();  
  */
-const TEST_EVENT_NAME = 'Test Event'; 
-const TEST_USER_EMAIL = 'testuser@keoweekrafters.org'; 
+const TEST_EVENT_NAME = 'Test Event';
+const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
+const eventData = {
+    date: new Date(),
+    endTime: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+    attendees: [],// 2 hours later
+    eventItem: {
+        id: '',
+        title: 'Test Event',
+        location: 'Test Location',
+        sizeLimit: 3,
+        host: { name: 'Test Host', id: '5636475000000431013' },
+        description: 'This is a test event. Do not signup !!',
+        price: 20,
+        cost: 5,
+        type: 'Class',
+        costDescription: 'Resin Supplies'
+    }
+};
 
+const eventManager = modelFactory.eventManager();
 
 function eventManagerIntegrationTests() {
     Logger.log('Starting EventManager integration tests...');
@@ -68,22 +86,11 @@ function test_addEvent() {
     const eventManager = modelFactory.eventManager();
     const calendarManager = modelFactory.calendarManager();
     try {
-        const eventData = {
-            title: 'Test Event',
-            date: new Date(),
-            location: 'Test Location',
-            sizeLimit: 10,
-            host: {name: 'Test Host', id: '5636475000000431013'},
-            description: 'This is a test event.',
-            price: 20,
-            cost: 5,
-            type: 'Class',
-            costDescription: 'Free event'
-        };
+
         const response = eventManager.addEvent(eventData);
         Logger.log(`addEvent response: ${response.message}`);
         assert('Event should be added successfully', response.success, true);
-        const event = response.data; 
+        const event = response.data;
         assert('Event ID should be returned', event.id != undefined, true);
         assert('Calendar ID should be returned', event.calendarId != undefined, true);
 
@@ -91,21 +98,59 @@ function test_addEvent() {
         const calendarEvent = calendarManager.calendar.getEventById(event.calendarId);
         assert('Calendar event should exist', calendarEvent != null, true);
         assert('Calendar event title matches', calendarEvent.getTitle(), eventData.title);
+        eventManager.deleteEvent(event);
         Logger.log('Calendar event verification passed.');
+
     } catch (error) {
         Logger.log(`addEvent failed: ${error.message}`);
     }
+}
+
+function test_add_event_item() {
+  
+    const eventManager = modelFactory.eventManager();
+    let eventItemId ; 
+    try {
+       const eventItem = eventManager.addEventItem(eventData.eventItem);
+      eventItemId = eventItemId.id; 
+      Logger.log(`addEvent response: ${eventItem}`);
+      assert('Event should be added successfully', (eventItem!=undefined), true);
+    } catch (e) {
+      Logger.log( 'Faield with: ${e.message}'); 
+    }
+     finally {
+      if (eventItemId) {
+        eventManager.deleteEventItem(eventItemId); 
+      }
+    }
+}
+
+function test_delete_event_item(eventId) {
+  
+
+    try {
+        const response = eventManager.deleteEvent(eventId);
+        const event = eventManager.getEventById(eventId); 
+        assert('Event should be deleted successfully', event===undefined, true);
+    } catch (error) {
+        Logger.log(` failed: ${error.message}`);
+    }
+}
+
+function delete_lastEventItem(eventId) {
+  const eventIdActual = eventId?eventId:'5636475000000514001'; 
+  eventManager.deleteEventItem(eventIdActual); 
 }
 
 function test_updateEvent() {
     const eventManager = modelFactory.eventManager();
     try {
         const originalResponse = eventManager.getEventList({ name: 'Test Event' });
-        const originalEvent = originalResponse.data[0]; 
+        const originalEvent = originalResponse.data[0];
         const eventId = originalEvent.id;
 
-        const updatedData = new ZohoEvent({name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
-        const response = eventManager.updateEvent( updatedData);
+        const updatedData = new ZohoEvent({ name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
+        const response = eventManager.updateEvent(updatedData);
         Logger.log(` response: ${response.message}`);
         assert('Event should be updated successfully', response.success, true);
     } catch (error) {
@@ -141,19 +186,19 @@ function test_deleteEvent() {
 }
 
 function test_when_member_signs_up_for_event__then_event_is_updated() {
-    const membershipManager = modelFactory.membershipManager(); 
-    const member = membershipManager.memberLookup(TEST_USER_EMAIL); 
-    const eventManager = modelFactory.eventManager(); 
+    const membershipManager = modelFactory.membershipManager();
+    const member = membershipManager.memberLookup(TEST_USER_EMAIL);
+    const eventManager = modelFactory.eventManager();
     assert('Found member', member != undefined, true);
 
-    const testMemberId = member.id; 
-    const eventResponse = eventManager.getEventList({name: TEST_EVENT_NAME}); 
-    assert('Event found',true, eventResponse.success != undefined && eventResponse.data  != undefined); 
+    const testMemberId = member.id;
+    const eventResponse = eventManager.getEventList({ name: TEST_EVENT_NAME });
+    assert('Event found', true, eventResponse.success != undefined && eventResponse.data != undefined);
 
-    const testEvent = eventResponse.data[0]; 
-    const testEventId = testEvent.id; 
+    const testEvent = eventResponse.data[0];
+    const testEventId = testEvent.id;
 
-    const confirmation  = eventManager.signup(testEventId, testMemberId);
+    const confirmation = eventManager.signup(testEventId, testMemberId);
 
     Logger.log(JSON.stringify(confirmation));
 }

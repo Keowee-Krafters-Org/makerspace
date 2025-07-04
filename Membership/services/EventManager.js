@@ -77,32 +77,29 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-      let eventItem = {};
-      if (eventData.eventItem && eventData.eventItem.id) {
-        eventItem = this.updateEvent(eventData);
+      let eventItem = eventData.eventItem;
+      if (eventItem && eventItem.id) {
+        eventItem = this.updateEvent(eventItem);
       } else {
-        eventItem = this.addItemEvent(eventData);
+        eventItem = this.addEventItem(eventItem);
       }
       if (!eventItem) {
         throw new Error('Failed to create event item.');
       }
-      // Add the event to the calendar
+      
       eventData.eventItem = eventItem;
+      // Add the event to the calendar
       const calendarEvent = this.addCalendarEvent(eventData);
+      return calendarEvent
 
-      return {
-        success: true,
-        message: 'Event added successfully!',
-        data: eventItem
-      };
     } catch (err) {
       console.error('Failed to create event:', err);
       return { success: false, message: 'Failed to create event.', error: err.toString() };
     }
   }
 
-  addItemEvent(eventData) {
-    const event = this.storageManager.createNew(eventData);
+  addEventItem(eventItem) {
+    const event = this.storageManager.createNew(eventItem);
     return this.storageManager.add(event);
   }
 
@@ -122,12 +119,12 @@ class EventManager {
     const eventId = updatedData.id;
     return this.storageManager.update(eventId, updatedData);
   }
-  deleteEvent(eventId) {
-    const event = this.storageManager.getById(eventId);
+  deleteEventItem(eventItemId) {
+    const event = this.storageManager.getById(eventItemId);
     if (!event) {
       return { success: false, message: 'Event not found.' };
     }
-    this.storageManager.delete(eventId);
+    const response = this.storageManager.delete(eventItemId);
     return { success: true, message: 'Event deleted successfully!' };
   }
 

@@ -167,7 +167,24 @@ function test_GetFilteredItems() {
             Logger.log(`getItemsByCustomFieldValue failed: ${error.message}`);
         }
 }
+function test_add_item() {
+  
+    const zoho = new ZohoAPI(getAuthConfig());
+    
+}
+function test_deleteTestItem() {
+  
+    const zoho = new ZohoAPI(getAuthConfig());
+    const eventResponse = zoho.get('items','', {name: 'Test Event'});
+    assert((eventResponse && eventResponse.message==='success'), "Item Found");
+    const event = eventResponse.items[0];
+    const eventId = event.item_id; 
+    const deleteResponse = zoho.deleteEntity('items', eventId);
+    assert((deleteResponse && deleteResponse.code===0), "Message Deleted"); 
+    const itemResponse = zoho.get('items', eventId); 
+    assert (itemResponse.code != 0, 'Item not found'); 
 
+}
 /**
  * Test for updating the 'Test Event' item's cf_event_description field.
  * This test finds the 'Test Event' item, updates its cf_event_description,
