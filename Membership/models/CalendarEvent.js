@@ -4,102 +4,43 @@ class CalendarEvent extends Event {
         super(eventData);
     }
 
-    set eventItem(eventItem) {
-        this.event = eventItem;
-    }
-    get eventItem() {
-        return this.event;
-    }
-
     get description() {
-        return this.event.description || '';
+        return this.eventItem.description || '';
     }
     set description(value) {
-        this.event.description = value;
+        this.eventItem.description = value;
     }
     get title() {
-        return this.event.title || '';
+        return this.eventItem.title || '';
     }
     set title(value) {
-        this.event.title = value;
+        this.eventItem.title = value;
     }
-    get date() {
-        return this.start || new Date();
-    }
-    set date(value) {
-        this.start = new Date(value);
-    }
-
     get price() {
-        return this.event.price || 0;
+        return this.eventItem.price || 0;
     }
     set price(value) {
-        this.event.price = value;
+        this.eventItem.price = value;
     }
     get cost() {
-        return this.event.cost || 0;
+        return this.eventItem.cost || 0;
     }
     set cost(value) {
-        this.event.cost = value;
+        this.eventItem.cost = value;
     }
     get costDescription() {
-        return this.event.costDescription || '';
+        return this.eventItem.costDescription || '';
     }
     set costDescription(value) {
-        this.event.costDescription = value;
+        this.eventItem.costDescription = value;
     }
     get location() {
-        return this.event.location || '';
+        return this.eventItem.location || '';
     }
     set location(value) {
-        this.event.location = value;
-    } 
-    get attendees() {
-        return this.attendees || [];
-    }   
-    set attendees(value) {
-        if (Array.isArray(value)) {
-            this.attendees = value;
-        } else if (typeof value === 'string') {
-            this.attendees = value.split(',').map(email => email.trim());
-        } else {
-            throw new Error('Attendees must be an array or a comma-separated string');
-        }
+        this.eventItem.location = value;
     }
 
-    get creator() {
-        return this.creator || null;
-    }
-    set creator(value) {
-        if (typeof value === 'string') {
-            this.creator = { email: value };
-        } else if (value && typeof value === 'object') {
-            this.creator = value;
-        } else {
-            throw new Error('Creator must be a string or an object');
-        }
-    }
-    get status() {
-        return this.status || 'confirmed'; // Default status
-    }
-    set status(value) {
-        const validStatuses = ['confirmed', 'tentative', 'cancelled'];
-        if (validStatuses.includes(value)) {
-            this.status = value;
-        } else {
-            throw new Error(`Invalid status: ${value}. Valid statuses are: ${validStatuses.join(', ')}`);
-        }
-    }
-    get id() {
-        return this.id || null; // Ensure id is always defined
-    }
-    set id(value) {
-        if (typeof value === 'string' || typeof value === 'number') {
-            this.id = String(value);
-        } else {
-            throw new Error('ID must be a string or a number');
-        }
-    }
     toObject() {
         return {
             id: this.id,
@@ -113,12 +54,12 @@ class CalendarEvent extends Event {
         };
     }
 
-    static getFromRecordMap() {
+    static getToRecordMap() {
         return {
             id: 'id',
             title: 'title',
-            description: 'description',
-            start: 'start',
+            _description: 'description',
+            date: 'start',
             _end: 'end',
             location: 'location',
             _attendees: 'guests',
@@ -127,23 +68,35 @@ class CalendarEvent extends Event {
             _eventItemId: 'eventItemId'
         };
     }
+
     get eventItemId() {
         const match = this.description?.match(/[?&]itemId=([a-zA-Z0-9_-]+)/);
         return match ? match[1] : null;
     }
 
-    static fromRecord(record) {
-        const data = super.convertRecordToData(record, CalendarEvent.getFromRecordMap());
+    static fromRecord(googleEvent) {
+
+        const record = {
+            id: googleEvent.getId(),
+            title: googleEvent.getTitle(),
+            description: googleEvent.getDescription(),
+            start: googleEvent.getStartTime(),
+            end: googleEvent.getEndTime(),
+            location: googleEvent.getLocation(),
+            attendees: googleEvent.getGuestList().map(g => g.getEmail()),
+            creator: googleEvent.getCreators()?.[0] || '',
+            visibility: googleEvent.getVisibility(), 
+            
+        };
+        const data = {eventItem:{},...super.convertRecordToData(record, CalendarEvent.getFromRecordMap())};
         // Create a new CalendarEvent instance from the record data
         if (record.start) {
-            data.start = new Date(record.start);
+            data.date = new Date(record.start);
         }
-        if (record._end) {
+        if (data._end) {
             data.duration = (new Date(record._end) - data.start) / (1000 * 60 * 60); // duration in hours
         }
-        if (record.attendees) {
-            data.attendees = this._attendees.split(',').map(email => email.trim());
-        }
+        
         return new CalendarEvent(data);
     }
 
@@ -151,6 +104,24 @@ class CalendarEvent extends Event {
     toRecord() {
         this._attendees = this.attendees.join(', '); // Convert attendees array to a comma-separated string
         this._eventItemId = this.eventItem.id; // Store eventItemId directly
+        const start = this.date;
+        const durationHours = Number(this.eventItem.duration) || 2;
+        this._end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+        this._description = this.updateDescription(this.eventItem.description, this.eventItem.id)
         return super.convertDataToRecord(CalendarEvent.getToRecordMap());
     }
+
+    /**
+ * Creates the eventItem  link  for the event
+ * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
+ * @returns {CalendarEvent}
+ */
+    updateDescription(description, eventItemId) {
+
+        // Update the description with the event item link
+        const updatedDescription = `${description}\nView Details: ${SharedConfig.baseUrl}/event?eventId=${eventItemId}`;
+        return updatedDescription;
+
+    }
+
 }

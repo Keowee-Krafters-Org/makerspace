@@ -14,28 +14,28 @@ class CalendarManager extends StorageManager {
 
   /**
    * Creates a calendar event and returns the calendar event ID
-   * @param {Object} eventData 
+   * @param {Object} event 
    * @returns {string} calendarEventId
    */
-  add(eventData) {
-    const start = eventData.start;
-    const durationHours = Number(eventData.duration) || 2;
-    const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  add(calendarEvent) {
 
-    const calendarEvent = this.calendar.createEvent(
-      eventData.title || 'Untitled Class',
-      start,
-      end,
+    const calendarRecord = calendarEvent.toRecord(); 
+    const calendarEventRecord = this.calendar.createEvent( 
+      calendarRecord.title || 'Untitled Class',
+      calendarRecord.start,
+      calendarRecord.end,
       {
-        description: updateDescription(calendarEvent.description, calendarEvent.eventItemId),
-        location: eventData.location || '',
-        guests: eventData.attendees,
+        description: calendarRecord.description,
+        location: calendarRecord.location,
+        guests: calendarRecord.attendees,
       }
     );
-
-    return new CalendarEvent(calendarEvent);
+    return CalendarEvent.fromRecord(calendarEventRecord);
   }
 
+  create(eventData) {
+    return CalendarEvent.createNew(eventData); 
+  }
   /**
    * Updates an existing calendar event using a CalendarEvent object
    * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
@@ -117,4 +117,36 @@ class CalendarManager extends StorageManager {
     const events = this.calendar.getEvents(start, end);
     return events.map(event => new CalendarEvent(event));
   }
-}     
+
+  /**
+   * Complies with StorageManager.getById
+   */
+  getById(id) {
+    return this.getEvent(id);
+  }
+
+  /**
+   * Complies with StorageManager.getAll
+   */
+  getAll(params = {}) {
+    return this.getUpcomingEvents(365); // or configurable range
+  }
+
+  /**
+   * Complies with StorageManager.getFiltered
+   */
+  getFiltered(filterFn) {
+    const all = this.getAll();
+    return all.filter(filterFn);
+  }
+
+  /**
+   * Overload to match StorageManager.update(id, object)
+   */
+  updateById(id, calendarEvent) {
+    if (!calendarEvent || id !== calendarEvent.id) {
+      throw new Error('Invalid calendar event or mismatched ID');
+    }
+    return this.update(calendarEvent);
+  }
+}

@@ -11,10 +11,19 @@ class EventManager {
     this.membershipManager = membershipManager;
   }
 
-  getEventList(params = {}) {
+  getEventItemList(params = {}) {
     const result = this.storageManager.getAll(params);
-    result.data = result.data.map(e => this.enrichWithCalendarData(e));
     return result;
+  }
+
+  getEventItemById(id) {
+    const result = this.storageManager.getById(id);
+    return result;
+  }
+
+  getEventList(params = {}) {
+    const calendarEvents = this.calendarManager.getAll(params);
+    return this.enrichCalendarEvents(calendarEvents);
   }
 
   getUpcomingEvents(params = {}) {
@@ -32,38 +41,43 @@ class EventManager {
    * @returns  {Array} An array of enriched calendar events.
    */
   enrichCalendarEvents(calendarEvents) {
-    const upcomingEvents = calendarEvents.map(ce => {
-      const eventItem = this.storageManager.getById(ce.eventItemId());
-      if (!response || !response.data || response.data.length === 0) {
+    const enriched = calendarEvents.map(ce => {
+      const result = this.storageManager.getById(ce.eventItemId);
+      if (!result || !result.data) {
         return null;
       }
-      ce.eventItem = eventItem;
+      ce.eventItem = result.data;
       return ce;
     });
-    return upcomingEvents.filter(e => e !== null);
+    return enriched.filter(e => e !== null);
   }
   getPastEvents() {
-    const response = this.storageManager.getFiltered(event => event.isPast());
-    response.data = response.data.map(e => this.enrichWithCalendarData(e));
+    const response = this.calendarManager.getFiltered(event => event.isPast());
+    response.data = response.data.map(e => this.enrichCalendarEvents(e));
     return response;
   }
   getAvailableEvents() {
-    const response = this.storageManager.getFiltered(event => event.isAvailable());
-    response.data = response.data.map(e => this.enrichWithCalendarData(e));
-    return response;
+    const calendarEvents = this.calendarManager.getAvailableEvents();
+    return this.enrichCalendarEvents(calendarEvents);
   }
+
   getEventById(eventId) {
-    const result = this.storageManager.getById(eventId);
+    const result = this.calendarManager.getById(eventId);
     if (result?.data) {
-      result.data = this.enrichWithCalendarData(result.data);
+      result.data = result.data.map(e => this.enrichCalendarEvents(e));
     }
     return result;
   }
   getEventsByHost(host) {
-    return this.storageManager.getFiltered(event => event.host === host);
+    const calendarEvents = this.calendarManager.getFiltered(event => {
+      const guests = event.attendees || [];
+      return guests.length > 0 && guests[0] === host;
+    });
+    return this.enrichCalendarEvents(calendarEvents);
   }
   getEventsByDate(date) {
-    return this.storageManager.getFiltered(event => event.date.toDateString() === new Date(date).toDateString());
+    const calendarEvents = this.calendarManager.getEventsByDate(date);
+    return this.enrichCalendarEvents(calendarEvents);
   }
   getEventsByLocation(location) {
     return this.storageManager.getFiltered(event => event.location === location);
@@ -72,7 +86,8 @@ class EventManager {
     return this.storageManager.getFiltered(event => event.sizeLimit === sizeLimit);
   }
   getEventsByAttendee(attendeeEmail) {
-    return this.storageManager.getFiltered(event => event.attendees.includes(attendeeEmail));
+    const calendarEvents = this.calendarManager.getEventsByAttendee(attendeeEmail);
+    return this.enrichCalendarEvents(calendarEvents);
   }
 
   addEvent(eventData) {
@@ -89,9 +104,10 @@ class EventManager {
       
       eventData.eventItem = eventItem;
       // Add the event to the calendar
-      const calendarEvent = this.addCalendarEvent(eventData);
-      return calendarEvent
-
+      const calendarEvent = this.calendarManager.create(eventData); 
+      const newCalendarEvent = this.addCalendarEvent(calendarEvent);
+      newCalendarEvent.eventItem = eventItem; 
+      return {success: true, data:newCalendarEvent}; 
     } catch (err) {
       console.error('Failed to create event:', err);
       return { success: false, message: 'Failed to create event.', error: err.toString() };
@@ -104,20 +120,21 @@ class EventManager {
   }
 
   addCalendarEvent(calendarEvent) {
-    return this.calendarManager.createEvent(calendarEvent);
+    return this.calendarManager.add(calendarEvent);
   }
 
 
   updateEvent(calendarEvent) {
     try {
-
       this.calendarManager.update(calendarEvent);
+      if (calendarEvent.eventItem) {
+        return this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
+      }
+      return { success: true };
     } catch (err) {
       console.error('Failed to update calendar event:', err);
       return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
     }
-    const eventId = updatedData.id;
-    return this.storageManager.update(eventId, updatedData);
   }
   deleteEventItem(eventItemId) {
     const event = this.storageManager.getById(eventItemId);
@@ -128,8 +145,13 @@ class EventManager {
     return { success: true, message: 'Event deleted successfully!' };
   }
 
+  deleteEvent(event) {
+    const eventItemId = event.eventItem.id; 
+    eventManager.deleteEventItem(eventItemId); 
+    this.calendarManager.delete(event.id); 
+  }
   createEvent(data = {}) {
-    return this.storageManager.create(data);
+    return this.calendarManager.create(data);
   }
 
   /**

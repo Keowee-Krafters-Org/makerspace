@@ -54,7 +54,7 @@ class ZohoStorageManager extends StorageManager {
     // This would typically involve making API calls to Zoho services
     delete entity.id;
     const entityData = entity.toRecord();
-    const response = this.zohoAPI.post(this.clazz.getResourceNamePlural(), entityData);
+    const response = this.zohoAPI.createEntity(this.clazz.getResourceNamePlural(), entityData);
     return this.clazz.fromRecord(response[this.resourceNameSingular]);
   }
 

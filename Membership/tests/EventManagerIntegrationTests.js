@@ -9,19 +9,21 @@ const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
     date: new Date(),
-    endTime: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
-    attendees: [],// 2 hours later
+    attendees: [],
     eventItem: {
         id: '',
         title: 'Test Event',
-        location: 'Test Location',
-        sizeLimit: 3,
-        host: { name: 'Test Host', id: '5636475000000431013' },
+        location: 'MakeKeowee, Woodshop, 4 Eagle Ln, Salem, SC 29676',
+        sizeLimit: '3',
+        host: { name: 'Test Host', id: '5636475000000295003' },
         description: 'This is a test event. Do not signup !!',
         price: 20,
         cost: 5,
-        type: 'Class',
-        costDescription: 'Resin Supplies'
+        duration: 4,
+        type: 'Event',
+        eventType: 'Class',
+        costDescription: 'Resin Supplies',
+        enabled: true
     }
 };
 
@@ -85,24 +87,28 @@ function test_getAvailableEvents() {
 function test_addEvent() {
     const eventManager = modelFactory.eventManager();
     const calendarManager = modelFactory.calendarManager();
+    let eventId; 
+    let event; 
     try {
 
         const response = eventManager.addEvent(eventData);
         Logger.log(`addEvent response: ${response.message}`);
         assert('Event should be added successfully', response.success, true);
-        const event = response.data;
+        event = response.data;
+
         assert('Event ID should be returned', event.id != undefined, true);
-        assert('Calendar ID should be returned', event.calendarId != undefined, true);
+        assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
 
         // Validate the calendar event was created
-        const calendarEvent = calendarManager.calendar.getEventById(event.calendarId);
+        const calendarEvent = calendarManager.calendar.getEventById(event.id);
         assert('Calendar event should exist', calendarEvent != null, true);
-        assert('Calendar event title matches', calendarEvent.getTitle(), eventData.title);
-        eventManager.deleteEvent(event);
+        assert('Calendar event title matches', calendarEvent.getTitle(), eventData.eventItem.title);
         Logger.log('Calendar event verification passed.');
 
     } catch (error) {
         Logger.log(`addEvent failed: ${error.message}`);
+    } finally {
+      eventManager.deleteEvent(event);
     }
 }
 
@@ -112,11 +118,15 @@ function test_add_event_item() {
     let eventItemId ; 
     try {
        const eventItem = eventManager.addEventItem(eventData.eventItem);
-      eventItemId = eventItemId.id; 
+      eventItemId = eventItem.id; 
       Logger.log(`addEvent response: ${eventItem}`);
       assert('Event should be added successfully', (eventItem!=undefined), true);
+      const createdEventResponse = eventManager.getEventItemById(eventItemId); 
+      assert ('Event found: ', (createdEventResponse && createdEventResponse.data && createdEventResponse.data.id != undefined),true);
+      const  createdEvent = createdEventResponse.data;
+      assert ('Event Description saved: ', createdEvent.description, eventData.eventItem.description  ); 
     } catch (e) {
-      Logger.log( 'Faield with: ${e.message}'); 
+      Logger.log( `Failed with: ${e.message}`); 
     }
      finally {
       if (eventItemId) {
@@ -129,7 +139,7 @@ function test_delete_event_item(eventId) {
   
 
     try {
-        const response = eventManager.deleteEvent(eventId);
+        const response = eventManager.deleteEventItem(eventId);
         const event = eventManager.getEventById(eventId); 
         assert('Event should be deleted successfully', event===undefined, true);
     } catch (error) {
@@ -137,8 +147,10 @@ function test_delete_event_item(eventId) {
     }
 }
 
-function delete_lastEventItem(eventId) {
-  const eventIdActual = eventId?eventId:'5636475000000514001'; 
+function delete_testEventItem(eventId) {
+  const eventsResponse = eventManager.getEventItemList({title: 'Test Event'}); 
+  assert('Event Exists',(eventsResponse && eventsResponse.data.length > 0), true); 
+  const eventIdActual = eventsResponse.data[0].id;
   eventManager.deleteEventItem(eventIdActual); 
 }
 

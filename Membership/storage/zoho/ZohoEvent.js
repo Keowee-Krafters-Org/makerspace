@@ -48,11 +48,12 @@ class ZohoEvent extends Event {
 
   toRecord() {
     this._attendees = JSON.stringify(this.attendees);
-
+  
     // Flatten the host record to id only
     this._hostId = this.host.id;
-
-    return this.convertDataToRecord(ZohoEvent.getToRecordMap())
+    const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
+    record.product_type = 'service';
+    return record; 
   }
 
   static createNew(data = {}) {
