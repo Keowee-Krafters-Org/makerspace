@@ -94,3 +94,18 @@ function getEventRooms() {
   const resources = eventManager.getEventRooms();
   return JSON.stringify(resources);
 }
+
+function getEventItemList() {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  const items = eventManager.getEventItemList();
+  return JSON.stringify(items);
+} 
+
+function getEventItemById(eventItemId) {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  const item = eventManager.getEventItemById(eventItemId);
+  return JSON.stringify(item);
+}
+

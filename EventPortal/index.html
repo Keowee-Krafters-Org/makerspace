@@ -152,6 +152,16 @@
 </head>
 
 <body>
+  <div class="container">
+    <h1>MakeKeowee Classes</h1>
+    <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
+    <div id="classes" class="classes-grid"></div>
+  </div>
+  <div id="spinner" class="spinner hidden"></div>
+  <h5>
+    <p id="version"></p>
+  </h5>
+
   <script type="application/json" id="member-data">
     <?!= JSON.stringify(member) ?>
   </script>
@@ -164,15 +174,7 @@
     const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
   </script>
 
-  <div class="container">
-    <h1>MakeKeowee Classes</h1>
-    <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
-    <div id="classes" class="classes-grid"></div>
-  </div>
-  <div id="spinner" class="spinner hidden"></div>
-  <h5>
-    <p id="version"></p>
-  </h5>
+
   <script>
 
     // Admin-only: New Class button
@@ -395,14 +397,41 @@
       const isNew = !cls.id;
       const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? createEvent() : saveEvent(cls.id));
 
+      // --- Event Item Dropdown at the top ---
+      const eventItemFieldContainer = document.createElement('div');
+      eventItemFieldContainer.id = 'event-item-field-container';
+      form.appendChild(eventItemFieldContainer);
+
+      // Fetch event items from backend and populate the Event Item dropdown
+      google.script.run.withSuccessHandler(function(response) {
+        // Handle response data
+        if (typeof response === 'string') {
+          try {
+            response = JSON.parse(response);
+          } catch (e) {
+            response = { data: [] }; // Fallback to empty array if parsing fails
+          }
+        } 
+        let itemList = response.data || [];
+        
+        // Assume each item has id and title
+        const dropdown = createDropdown(
+          'edit-event-item',
+          itemList.map(i => ({ id: i.id, name: i.title })),
+          cls.eventItemId || ''
+        );
+        eventItemFieldContainer.innerHTML = '';
+        addLabeledField(eventItemFieldContainer, 'Event Item:', dropdown);
+      }).getEventItemList();
+
+      // --- Rest of the fields ---
       addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
       addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
       addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
+
       // Placeholder for Location dropdown (replace the existing location input)
       const locationFieldContainer = document.createElement('div');
       locationFieldContainer.id = 'location-field-container';
-      // Remove or comment out the line below if you want to use the dropdown instead of a text input:
-      // addLabeledField(form, 'Location:', createInput('edit-location', cls.location));
       form.appendChild(locationFieldContainer);
 
       // Fetch calendar resources from backend and populate the Location dropdown
@@ -439,9 +468,6 @@
 
       // Fetch instructors from backend and populate the Host dropdown
       google.script.run.withSuccessHandler(function (instructors) {
-
-        // Parse if instructors is a JSON string
-
         let instructorList = instructors;
         if (typeof instructors === 'string') {
           try {
@@ -451,7 +477,6 @@
           }
         }
         const dropdown = createDropdown('edit-host', instructorList, cls.host || '');
-        // Replace the placeholder with the labeled dropdown
         hostFieldContainer.innerHTML = '';
         addLabeledField(hostFieldContainer, 'Host:', dropdown);
         hideSpinner();
@@ -478,6 +503,7 @@
         price: parseFloat(document.getElementById('edit-price').value),
         sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
         description: document.getElementById('edit-desc').value,
+        eventItemId: document.getElementById('edit-event-item').value,
       });
 
       showSpinner();
@@ -513,6 +539,7 @@
         price: parseFloat(document.getElementById('edit-price').value),
         sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
         description: document.getElementById('edit-desc').value,
+        eventItemId: document.getElementById('edit-event-item').value,
       });
 
       showSpinner();
