@@ -188,4 +188,20 @@ class MembershipManager {
   getHosts() {
     return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.host); 
   }
+
+  getInstructors() {
+    // Use ZohoStorageManager's getFiltered to find members with level > Instructor
+    const instructorLevel = SharedConfig.levels.Instructor;
+    const response = this.storageManager.getFiltered(
+      member => {
+        const memberLevel = SharedConfig.levels[member.registration.level]; 
+        // Ensure level is a number for comparison
+        return memberLevel > instructorLevel;
+      }, {per_page:200}
+    );
+    // Return only the data array (list of instructors)
+    return response.data;
+  }
+
+  
 }

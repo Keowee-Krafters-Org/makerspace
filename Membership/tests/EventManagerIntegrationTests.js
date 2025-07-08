@@ -214,3 +214,21 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
 
     Logger.log(JSON.stringify(confirmation));
 }
+
+function test_getEventRooms() {
+    const eventManager = modelFactory.eventManager();
+    try {
+        const rooms = eventManager.getEventRooms();
+        Logger.log('getEventRooms returned: ' + JSON.stringify(rooms));
+        assert('Event rooms should be an array', Array.isArray(rooms), true);
+        assert('At least one event room returned', rooms.length > 0, true);
+        // Optionally, check that each room has expected properties
+        rooms.forEach((room, idx) => {
+            assert(`Room ${idx} has id`, typeof room.id !== 'undefined', true);
+            assert(`Room ${idx} has name`, typeof room.name !== 'undefined', true);
+            assert(`Room ${idx} has email`, typeof room.email !== 'undefined', true);
+        });
+    } catch (error) {
+        Logger.log(`getEventRooms failed: ${error.message}`);
+    }
+}

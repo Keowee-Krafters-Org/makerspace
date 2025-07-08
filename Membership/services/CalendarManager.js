@@ -149,4 +149,26 @@ class CalendarManager extends StorageManager {
     }
     return this.update(calendarEvent);
   }
+
+  /**
+   * Returns an array of Google Calendar resources (rooms, equipment, etc.)
+   * Requires AdminDirectory advanced service to be enabled and admin privileges.
+   * @returns {Array} Array of resource objects: { id, name, email }
+   */
+  
+  getCalendarResources() {
+    // 'my_customer' works for most Google Workspace domains
+    const customerId = 'my_customer';
+    try {
+      const resources = AdminDirectory.Resources.Calendars.list(customerId).items || [];
+      return resources.map(resource => ({
+        id: resource.resourceId,
+        name: resource.resourceName,
+        email: resource.resourceEmail
+      }));
+    } catch (e) {
+      Logger.log('Error fetching calendar resources: ' + e);
+      return [];
+    }
+  }
 }

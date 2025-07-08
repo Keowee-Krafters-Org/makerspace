@@ -8,6 +8,6 @@ function getConfig() {
 }
 
 config = {
-  version: 'SNAPSHOT-0.1.82',
+  version: 'SNAPSHOT-0.1.98',
   deploymentId: 'AKfycbxJ-RojAvSwumV8Gebs-0yA6jK_DLPFobfeZOy8ChvD5YBaaQDTp6Zv54vtg2e9NEjPPQ'
 }

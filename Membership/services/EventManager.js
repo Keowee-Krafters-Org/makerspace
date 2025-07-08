@@ -206,4 +206,8 @@ class EventManager {
     }
     return event;
   }
+
+ getEventRooms() {
+  return this.calendarManager.getCalendarResources();
+}
 }

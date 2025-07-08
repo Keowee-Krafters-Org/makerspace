@@ -40,7 +40,8 @@ class ZohoStorageManager extends StorageManager {
     const toRecordMap = this.clazz.getToRecordMap();
     const zohoParams = {};
     Object.entries(params).forEach(([key, value]) => {
-      zohoParams[toRecordMap[key]] = value;
+      const zohoKey = toRecordMap[key]
+      zohoParams[zohoKey?zohoKey:key] = value;
     });
     return zohoParams;
   }

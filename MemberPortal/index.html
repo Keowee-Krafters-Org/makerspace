@@ -76,6 +76,13 @@
   <script>
     // Main application logic for the member portal dashboard
 
+
+    const isEmbedded = window.self !== window.top;
+    if (isEmbedded) {
+      console.log("Running inside Google Sites iframe");
+      // You could hide logout button or shrink UI
+    }
+
     function showSpinner() {
       document.getElementById('spinner').style.display = 'block';
     }
@@ -138,7 +145,8 @@
             const registrationUrl = buildPrefilledFormUrl(config.forms.registration, member);
             content += `<p>You're almost done! Please complete your registration below.</p>
               <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p>`;
-            content += `AND then <p> <a href="${loginUrl}>Refresh the page to continue"</a></p>`;
+            content += `AND then <p><a href="${loginUrl}" target="_blank">Refresh the page to continue</a></p>
+`;
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
             const levelNumber = getLevelNumber(config, member.registration.level);
@@ -247,7 +255,7 @@
         if (response.redirectToForm) {
           const map = response.entryMap;
           const url = response.formUrl + `?${map.email}=${encodeURIComponent(currentEmail)}`;
-          window.location.href = url;
+          window.open(url, '_blank');
         } else {
           const member = response.data;
           renderDashboard(member);
@@ -300,9 +308,9 @@
     /**
      * Convert the level tet to the equivelent number
      */
-    function getLevelNumber(config,levelString) {
+    function getLevelNumber(config, levelString) {
       return config.levels[levelString];
-      
+
     }
     renderDashboard({ login: { status: 'UNVERIFIED' } });
   </script>

@@ -107,6 +107,14 @@
     .class-card label {
       font-weight: bold;
       color: #333;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .class-card select,
+    .class-card input,
+    .class-card textarea {
+      margin-bottom: 16px;
     }
 
     .class-card input[type="text"],
@@ -118,6 +126,17 @@
       border-radius: 6px;
       font-size: 1em;
       width: 100%;
+    }
+
+    .class-card select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1em;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 0;
+      /* Remove extra spacing if needed */
     }
 
     .class-card textarea {
@@ -134,18 +153,15 @@
 
 <body>
   <script type="application/json" id="member-data">
-  <?!= JSON.stringify(member) ?>
-</script>
-<script type="application/json" id="shared-config">
-  <?!= JSON.stringify(sharedConfig) ?>
-</script>
+    <?!= JSON.stringify(member) ?>
+  </script>
+  <script type="application/json" id="shared-config">
+    <?!= JSON.stringify(sharedConfig) ?>
+  </script>
   <script>
     const currentMember = JSON.parse(document.getElementById('member-data').textContent);
-    console.log("Injected member:", currentMember);
-    const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
-    console.log("Config:", sharedConfig); 
     window.currentMemberId = currentMember.id;
-    window.sharedConfig = sharedConfig; 
+    const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
   </script>
 
   <div class="container">
@@ -153,8 +169,31 @@
     <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
     <div id="classes" class="classes-grid"></div>
   </div>
-
+  <div id="spinner" class="spinner hidden"></div>
+  <h5>
+    <p id="version"></p>
+  </h5>
   <script>
+
+    // Admin-only: New Class button
+    if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
+      const newBtn = document.createElement('button');
+      newBtn.className = 'signup-btn';
+      newBtn.textContent = 'New Class';
+      newBtn.onclick = () => editEvent({});
+      document.querySelector('.container').prepend(newBtn);
+    }
+
+    // Display member name
+    document.getElementById('memberName').textContent =
+      `${currentMember.firstName} ${currentMember.lastName}`;
+
+    // Show version if available
+    if (sharedConfig.version?.eventPortal) {
+      document.getElementById('version').textContent = `Version: ${sharedConfig.version.eventPortal}`;
+    }
+
+    loadEvents();
 
     function showSpinner() {
       document.getElementById('spinner').classList.remove('hidden');
@@ -235,14 +274,10 @@
         <div class="class-info"><strong>Price:</strong> $${Number(cls.price).toFixed(2)}</div>
         <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
         <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
-        <div class="class-info"><strong>Instructor:</strong> ${cls.host.name}</div>
+        <div class="class-info"><strong>Instructor:</strong> ${cls.host?.name || cls.host || ''}</div>
         <div class="class-info"><strong>Max Attendees:</strong> ${cls.sizeLimit}</div>
         <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
       `;
-    }
-
-    function getCurrentMemberId() {
-      return window.currentMemberId || '';
     }
 
     function signup(classId, memberId) {
@@ -271,17 +306,18 @@
     }
 
     function loadEvents() {
-
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         showSpinner();
-
         google.script.run.withSuccessHandler(res => {
           const response = JSON.parse(res);
-          const classes = response.data;
-          renderClasses(classes);
+          if (response.success !== true) {
+            document.getElementById('classes').innerHTML = `<p>Error loading classes: ${response.error || 'Unknown error.'}</p>`;
+            hideSpinner();
+            return;
+          }
+          renderClasses(response.data);
           hideSpinner();
         }).getEventList();
-
       } else {
         document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
         hideSpinner();
@@ -333,14 +369,28 @@
       return button;
     }
 
+    function createDropdown(id, options, selectedValue = '') {
+      const select = document.createElement('select');
+      select.id = id;
+      options.forEach(opt => {
+        const value = typeof opt === 'object' ? (opt.id || opt.name) : opt;
+        const label = typeof opt === 'object' ? opt.name : opt;
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        if (value === selectedValue) option.selected = true;
+        select.appendChild(option);
+      });
+      return select;
+    }
+
     function editEvent(cls) {
+      showSpinner();
       const container = document.getElementById('classes');
       container.innerHTML = '';
 
       const form = document.createElement('form');
       form.className = 'class-card';
-
-
 
       const isNew = !cls.id;
       const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? createEvent() : saveEvent(cls.id));
@@ -348,17 +398,76 @@
       addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
       addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
       addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
-      addLabeledField(form, 'Location:', createInput('edit-location', cls.location));
-      addLabeledField(form, 'Host:', createInput('edit-host', cls.host || ''));
+      // Placeholder for Location dropdown (replace the existing location input)
+      const locationFieldContainer = document.createElement('div');
+      locationFieldContainer.id = 'location-field-container';
+      // Remove or comment out the line below if you want to use the dropdown instead of a text input:
+      // addLabeledField(form, 'Location:', createInput('edit-location', cls.location));
+      form.appendChild(locationFieldContainer);
+
+      // Fetch calendar resources from backend and populate the Location dropdown
+      google.script.run.withSuccessHandler(function (resources) {
+        let resourceList = resources;
+        if (typeof resources === 'string') {
+          try {
+            resourceList = JSON.parse(resources);
+          } catch (e) {
+            resourceList = [];
+          }
+        }
+        // Use resource name for display, resource email as value
+        const dropdown = createDropdown(
+          'edit-location',
+          resourceList.map(r => ({ id: r.email, name: r.name })),
+          cls.location || ''
+        );
+        locationFieldContainer.innerHTML = '';
+        addLabeledField(locationFieldContainer, 'Location:', dropdown);
+      }).getEventRooms();
+
+      // Placeholder for Host dropdown
+      const hostFieldContainer = document.createElement('div');
+      hostFieldContainer.id = 'host-field-container';
+      form.appendChild(hostFieldContainer);
+
       addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.price || 0));
       addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.sizeLimit || 0, 'number'));
       addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.enabled === true));
 
       form.appendChild(saveBtn);
       container.appendChild(form);
+
+      // Fetch instructors from backend and populate the Host dropdown
+      google.script.run.withSuccessHandler(function (instructors) {
+
+        // Parse if instructors is a JSON string
+
+        let instructorList = instructors;
+        if (typeof instructors === 'string') {
+          try {
+            instructorList = JSON.parse(instructors);
+          } catch (e) {
+            instructorList = [];
+          }
+        }
+        const dropdown = createDropdown('edit-host', instructorList, cls.host || '');
+        // Replace the placeholder with the labeled dropdown
+        hostFieldContainer.innerHTML = '';
+        addLabeledField(hostFieldContainer, 'Host:', dropdown);
+        hideSpinner();
+      }).getInstructors();
     }
 
     function saveEvent(eventId) {
+      const requiredFields = ['edit-title', 'edit-date', 'edit-location'];
+      for (const id of requiredFields) {
+        const field = document.getElementById(id);
+        if (!field.value.trim()) {
+          alert(`${field.previousSibling.textContent.replace(':', '')} is required.`);
+          return;
+        }
+      }
+
       const updated = JSON.stringify({
         id: eventId,
         enabled: document.getElementById('edit-enabled').checked,
@@ -373,7 +482,7 @@
 
       showSpinner();
       google.script.run
-        .withSuccessHandler(res => {
+        .withSuccessHandler(() => {
           hideSpinner();
           alert("Event updated.");
           loadEvents();
@@ -381,12 +490,20 @@
         .withFailureHandler(err => {
           hideSpinner();
           alert(`Failed to update event. ${err}`);
-          console.error(err);
         })
         .updateEvent(updated);
     }
 
     function createEvent() {
+      const requiredFields = ['edit-title', 'edit-date', 'edit-location'];
+      for (const id of requiredFields) {
+        const field = document.getElementById(id);
+        if (!field.value.trim()) {
+          alert(`${field.previousSibling.textContent.replace(':', '')} is required.`);
+          return;
+        }
+      }
+
       const newEvent = JSON.stringify({
         enabled: document.getElementById('edit-enabled').checked,
         title: document.getElementById('edit-title').value,
@@ -400,7 +517,7 @@
 
       showSpinner();
       google.script.run
-        .withSuccessHandler(res => {
+        .withSuccessHandler(() => {
           hideSpinner();
           alert("Event created.");
           loadEvents();
@@ -408,7 +525,6 @@
         .withFailureHandler(err => {
           hideSpinner();
           alert(`Failed to create event. ${err}`);
-          console.error(err);
         })
         .createEvent(newEvent);
     }
@@ -423,25 +539,9 @@
       const min = String(d.getMinutes()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
-        const newBtn = document.createElement('button');
-        newBtn.className = 'signup-btn';
-        newBtn.textContent = 'New Class';
-        newBtn.onclick = () => editEvent({});
-        document.querySelector('.container').prepend(newBtn);
-      }
-      showSpinner();
-      document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
-      loadEvents();
-    });
   </script>
 
-  <div id="spinner" class="spinner hidden"></div>
-  <h5>
-    <p id="version"></p>
-  </h5>
+
 </body>
 
 </html>

@@ -1,4 +1,3 @@
-
 /** 
  * Assert block for tests
  */
@@ -213,6 +212,20 @@ function test_whenMemberIsCreatedFromData_thenAllFieldsAreThere(){
   assert('Login Status', testMember.status, newMember.login.status); 
 }
 
+function test_getInstructors_returns_instructors() {
+  const instructors = membershipManager.getInstructors();
+  Logger.log('Instructors:', instructors);
+  // Check that instructors is an array and not empty
+  assert('Instructors is array', true, Array.isArray(instructors));
+  assert('At least one instructor found', true, instructors.length > 0);
+  // Optionally, check that each instructor has expected properties
+  instructors.forEach((inst, idx) => {
+    assert(`Instructor ${idx} has level`, true, typeof inst.registration.level !== 'undefined');
+    assert(`Instructor ${idx} has emailAddress`, true, typeof inst.emailAddress !== 'undefined');
+  });
+}
+
+// Add to runAllTests
 function runAllTests() {
   test_if_member_registers__then_member_data_is_complete();
   test_if_system_sends_email_then_user_receives_email();
@@ -225,7 +238,8 @@ function runAllTests() {
   test_getAllMembers_returns_members();
   test_whenAuthenticationIsRequested_thenAuthenticationIsVerified();
   test_whenMemberIsUpdated_thenMemberData_is_changed();
-  test_whenMemberIsCreatedFromData_thenAllFieldsAreThere(); 
+  test_whenMemberIsCreatedFromData_thenAllFieldsAreThere();
+  test_getInstructors_returns_instructors(); // <-- Add this line
 }
 function runTests() {
   try {
