@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..48',
+  version: 'SNAPSHOT-..50',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 

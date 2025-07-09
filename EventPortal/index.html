@@ -402,6 +402,8 @@
       eventItemFieldContainer.id = 'event-item-field-container';
       form.appendChild(eventItemFieldContainer);
 
+      let eventItemsCache = []; // Store event items for lookup
+
       // Fetch event items from backend and populate the Event Item dropdown
       google.script.run.withSuccessHandler(function(response) {
         // Handle response data
@@ -413,15 +415,39 @@
           }
         } 
         let itemList = response.data || [];
-        
-        // Assume each item has id and title
+        eventItemsCache = itemList; // Cache for later use
+
         const dropdown = createDropdown(
           'edit-event-item',
-          itemList.map(i => ({ id: i.id, name: i.title })),
+          [{ id: '', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
           cls.eventItemId || ''
         );
         eventItemFieldContainer.innerHTML = '';
         addLabeledField(eventItemFieldContainer, 'Event Item:', dropdown);
+
+        // Add change event to autofill fields
+        dropdown.addEventListener('change', function () {
+          const selectedId = this.value;
+          const selectedItem = eventItemsCache.find(i => i.id === selectedId);
+          if (selectedItem) {
+            if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
+            if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
+            if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
+            if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit; // <-- Add this line
+            // Add more fields as needed
+          }
+        });
+
+        // Optionally, trigger autofill if editing an existing event with an eventItemId
+        if (cls.eventItemId) {
+          const selectedItem = eventItemsCache.find(i => i.id === cls.eventItemId);
+          if (selectedItem) {
+            if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
+            if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
+            if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
+            if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit; // <-- Add this line
+          }
+        }
       }).getEventItemList();
 
       // --- Rest of the fields ---
@@ -498,12 +524,12 @@
         enabled: document.getElementById('edit-enabled').checked,
         title: document.getElementById('edit-title').value,
         date: new Date(document.getElementById('edit-date').value),
-        location: document.getElementById('edit-location').value,
-        host: document.getElementById('edit-host').value,
+        location: {id:document.getElementById('edit-location').value},
+        host: {id:document.getElementById('edit-host').value},
         price: parseFloat(document.getElementById('edit-price').value),
         sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
         description: document.getElementById('edit-desc').value,
-        eventItemId: document.getElementById('edit-event-item').value,
+        eventItem: {id: document.getElementById('edit-event-item').value},
       });
 
       showSpinner();

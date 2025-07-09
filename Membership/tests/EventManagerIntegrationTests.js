@@ -84,6 +84,34 @@ function test_getAvailableEvents() {
     }
 }
 
+function test_when_event_item_exists__then_only_calendar_event_is_added() {
+    const eventManager = modelFactory.eventManager();
+    const calendarManager = modelFactory.calendarManager();
+    const eventDataWithId = JSON.parse(JSON.stringify(eventData));
+    eventDataWithId.eventItem = {id:'5636475000000531001'};
+    const response = eventManager.addEvent(eventDataWithId); 
+    try {
+        Logger.log(`addEvent response: ${response.message}`);
+        assert('Event should be added successfully', response.success, true);
+        event = response.data;
+
+        assert('Event ID should be returned', event.id != undefined, true);
+        assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
+
+        // Validate the calendar event was created
+        const calendarEvent = calendarManager.calendar.getEventById(event.id);
+        assert('Calendar event should exist', calendarEvent != null, true);
+        assert('Calendar event title matches', calendarEvent.getTitle().startsWith('Woodturning '), true);
+        Logger.log('Calendar event verification passed.');
+
+    } catch (error) {
+        Logger.log(`addEvent failed: ${error.message}`);
+    } finally {
+      eventManager.deleteCalendarEvent(event);
+    }
+    
+
+}
 function test_addEvent() {
     const eventManager = modelFactory.eventManager();
     const calendarManager = modelFactory.calendarManager();

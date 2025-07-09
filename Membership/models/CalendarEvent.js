@@ -1,6 +1,9 @@
 
 class CalendarEvent extends Event {
     constructor(eventData = {}) {
+        if(!eventData.eventItem) {
+            eventData.eventItem = {};
+        }
         super(eventData);
     }
 

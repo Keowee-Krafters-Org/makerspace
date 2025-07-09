@@ -92,22 +92,24 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-      let eventItem = eventData.eventItem;
+      const event = new CalendarEvent(eventData);
+      let eventItem = event.eventItem;
       if (eventItem && eventItem.id) {
-        eventItem = this.updateEvent(eventItem);
+        const eventItemResponse = this.updateEventItem(eventItem);
+        eventItem= eventItemResponse.data; 
       } else {
         eventItem = this.addEventItem(eventItem);
       }
       if (!eventItem) {
         throw new Error('Failed to create event item.');
       }
-      
+
       eventData.eventItem = eventItem;
       // Add the event to the calendar
-      const calendarEvent = this.calendarManager.create(eventData); 
+      const calendarEvent = this.calendarManager.create(eventData);
       const newCalendarEvent = this.addCalendarEvent(calendarEvent);
-      newCalendarEvent.eventItem = eventItem; 
-      return {success: true, data:newCalendarEvent}; 
+      newCalendarEvent.eventItem = eventItem;
+      return { success: true, data: newCalendarEvent };
     } catch (err) {
       console.error('Failed to create event:', err);
       return { success: false, message: 'Failed to create event.', error: err.toString() };
@@ -136,6 +138,12 @@ class EventManager {
       return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
     }
   }
+
+  updateEventItem(eventItemData) {
+    const eventItem = this.storageManager.createNew(eventItemData);
+     return this.storageManager.update(eventItem.id, eventItem);
+  }
+
   deleteEventItem(eventItemId) {
     const event = this.storageManager.getById(eventItemId);
     if (!event) {
@@ -146,10 +154,15 @@ class EventManager {
   }
 
   deleteEvent(event) {
-    const eventItemId = event.eventItem.id; 
-    eventManager.deleteEventItem(eventItemId); 
-    this.calendarManager.delete(event.id); 
+    const eventItemId = event.eventItem.id;
+    eventManager.deleteEventItem(eventItemId);
+    this.deleteCalendarEvent(event);
   }
+
+  deleteCalendarEvent(event) {
+    this.calendarManager.delete(event.id);
+  }
+
   createEvent(data = {}) {
     return this.calendarManager.create(data);
   }
@@ -207,7 +220,7 @@ class EventManager {
     return event;
   }
 
- getEventRooms() {
-  return this.calendarManager.getCalendarResources();
-}
+  getEventRooms() {
+    return this.calendarManager.getCalendarResources();
+  }
 }
