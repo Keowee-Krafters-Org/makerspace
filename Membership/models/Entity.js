@@ -54,8 +54,8 @@ class Entity {
     // Generic mapping helpers
     convertDataToRecord(toRecordMap) {
         const record = {};
-        Object.keys(this).forEach(key => {
-            if (toRecordMap[key]) record[toRecordMap[key]] = this[key];
+        Object.keys(toRecordMap).forEach(key => {
+            if (this[key]) record[toRecordMap[key]] = this[key];
         });
         return record;
     }

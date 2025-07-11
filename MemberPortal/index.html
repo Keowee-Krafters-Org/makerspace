@@ -76,6 +76,13 @@
   <script>
     // Main application logic for the member portal dashboard
 
+
+    const isEmbedded = window.self !== window.top;
+    if (isEmbedded) {
+      console.log("Running inside Google Sites iframe");
+      // You could hide logout button or shrink UI
+    }
+
     function showSpinner() {
       document.getElementById('spinner').style.display = 'block';
     }
@@ -134,11 +141,12 @@
           break;
 
         case 'VERIFIED':
-          if (member.registration.status === 'NEW') {
+            if (member.registration.status === 'NEW') {
             const registrationUrl = buildPrefilledFormUrl(config.forms.registration, member);
             content += `<p>You're almost done! Please complete your registration below.</p>
-              <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p>`;
-            content += `AND then <p> <a href="${loginUrl}>Refresh the page to continue"</a></p>`;
+              <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p> then... `;
+            content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+      
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
             const levelNumber = getLevelNumber(config, member.registration.level);
@@ -170,16 +178,20 @@
           } else if (member.registration.status === 'APPLIED') {
             const waiverUrl = buildPrefilledFormUrl(config.forms.waiver, member);
             content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
-              <p><a href="${waiverUrl}" target="_blank">Sign Waiver Form</a></p>`;
+              <p><a href="${waiverUrl}" target="_blank">Sign Waiver Form</a></p> <p>then...</p>`;
+              
+            content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
 
           } else if (member.registration.status === 'PENDING') {
-            content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>`;
+            content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p> 
+              <p>Once verified, you will receive an email with further instructions.</p>`;
+            content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
 
           } else {
-            content += `<p>Your membership status is ${member.regisrtation.status.toLowerCase()}.</p>`;
+            content += `<p>Your membership status is ${member.registration.status.toLowerCase()}.</p>`;
           }
 
-          content += `<button onclick="logout()">Logout</button>`;
+          //content += `<button onclick="logout()">Logout</button>`;
           break;
 
         default:
@@ -197,10 +209,14 @@
       }).getConfig();
     }
 
-    function requestToken() {
-      const emailInput = document.getElementById('email');
-      emailInput.blur();
-      const email = emailInput.value.trim();
+    function requestToken(emailAddress) {
+      let email = emailAddress; 
+      if (!email) {
+        // If emailAddress is not provided, get it from the input field
+        const emailInput = document.getElementById('email');
+        email = emailInput.value.trim();
+        emailInput.blur();
+      }
       currentEmail = email;
 
       if (!email) {
@@ -247,7 +263,7 @@
         if (response.redirectToForm) {
           const map = response.entryMap;
           const url = response.formUrl + `?${map.email}=${encodeURIComponent(currentEmail)}`;
-          window.location.href = url;
+          window.open(url, '_blank');
         } else {
           const member = response.data;
           renderDashboard(member);
@@ -300,9 +316,9 @@
     /**
      * Convert the level tet to the equivelent number
      */
-    function getLevelNumber(config,levelString) {
+    function getLevelNumber(config, levelString) {
       return config.levels[levelString];
-      
+
     }
     renderDashboard({ login: { status: 'UNVERIFIED' } });
   </script>

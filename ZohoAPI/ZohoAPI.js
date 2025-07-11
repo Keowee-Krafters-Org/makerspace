@@ -160,7 +160,7 @@ class ZohoAPI {
         const orgId = this.authConfig.organizationId;
         const apiBaseUrl = this.authConfig.apiBaseUrl || 'https://www.zohoapis.com/books/v3';
         let url = `${apiBaseUrl}/${entityType}`;
-        if (id) url += `/${encodeURIComponent(id)}`;
+        if (id && id != '') url += `/${encodeURIComponent(id)}`;
         params.organization_id = orgId;
         const query = Object.keys(params)
             .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
@@ -194,21 +194,25 @@ class ZohoAPI {
     }
     post(entityType, payload) {
         const url = this.generateUrl(entityType);
-        return this.fetch(url, {
+
+        return  this.fetch(url, {
             method: 'post',
             contentType: 'application/json',
             payload: JSON.stringify(payload)
         });
+        
     }
 
     put(entityType, id, payload) {
         // Wrap data in the resource key if needed
         const url = this.generateUrl(entityType, id);
-        return this.fetch(url, {
+
+        return  this.fetch(url, {
             method: 'put',
             contentType: 'application/json',
             payload: JSON.stringify(payload)
         });
+        
     }
     // --- Generalized Entity Methods ---
 
@@ -226,9 +230,13 @@ class ZohoAPI {
     getEntity(entityType, id, params = {}) {
         const url = this.generateUrl(entityType, id, params);
         const response = this.fetch(url);
-        const entityTypeSingular = entityType.slice(0, -1); // Remove trailing 's' for singular form
+        return this.processCustomFields(entityType,response);
+    }
+
+    processCustomFields(entityType, response) {
+      const entityTypeSingular = entityType.slice(0, -1); // Remove trailing 's' for singular form
         if (!response || !response[entityTypeSingular]) {
-            throw new Error(`Entity ${entityTypeSingular} with ID ${id} not found.`);
+            throw new Error(`Entity ${entityTypeSingular} not created: ${response.message}.`);
         }
         let entity = response[entityTypeSingular];
         // Convert custom_field_hash to top-level cf_xx fields
@@ -270,12 +278,16 @@ class ZohoAPI {
 
     updateEntity(entityType, id, data) {
         const payload = this.packageCustomFields(data);
-        return this.put(entityType, id, payload);
+         const response =  this.put(entityType, id, payload);
+         return this.processCustomFields(entityType,response);
     }
 
     createEntity(entityType, data) {
         const payload = this.packageCustomFields(data);
-        return this.post(entityType, payload);
+        const response =  this.post(entityType, payload);
+   
+        return this.processCustomFields(entityType,response);
+
     }
 
     deleteEntity(entityType, id) {
@@ -323,7 +335,7 @@ class ZohoAPI {
             Object.keys(hash).forEach(cfKey => {
                 // Promote the field to a top-level property if it doesn't already exist
                  // Use the API name directly as the top-level key
-                if (!(cfKey in entity) && !cfKey.endsWith('_unformatted') || cfKey.includes('date')) {
+                if (!(cfKey in entity)) {
                     entity[cfKey] = hash[cfKey];
                 }
             });

@@ -40,7 +40,8 @@ class ZohoStorageManager extends StorageManager {
     const toRecordMap = this.clazz.getToRecordMap();
     const zohoParams = {};
     Object.entries(params).forEach(([key, value]) => {
-      zohoParams[toRecordMap[key]] = value;
+      const zohoKey = toRecordMap[key]
+      zohoParams[zohoKey?zohoKey:key] = value;
     });
     return zohoParams;
   }
@@ -54,7 +55,7 @@ class ZohoStorageManager extends StorageManager {
     // This would typically involve making API calls to Zoho services
     delete entity.id;
     const entityData = entity.toRecord();
-    const response = this.zohoAPI.post(this.clazz.getResourceNamePlural(), entityData);
+    const response = this.zohoAPI.createEntity(this.clazz.getResourceNamePlural(), entityData);
     return this.clazz.fromRecord(response[this.resourceNameSingular]);
   }
 
@@ -89,7 +90,7 @@ class ZohoStorageManager extends StorageManager {
 
   delete(id) {
     // Implement delete logic using this.zohoAPI
-    this.zohoAPI.deleteEntity(id);
+    return this.zohoAPI.deleteEntity(this.resourceName,id);
   }
 
   getFiltered(predicate, params = {},) {

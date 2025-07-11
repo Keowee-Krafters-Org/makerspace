@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..34',
+  version: 'SNAPSHOT-..56',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -7,6 +7,11 @@ var SharedConfig = {
   ...config,
   loginTokenExpirationMinutes: 15,
   sessionTokenExpirationMinutes: 60 * 24,
+  services: {
+    calendar: {
+      defaultCalendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com'
+    }
+  },
   forms: {
     registration: {
       url: 'https://docs.google.com/forms/d/e/1FAIpQLScEGclpyk12DVBPD3chZq1Xuds1NXEPwlRZopvb8tbN5NR3FQ/viewform?usp=pp_url',
@@ -44,9 +49,9 @@ var SharedConfig = {
     'Interested Party': 1,
     'Active': 2,
     'Full Access': 3,
-    'Lifetime': 4,
-    'Instructor': 5,
-    'Workshop Supervisor': 6,
+    'Lifetime': 4,    
+    'Host': 5,
+    'Instructor': 6,
     'Board': 10,
     'President': 11,
     'Vice President': 12,

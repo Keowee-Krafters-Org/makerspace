@@ -7,6 +7,22 @@
  */
 const testEventFilter = {name: 'Test Event'};
 const testUserFilter = {email: 'testuser@keoweekrafters.org'}; 
+const testEventItem = 
+      {
+        id: '',
+        name: 'Test Event',
+        cf_location: 'MakeKeowee, Woodshop, 4 Eagle Ln, Salem, SC 29676',
+        cf_attendance_limit: '3',
+        cf_host: '5636475000000295003',
+        cf_event_description: 'This is a test event. Do not signup !!',
+        rate: 20,
+        purchase_rate: 5,
+        type: 'service', 
+        cf_type: 'Event',
+        cf_event_type: 'Class',
+        costDescription: 'Resin Supplies'
+    }; 
+
 function zohoIntegrationTests() {
     Logger.log('Starting Zoho API integration tests...');
 
@@ -99,7 +115,7 @@ function test_getItemById() {
     const zoho = new ZohoAPI(getAuthConfig());
     try {
         // First, get all items to obtain a valid item ID
-        const allResponse = zoho.getEntities('items', testUserFilter) ;
+        const allResponse = zoho.getEntities('items', testEventFilter) ;
         const items = allResponse.items || [];
         assert(items.length > 0, 'At least one item should exist to test getItemById');
         const itemId = items[0].item_id;
@@ -167,7 +183,47 @@ function test_GetFilteredItems() {
             Logger.log(`getItemsByCustomFieldValue failed: ${error.message}`);
         }
 }
+function test_add_item() {
+      const zoho = new ZohoAPI(getAuthConfig());
+      let itemId; 
+  try {
 
+    const response = zoho.createEntity('items', testEventItem); 
+    assert ((response && response.code === 0) , 'Item Added');
+    const newEventItem = response.item; 
+    assert ((newEventItem && newEventItem.item_id), 'Item Created'); 
+    const foundItemResponse = zoho.getEntity('items', newEventItem.item_id);
+    assert (foundItemResponse.code===0, "Item Found"); 
+    const foundItem = foundItemResponse.item; 
+    itemId = foundItem.item_id; 
+    assert (foundItem.cf_event_description === testEventItem.cf_event_description, 'Description matches') ; 
+    } catch (e) {
+      Logger.log(`Failed with error: ${e.message}`); 
+    } finally {
+      if (itemId) {
+        zoho.deleteEntity('items', itemId);
+        }
+    }
+
+}
+
+function test_deleteTestItem() {
+  
+    const zoho = new ZohoAPI(getAuthConfig());
+    const eventResponse = zoho.get('items','', {name: 'Test Event'});
+    assert((eventResponse && eventResponse.message==='success'), "Item Found");
+    const event = eventResponse.items[0];
+    if (event) {
+    const eventId = event.item_id; 
+    const deleteResponse = zoho.deleteEntity('items', eventId);
+    assert((deleteResponse && deleteResponse.code===0), "Message Deleted"); 
+    const itemResponse = zoho.get('items', eventId); 
+    assert (itemResponse.code != 0, 'Item not found'); 
+    } else {
+      Logger.log('Item Not found'); 
+    }
+
+}
 /**
  * Test for updating the 'Test Event' item's cf_event_description field.
  * This test finds the 'Test Event' item, updates its cf_event_description,

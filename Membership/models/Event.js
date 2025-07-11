@@ -19,10 +19,9 @@ class Event extends Entity {
      * @returns {Event}
      */
     static createNew(data = {}) {
-        return new Event({
+        return new this({
             ...data,
-            attendees: Array.isArray(data.attendees) ? data.attendees : [],
-            title: typeof data.title === 'string' && data.title.trim() !== '' ? data.title : 'Untitled Event'
+            attendees: Array.isArray(data.attendees) ? data.attendees : []
         });
     }
 

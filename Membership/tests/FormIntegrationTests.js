@@ -5,7 +5,7 @@
 const WAIVER_ID = SharedConfig.forms.waiver.formId;
 function test_when_waiverFormSubmitted_then_documentGenerated() {
     const formStorageManager= new FormStorageManager(FormWaiver);
-    const waiverManager = newWaiverManager();
+    const waiverManager = modelFactory.waiverManager();
     
     // Locate the waiver form by its ID
     const waiverForm = formStorageManager.getById(WAIVER_ID);

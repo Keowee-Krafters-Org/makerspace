@@ -124,12 +124,12 @@ class MembershipManager {
     return (this.storageManager.getById(memberId)); 
   }
   addMemberRegistration(memberData) {
-    let registeredMember = this.storageManager.create(memberData); 
+    let registeredMember = this.storageManager.createNew(memberData); 
     let member = this.memberLookup(memberData.emailAddress);
     if (!member) {
       member = addMember(memberData);
     }
-    Object.assign( member, registeredMember);
+    registeredMember.id = member.id;
     if (member && member.login.status === 'VERIFIED') {
       registeredMember.registration.status = 'APPLIED';
     }
@@ -184,4 +184,24 @@ class MembershipManager {
   deleteMember(member) {
     this.storageManager.delete(member.id); 
   }
+
+  getHosts() {
+    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.host); 
+  }
+
+  getInstructors() {
+    // Use ZohoStorageManager's getFiltered to find members with level > Instructor
+    const instructorLevel = SharedConfig.levels.Instructor;
+    const response = this.storageManager.getFiltered(
+      member => {
+        const memberLevel = SharedConfig.levels[member.registration.level]; 
+        // Ensure level is a number for comparison
+        return memberLevel > instructorLevel;
+      }, {per_page:200}
+    );
+    // Return only the data array (list of instructors)
+    return response.data;
+  }
+
+  
 }

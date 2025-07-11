@@ -24,7 +24,7 @@ function generateWaiverDocument(e) {
   const email = responses['Email'];
 
   Logger.log(JSON.stringify(responses)); 
-  const waiverManager = Membership.newWaiverManager();
+  const waiverManager = Membership.newModelFactory().waiverManager();
   const result = waiverManager.generateWaiverDocument(email);
   return result;
 }

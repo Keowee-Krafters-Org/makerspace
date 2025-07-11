@@ -12,11 +12,10 @@ class ZohoEvent extends Event {
     return {
       id: 'item_id',
       title: 'name',
-      _date: 'cf_scheduled_date',
       cost: 'purchase_rate',
       costDescription: 'purchase_description',
       price: 'rate',
-      host: 'cf_host',
+      _hostId: 'cf_host',
       location: 'cf_location',
       duration: 'cf_duration_hrs',
       description: 'cf_event_description',
@@ -24,9 +23,7 @@ class ZohoEvent extends Event {
       sizeLimit: 'cf_attendance_limit',
       type: 'cf_type',
       eventType: 'cf_event_type',
-      enabled: 'cf_enabled',
-      _attendees: 'cf_attendees' // custom text field for attendees
-
+      enabled: 'cf_enabled'
     }
   };
 
@@ -39,6 +36,9 @@ class ZohoEvent extends Event {
       data.date = new Date(record.cf_scheduled_date_unformatted);
     }
 
+    if (record.cf_host) {
+      data.host = new Member({name: record.cf_host, id: record.cf_host_unformatted}); 
+    }
     
     if (data._attendees) {
       data.attendees = JSON.parse(data._attendees);
@@ -47,12 +47,16 @@ class ZohoEvent extends Event {
   }
 
   toRecord() {
-    this._attendees = JSON.stringify(this.attendees);
-    // Update the date only if there is one - zoho allows partial updates
-    if (this.date) {
-        this._date = Utilities.formatDate(this.date, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'); 
-    }
-    return this.convertDataToRecord(ZohoEvent.getToRecordMap())
+  
+    // Flatten the host record to id only
+    this._hostId = this.host?this.host.id:'';
+    const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
+    record.product_type = 'service';
+    return record; 
+  }
+
+  static createNew(data = {}) {
+    return super.createNew(data); 
   }
 }
 
