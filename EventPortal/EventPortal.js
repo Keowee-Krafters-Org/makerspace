@@ -3,7 +3,10 @@
  */
 function doGet(e) {
   const modelFactory = Membership.newModelFactory();
-  let member = null;
+  // Deafault member object
+  // This is used when the user is not logged in or has not provided a memberId
+  let member = {firstName: 'Anonymous', lastName: 'Guest', registration: {status: 'NOT_REGISTERED', level: 'Guest'}, login: {status: 'NOT_VERIFIED'}};
+  
   let canSignup = false;
 
   if (e.parameter.memberId) {
@@ -17,8 +20,6 @@ function doGet(e) {
         canSignup = true;
       }
     }
-  } else {
-    member = {firstName: 'Anonymous', lastName: 'Guest', registration: {status: 'NOT_REGISTERED', level: 'Guest'}, login: {status: 'NOT_VERIFIED'}};
   }
 
   const eventManager = modelFactory.eventManager();
