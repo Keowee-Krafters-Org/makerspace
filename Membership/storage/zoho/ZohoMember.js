@@ -20,7 +20,7 @@ class ZohoMember extends Member {
     member.name = `${member.firstName} ${member.lastName}`
     member.contacts = data.contacts || [];
     member.login = ZohoLogin.fromObject(data.login || { status: 'UNVERIFIED' }),
-      member.registration = ZohoRegistration.fromObject(data.registration || { status: 'NEW' })
+    member.registration = ZohoRegistration.fromObject(data.registration || { status: 'NEW' })
     return member;
   }
   /**

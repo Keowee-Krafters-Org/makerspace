@@ -99,6 +99,20 @@ class CalendarEvent extends Event {
         if (data._end) {
             data.duration = (new Date(record._end) - data.start) / (1000 * 60 * 60); // duration in hours
         }
+        if (data._attendees) {
+            data.attendees = data._attendees.split(',').map(a => a.trim());
+        } else {
+            data.attendees = [];
+        }
+ 
+  
+        // Extract the eventItemId from the description if it exists
+        if (data._description) {
+            const match = data._description.match(/eventItemId=(\d*)/);
+            if (match) {
+                data.eventItem.id = match[1];
+            }
+        }
         
         return new CalendarEvent(data);
     }
@@ -122,7 +136,7 @@ class CalendarEvent extends Event {
     updateDescription(description, eventItemId) {
 
         // Update the description with the event item link
-        const updatedDescription = `${description}\nView Details: ${SharedConfig.baseUrl}/event?eventId=${eventItemId}`;
+        const updatedDescription = `${description}\nView Details: ${SharedConfig.baseUrl}/event?eventItemId=${eventItemId}`;
         return updatedDescription;
 
     }

@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..50',
+  version: 'SNAPSHOT-..56',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -9,7 +9,7 @@ var SharedConfig = {
   sessionTokenExpirationMinutes: 60 * 24,
   services: {
     calendar: {
-      defaultCalendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com'
+      defaultCalendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com'
     }
   },
   forms: {

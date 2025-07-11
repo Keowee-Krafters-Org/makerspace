@@ -157,7 +157,7 @@
     <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
     <div id="classes" class="classes-grid"></div>
   </div>
-  <div id="spinner" class="spinner hidden"></div>
+  <div id="spinner" class="spinner"></div>
   <h5>
     <p id="version"></p>
   </h5>
@@ -168,10 +168,16 @@
   <script type="application/json" id="shared-config">
     <?!= JSON.stringify(sharedConfig) ?>
   </script>
+  <script type="application/json" id="can-signup">
+    <?!= JSON.stringify(canSignup) ?>
+  </script>
   <script>
     const currentMember = JSON.parse(document.getElementById('member-data').textContent);
-    window.currentMemberId = currentMember.id;
+     window.currentMemberId = currentMember.id;
     const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
+    window.sharedConfig = sharedConfig;
+    const canSignup = JSON.parse(document.getElementById('can-signup').textContent);  
+    window.canSignup = canSignup;
   </script>
 
 
@@ -242,11 +248,20 @@
       infoDiv.innerHTML = generateClassDiv(cls);
       card.appendChild(infoDiv);
 
-      const btn = document.createElement('button');
-      btn.className = 'signup-btn';
-      btn.textContent = 'Sign Me Up';
-      btn.onclick = () => signup(cls.id, currentMember.id);
-      card.appendChild(btn);
+      if (canSignup) {
+        const btn = document.createElement('button');
+        btn.className = 'signup-btn';
+        btn.textContent = 'Sign Me Up';
+        btn.onclick = () => signup(cls.id, currentMember.id);
+        card.appendChild(btn);
+      } else {
+        const msg = document.createElement('div');
+        msg.style.color = 'gray';
+        msg.style.textAlign = 'center';
+        msg.style.margin = '16px 0';
+        msg.textContent = 'Please log in to sign up for this class.';
+        card.appendChild(msg);
+      }
 
       if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
         const editBtn = document.createElement('button');
@@ -269,15 +284,15 @@
     function generateClassDiv(cls) {
       const dateObj = new Date(cls.date);
       const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-      const spotsAvailable = cls.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
+      const spotsAvailable = cls.eventItem.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
       return `
-        <div class="class-title">${cls.title}</div>
-        <div class="class-desc">${cls.description}</div>
-        <div class="class-info"><strong>Price:</strong> $${Number(cls.price).toFixed(2)}</div>
+        <div class="class-title">${cls.eventItem.title}</div>
+        <div class="class-desc">${cls.eventItem.description}</div>
+        <div class="class-info"><strong>Price:</strong> $${Number(cls.eventItem.price).toFixed(2)}</div>
         <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
         <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
-        <div class="class-info"><strong>Instructor:</strong> ${cls.host?.name || cls.host || ''}</div>
-        <div class="class-info"><strong>Max Attendees:</strong> ${cls.sizeLimit}</div>
+        <div class="class-info"><strong>Instructor:</strong> ${cls.eventItem.host?.name || cls.eventItem.host || ''}</div>
+        <div class="class-info"><strong>Max Attendees:</strong> ${cls.eventItem.sizeLimit}</div>
         <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
       `;
     }
@@ -405,7 +420,7 @@
       let eventItemsCache = []; // Store event items for lookup
 
       // Fetch event items from backend and populate the Event Item dropdown
-      google.script.run.withSuccessHandler(function(response) {
+      google.script.run.withSuccessHandler(function (response) {
         // Handle response data
         if (typeof response === 'string') {
           try {
@@ -413,14 +428,14 @@
           } catch (e) {
             response = { data: [] }; // Fallback to empty array if parsing fails
           }
-        } 
+        }
         let itemList = response.data || [];
         eventItemsCache = itemList; // Cache for later use
 
         const dropdown = createDropdown(
           'edit-event-item',
           [{ id: '', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
-          cls.eventItemId || ''
+          cls.eventItem.id || ''
         );
         eventItemFieldContainer.innerHTML = '';
         addLabeledField(eventItemFieldContainer, 'Event Item:', dropdown);
@@ -439,8 +454,8 @@
         });
 
         // Optionally, trigger autofill if editing an existing event with an eventItemId
-        if (cls.eventItemId) {
-          const selectedItem = eventItemsCache.find(i => i.id === cls.eventItemId);
+        if (cls.eventItem.id) {
+          const selectedItem = eventItemsCache.find(i => i.id === cls.eventItem.id);
           if (selectedItem) {
             if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
             if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
@@ -451,8 +466,8 @@
       }).getEventItemList();
 
       // --- Rest of the fields ---
-      addLabeledField(form, 'Title:', createInput('edit-title', cls.title));
-      addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.description));
+      addLabeledField(form, 'Title:', createInput('edit-title', cls.eventItem.title));
+      addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.eventItem.description));
       addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
 
       // Placeholder for Location dropdown (replace the existing location input)
@@ -485,9 +500,9 @@
       hostFieldContainer.id = 'host-field-container';
       form.appendChild(hostFieldContainer);
 
-      addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.price || 0));
-      addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.sizeLimit || 0, 'number'));
-      addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.enabled === true));
+      addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.eventItem.price || 0));
+      addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
+      addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
       form.appendChild(saveBtn);
       container.appendChild(form);
@@ -502,7 +517,7 @@
             instructorList = [];
           }
         }
-        const dropdown = createDropdown('edit-host', instructorList, cls.host || '');
+        const dropdown = createDropdown('edit-host', instructorList, cls.eventItem.host || '');
         hostFieldContainer.innerHTML = '';
         addLabeledField(hostFieldContainer, 'Host:', dropdown);
         hideSpinner();
@@ -519,18 +534,7 @@
         }
       }
 
-      const updated = JSON.stringify({
-        id: eventId,
-        enabled: document.getElementById('edit-enabled').checked,
-        title: document.getElementById('edit-title').value,
-        date: new Date(document.getElementById('edit-date').value),
-        location: {id:document.getElementById('edit-location').value},
-        host: {id:document.getElementById('edit-host').value},
-        price: parseFloat(document.getElementById('edit-price').value),
-        sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
-        description: document.getElementById('edit-desc').value,
-        eventItem: {id: document.getElementById('edit-event-item').value},
-      });
+      const updated = createEvent();
 
       showSpinner();
       google.script.run
@@ -546,7 +550,7 @@
         .updateEvent(updated);
     }
 
-    function createEvent() {
+    function createEventObject() {
       const requiredFields = ['edit-title', 'edit-date', 'edit-location'];
       for (const id of requiredFields) {
         const field = document.getElementById(id);
@@ -556,18 +560,8 @@
         }
       }
 
-      const newEvent = JSON.stringify({
-        enabled: document.getElementById('edit-enabled').checked,
-        title: document.getElementById('edit-title').value,
-        date: new Date(document.getElementById('edit-date').value),
-        location: document.getElementById('edit-location').value,
-        host: document.getElementById('edit-host').value,
-        price: parseFloat(document.getElementById('edit-price').value),
-        sizeLimit: parseInt(document.getElementById('edit-size').value, 10),
-        description: document.getElementById('edit-desc').value,
-        eventItemId: document.getElementById('edit-event-item').value,
-      });
-
+      const newEvent = createEventObject();
+      console.log("Creating event object:", newEvent);
       showSpinner();
       google.script.run
         .withSuccessHandler(() => {
@@ -581,6 +575,33 @@
         })
         .createEvent(newEvent);
     }
+
+    function createEventObject() {
+      const eventItemId = document.getElementById('edit-event-item').value;
+      const title = document.getElementById('edit-title').value;
+      const description = document.getElementById('edit-desc').value;
+      const date = document.getElementById('edit-date').value;
+      const location = document.getElementById('edit-location').value;
+      const price = parseFloat(document.getElementById('edit-price').value) || 0;
+      const sizeLimit = parseInt(document.getElementById('edit-size').value) || 0;
+      const enabled = document.getElementById('edit-enabled').checked;
+      const host = document.getElementById('edit-host').value;
+
+      return JSON.stringify({
+        id: eventItemId,
+        eventItem: {
+          id: eventItemId,
+          title: title,
+          description: description,
+          price: price,
+          sizeLimit: sizeLimit,
+          enabled: enabled,
+          host: host
+        },
+        date: new Date(date),
+        location: location
+      });
+    } 
 
     function formatDateForInput(date) {
       if (!date) return '';

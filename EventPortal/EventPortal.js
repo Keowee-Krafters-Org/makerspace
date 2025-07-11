@@ -2,28 +2,31 @@
  * Open the index page
  */
 function doGet(e) {
-
   const modelFactory = Membership.newModelFactory();
-  const memberId = e.parameter.memberId;
-  if (!memberId) {
-    return HtmlService.createHtmlOutput('Missing memberId.');
+  let member = null;
+  let canSignup = false;
+
+  if (e.parameter.memberId) {
+    const response = getMember(e.parameter.memberId);
+    if (response.success) {
+      const authentication = response.data.login.authentication;
+      const isValid = new Date() < new Date(authentication.expirationTime);
+      if (isValid) {
+        member = response.data;
+        delete member.login.authentication.token;
+        canSignup = true;
+      }
+    }
+  } else {
+    member = {firstName: 'Anonymous', lastName: 'Guest', registration: {status: 'NOT_REGISTERED', level: 'Guest'}, login: {status: 'NOT_VERIFIED'}};
   }
 
-  const response = getMember(memberId);
-  if (!response.success) {
-    return HtmlService.createHtmlOutput('User not found.');
-  }
+  const eventManager = modelFactory.eventManager();
 
-  const authentication = response.data.login.authentication;
-  const isValid = new Date() < new Date(authentication.expirationTime);
-  if (!isValid) {
-    return HtmlService.createHtmlOutput('Invalid or expired token.');
-  }
-  const member = response.data;
-  // Remove the token for security 
-  delete member.login.authentication.token;
   const template = HtmlService.createTemplateFromFile('index');
-  template.member = member // inject member directly
+  template.member = member;
+  template.sharedConfig = modelFactory.config;
+  template.canSignup = canSignup;
   template.sharedConfig = modelFactory.config;
 
   return template.evaluate()

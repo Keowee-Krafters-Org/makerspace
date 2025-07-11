@@ -115,7 +115,7 @@ class CalendarManager extends StorageManager {
     }
 
     const events = this.calendar.getEvents(start, end);
-    return events.map(event => new CalendarEvent(event));
+    return events.map(event => CalendarEvent.fromRecord(event));
   }
 
   /**

@@ -10,7 +10,6 @@
   * It is designed to be triggered by a form submission event, and it handles both cases
   * where the form collects the email automatically or has a custom email question.
  */
-const modelFactory = Membership.newModelFactory();
 function generateWaiverDocument(e) {
   const response = e.response;
   const itemResponses = response.getItemResponses();
@@ -25,7 +24,7 @@ function generateWaiverDocument(e) {
   const email = responses['Email'];
 
   Logger.log(JSON.stringify(responses)); 
-  const waiverManager = modelFactory.waiverManager();
+  const waiverManager = Membership.newModelFactory().waiverManager();
   const result = waiverManager.generateWaiverDocument(email);
   return result;
 }

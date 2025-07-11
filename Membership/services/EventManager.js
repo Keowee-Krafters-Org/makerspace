@@ -31,7 +31,7 @@ class EventManager {
     if (!calendarEvents || calendarEvents.length === 0) {
       return [];
     }
-    return enrichCalendarEvents(calendarEvents);
+    return this.enrichCalendarEvents(calendarEvents);
   }
 
   /**
@@ -42,7 +42,7 @@ class EventManager {
    */
   enrichCalendarEvents(calendarEvents) {
     const enriched = calendarEvents.map(ce => {
-      const result = this.storageManager.getById(ce.eventItemId);
+      const result = this.storageManager.getById(ce.eventItem.id);
       if (!result || !result.data) {
         return null;
       }

@@ -45,12 +45,18 @@ function eventManagerIntegrationTests() {
 function test_getEventList() {
     const eventManager = modelFactory.eventManager();
     try {
-        const response = eventManager.getEventList();
-        Logger.log(`getEventList response: ${response.message}`);
-        const events = response.data;
-        Logger.log(`Retrieved ${events.length} events.`);
-        assert('Events should not be null or undefined', events != undefined, true);
-        assert(`${events.length} Events are retrieved`, events.length > 0, true);
+        const events = eventManager.getEventList();
+        Logger.log('getEventList response: ' + JSON.stringify(events));
+        assert('Event list should not be null or undefined', events != undefined, true);
+        assert('Event list should be an array', Array.isArray(events), true);
+        assert('Event list should have at least one event', events.length > 0, true);
+        events.forEach((event, idx) => {
+            assert(`Event ${idx} has id`, typeof event.id !== 'undefined', true);
+            assert(`Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+            assert(`Event ${idx} has date`, event.date instanceof Date, true);
+        });
+        Logger.log('Event list verification passed.');
+
     } catch (error) {
         Logger.log(`getEventList failed: ${error.message}`);
     }
@@ -59,12 +65,18 @@ function test_getEventList() {
 function test_getUpcomingEvents() {
     const eventManager = modelFactory.eventManager();
     try {
-        const response = eventManager.getUpcomingEvents();
-        Logger.log(`getUpcomingEvents response: ${response.message}`);
-        const events = response.data;
+        const events = eventManager.getUpcomingEvents();
         Logger.log(`Retrieved ${events.length} upcoming events.`);
-        assert('Upcoming events should not be null or undefined', events != undefined, true);
-        assert(`${events.length} Upcoming Events are retrieved`, events.length > 0, true);
+        Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
+        assert('Upcoming events should be an array', Array.isArray(events), true);
+        assert('Upcoming events should not be empty', events.length > 0, true);
+        events.forEach((event, idx) => {
+            assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
+            assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+            assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
+        });
+        Logger.log('Upcoming events verification passed.');
+
     } catch (error) {
         Logger.log(`getUpcomingEvents failed: ${error.message}`);
     }
