@@ -42,12 +42,6 @@ class CalendarEvent extends Event {
     set costDescription(value) {
         this.eventItem.costDescription = value;
     }
-    get location() {
-        return this.eventItem.location || '';
-    }
-    set location(value) {
-        this.eventItem.location = value;
-    }
 
     toObject() {
         return {

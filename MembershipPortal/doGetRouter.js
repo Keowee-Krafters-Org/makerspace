@@ -11,7 +11,7 @@ function doGet(e) {
         lastName: 'Guest',
         emailAddress: '',
         registration: { status: 'NOT_REGISTERED', level: 'Guest' },
-        login: { status: 'NOT_VERIFIED' }
+        login: { status: 'UNVERIFIED' }
     };
 
     if (e.parameter.memberId) {
