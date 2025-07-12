@@ -174,11 +174,10 @@ class EventManager {
    * @returns Response(EventConfirmation) 
    */
   signup(eventId, memberId) {
-    const eventResponse = this.storageManager.getById(eventId);
-    if (!(eventResponse && eventResponse.data)) {
-      return { success: false, error: 'Event not found.' };
+    const event = this.calendarManager.getById(eventId);
+    if (!event) {
+      throw new Error('Event not found.' );
     }
-    const event = eventResponse.data;
     // Prevent duplicate signups
     if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
       return { success: false, error: 'Member already signed up for this event.' };
@@ -189,14 +188,12 @@ class EventManager {
       return { success: false, error: 'Event is full.' };
     }
 
-
-    // Add member to attendees
-    event.attendees = Array.isArray(event.attendees) ? event.attendees : [];
-    event.attendees.push(memberId);
-
-    const updatedEvent = this.storageManager.create({ id: event.id, attendees: event.attendees })
-    // Persist the updated event
-    this.storageManager.update(eventId, updatedEvent);
+    const memberResponse= this.membershipManager.getMember(memberId); 
+    if (!(memberResponse && memberResponse.success)) {
+      throw new Error('Member not found'); 
+    }
+    const member = memberResponse.data; 
+    this.calendarManager.addAttendee(eventId, member.emailAddress);
 
     return {
       success: true, data: { message: `You are successfully signed up successfully for: ${event.name}`, eventId: eventId }

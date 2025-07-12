@@ -41,22 +41,19 @@ class CalendarManager extends StorageManager {
    * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
    * @returns {CalendarEvent}
    */
-  update(calendarEvent) {
-    const event = this.calendar.getEventById(calendarEvent.id);
+  update(id,calendarEvent) {
+    const event = this.calendar.getEventById(id);
     if (!event) {
       throw new Error(`No calendar event found for ID: ${calendarEvent.id}`);
     }
-
-    const start = new Date(calendarEvent.start);
-    const durationHours = Number(calendarEvent.duration) || 2;
-    const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
-
-    event.setTitle(calendarEvent.title || 'Untitled Class');
-    event.setTime(start, end);
-    event.setLocation(calendarEvent.location || '');
-    event.setDescription(updateDescription(calendarEvent.description, calendarEvent.eventItemId));
+    const calendarEventRecord = calendarEvent.toRecord();
+    event.setTitle(calendarEvent.title || event.getTitle());
+    event.setTime(calendarEventRecord.start || event.getStartTime(), calendarEventRecord.end || event.getEndTime()) ;
+    event.setLocation(calendarEventRecord.location || event.getLocation());
+    event.setDescription(calendarEventRecord.description || event.getDescription());
+     
     this.calendar.updateEvent(event);
-    return new CalendarEvent(event);
+    return CalendarEvent.fromRecord(event);
   }
 
   /**
@@ -92,7 +89,7 @@ class CalendarManager extends StorageManager {
    */
   getEvent(calendarId) {
     const event = this.calendar.getEventById(calendarId);
-    return event ? new CalendarEvent(event) : null;
+    return event ? CalendarEvent.fromRecord(event) : null;
   }
 
   getUpcomingEvents(daysAhead = 14) {
@@ -170,5 +167,15 @@ class CalendarManager extends StorageManager {
       Logger.log('Error fetching calendar resources: ' + e);
       return [];
     }
+  }
+
+  addAttendee(id, emailAddress) {
+    
+    const event = this.calendar.getEventById(id);
+    if (!event) {
+      throw new Error(`No calendar event found for ID: ${calendarId}`);
+    }
+    event.addGuest(emailAddress); 
+    return CalendarEvent.fromRecord(event); 
   }
 }

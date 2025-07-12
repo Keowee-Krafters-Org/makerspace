@@ -122,7 +122,7 @@ class CalendarEvent extends Event {
         this._eventItemId = this.eventItem.id; // Store eventItemId directly
         const start = this.date;
         const durationHours = Number(this.eventItem.duration) || 2;
-        this._end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+        this._end = start?new Date(start.getTime() + durationHours * 60 * 60 * 1000):undefined;
         this._description = this.updateDescription(this.eventItem.description, this.eventItem.id)
         return super.convertDataToRecord(CalendarEvent.getToRecordMap());
     }

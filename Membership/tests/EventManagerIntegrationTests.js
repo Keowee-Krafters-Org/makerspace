@@ -239,15 +239,15 @@ function test_deleteEvent() {
 
 function test_when_member_signs_up_for_event__then_event_is_updated() {
     const membershipManager = modelFactory.membershipManager();
-    const member = membershipManager.memberLookup(TEST_USER_EMAIL);
+    const member = membershipManager.memberLookup('christopher.smith@keoweekrafters.org');
     const eventManager = modelFactory.eventManager();
     assert('Found member', member != undefined, true);
 
     const testMemberId = member.id;
-    const eventResponse = eventManager.getEventList({ name: TEST_EVENT_NAME });
-    assert('Event found', true, eventResponse.success != undefined && eventResponse.data != undefined);
+    const events = eventManager.getUpcomingEvents();
+    assert('Event found', true, (events && events.length > 0));
 
-    const testEvent = eventResponse.data[0];
+    const testEvent = events[0];
     const testEventId = testEvent.id;
 
     const confirmation = eventManager.signup(testEventId, testMemberId);
