@@ -64,7 +64,7 @@ class CalendarEvent extends Event {
             date: 'start',
             _end: 'end',
             location: 'location',
-            _attendees: 'guests',
+            attendees: 'guests',
             creator: 'creator',
             status: 'status',
             _eventItemId: 'eventItemId'
@@ -85,11 +85,11 @@ class CalendarEvent extends Event {
             start: googleEvent.getStartTime(),
             end: googleEvent.getEndTime(),
             location: googleEvent.getLocation(),
-            attendees: googleEvent.getGuestList().map(g => g.getEmail()),
+            guests: googleEvent.getGuestList().filter(g => !(g.getEmail().includes('resource.calendar.google.com'))).map(g => g.getEmail()),
             creator: googleEvent.getCreators()?.[0] || '',
             visibility: googleEvent.getVisibility(), 
             
-        };
+        }; 
         const data = {eventItem:{},...super.convertRecordToData(record, CalendarEvent.getFromRecordMap())};
         // Create a new CalendarEvent instance from the record data
         if (record.start) {
@@ -98,12 +98,7 @@ class CalendarEvent extends Event {
         if (data._end) {
             data.duration = (new Date(record._end) - data.start) / (1000 * 60 * 60); // duration in hours
         }
-        if (data._attendees) {
-            data.attendees = data._attendees.split(',').map(a => a.trim());
-        } else {
-            data.attendees = [];
-        }
- 
+         
   
         // Extract the eventItemId from the description if it exists
         if (data._description) {
