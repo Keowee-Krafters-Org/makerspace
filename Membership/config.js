@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..56',
+  version: 'SNAPSHOT-..63',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -46,6 +46,7 @@ var SharedConfig = {
     from: 'noreply@keoweekrafters.org'
   },
   levels: {
+    'Guest': 0,
     'Interested Party': 1,
     'Active': 2,
     'Full Access': 3,

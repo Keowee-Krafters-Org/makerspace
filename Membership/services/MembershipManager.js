@@ -43,12 +43,12 @@ class MembershipManager {
     if (expired) {
       member.login.authentication = this.generateAuthentication();
       member.login.status = "VERIFYING";
-      this.storageManager.update(member.id, member);
+      member= this.storageManager.update(member.id, member).data;
     }
 
     if (!expired && member.registration && member.registration.status === 'REGISTERED') {
       member.login.status = 'VERIFIED';
-      this.storageManager.update(member.id, member);
+      member = this.storageManager.update(member.id, member).data;
     }
 
     if (member.login && member.login.status === 'VERIFYING') {

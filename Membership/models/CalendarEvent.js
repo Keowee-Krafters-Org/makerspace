@@ -1,4 +1,9 @@
 
+/**
+ * CalendarEvent.js
+ * Represents a calendar event with additional properties for event items.
+ * Extends the base Event class to include event item details.
+ */
 class CalendarEvent extends Event {
     constructor(eventData = {}) {
         if(!eventData.eventItem) {

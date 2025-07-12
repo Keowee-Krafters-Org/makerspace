@@ -1,40 +1,3 @@
-/**
- * Open the index page
- */
-function doGet(e) {
-  const modelFactory = Membership.newModelFactory();
-  // Deafault member object
-  // This is used when the user is not logged in or has not provided a memberId
-  let member = {firstName: 'Anonymous', lastName: 'Guest', registration: {status: 'NOT_REGISTERED', level: 'Guest'}, login: {status: 'NOT_VERIFIED'}};
-  
-  let canSignup = false;
-
-  if (e.parameter.memberId) {
-    const response = getMember(e.parameter.memberId);
-    if (response.success) {
-      const authentication = response.data.login.authentication;
-      const isValid = new Date() < new Date(authentication.expirationTime);
-      if (isValid) {
-        member = response.data;
-        delete member.login.authentication.token;
-        canSignup = true;
-      }
-    }
-  }
-
-  const eventManager = modelFactory.eventManager();
-
-  const template = HtmlService.createTemplateFromFile('index');
-  template.member = member;
-  template.sharedConfig = modelFactory.config;
-  template.canSignup = canSignup;
-  template.sharedConfig = modelFactory.config;
-
-  return template.evaluate()
-    .setTitle('Event Signup')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
 function getEventList() {
 
   const modelFactory = Membership.newModelFactory();
@@ -112,4 +75,3 @@ function getEventItemById(eventItemId) {
   const item = eventManager.getEventItemById(eventItemId);
   return JSON.stringify(item);
 }
-
