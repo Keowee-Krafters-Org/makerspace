@@ -34,3 +34,8 @@ function test_that_when_a_member_logs_in__then_the_member_is_returned() {
   const member = memberResponse.data; 
   assert( 'Member email  should match', emailAddress, member.emailAddress );
 }
+
+function test_get_event_rooms() {
+  const rooms = JSON.parse(getEventRooms());
+  assert('Event rooms should not be empty', true, Array.isArray(rooms) && rooms.length > 0);
+}

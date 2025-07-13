@@ -187,7 +187,7 @@
             const newBtn = document.createElement('button');
             newBtn.className = 'signup-btn';
             newBtn.textContent = 'New Class';
-            newBtn.onclick = () => editEvent({});
+            newBtn.onclick = () => newEvent({});
             document.querySelector('.container').prepend(newBtn);
         }
 
@@ -210,6 +210,10 @@
             document.getElementById('spinner').classList.add('hidden');
         }
 
+        /**
+         * Renders a list of classes in the UI.
+         * @param {Array} classes - The list of class objects to render.
+         */
         function renderClasses(classes) {
             const container = document.getElementById('classes');
             container.innerHTML = '';
@@ -236,6 +240,10 @@
             });
         }
 
+        /**
+         * Renders the details of a specific class.
+         * @param {Object} cls - The class object to render.
+         */ 
         function renderClass(cls) {
             const container = document.getElementById('classes');
             container.innerHTML = '';
@@ -297,6 +305,11 @@
       `;
         }
 
+        /**
+         * Handles the signup process for a class.
+         * @param {string} classId - The ID of the class to sign up for.
+         * @param {string} memberId - The ID of the member signing up.
+         */ 
         function signup(classId, memberId) {
             showSpinner();
             google.script.run
@@ -322,6 +335,30 @@
                 }).signup(classId, memberId);
         }
 
+        /**
+         * Creates a new event object and opens the edit form.
+         */
+        function newEvent() {
+            const event = {
+                id: null,
+                eventItem: {
+                    id: null,
+                    title: '',
+                    description: '',
+                    price: 0,
+                    sizeLimit: 0,
+                    enabled: true,
+                    host: ''
+                },
+                date: new Date(),
+                location: ''
+            };
+            editEvent(event);
+        }
+
+        /**
+         * Loads the list of events from the server and renders them.
+         */
         function loadEvents() {
             if (typeof google !== 'undefined' && google.script && google.script.run) {
                 showSpinner();
@@ -534,8 +571,6 @@
                 }
             }
 
-            const updated = createEvent();
-
             showSpinner();
             google.script.run
                 .withSuccessHandler(() => {
@@ -550,8 +585,8 @@
                 .updateEvent(updated);
         }
 
-        function createEventObject() {
-            const requiredFields = ['edit-title', 'edit-date', 'edit-location'];
+        function createEvent() {
+            const requiredFields = ['edit-date', 'edit-location', 'edit-event-item'];
             for (const id of requiredFields) {
                 const field = document.getElementById(id);
                 if (!field.value.trim()) {

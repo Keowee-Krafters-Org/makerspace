@@ -165,7 +165,7 @@
 
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
-            const levelNumber = sharedConfig[member.registration.level];
+            const levelNumber = sharedConfig.levels[member.registration.level];
             console.log(`Member level: ${member.registration.level} (${levelNumber})`);
             content += `<ul>
                 <li><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}">View Classes</a></li>`;

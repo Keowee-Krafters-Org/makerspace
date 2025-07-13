@@ -118,7 +118,7 @@ class CalendarEvent extends Event {
         const start = this.date;
         const durationHours = Number(this.eventItem.duration) || 2;
         this._end = start?new Date(start.getTime() + durationHours * 60 * 60 * 1000):undefined;
-        this._description = this.updateDescription(this.eventItem.description, this.eventItem.id)
+        this._description = this.updateDescription()
         return super.convertDataToRecord(CalendarEvent.getToRecordMap());
     }
 
@@ -127,12 +127,10 @@ class CalendarEvent extends Event {
  * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
  * @returns {CalendarEvent}
  */
-    updateDescription(description, eventItemId) {
+    updateDescription() {
 
         // Update the description with the event item link
-        const updatedDescription = `${description}\nView Details: ${SharedConfig.baseUrl}/event?eventItemId=${eventItemId}`;
+        const updatedDescription = `<a href="${getConfig().baseUrl}?view=event&eventId=${this.id}&eventItemId=${this.eventItem.id}">View Details</a>`;
         return updatedDescription;
-
     }
-
 }

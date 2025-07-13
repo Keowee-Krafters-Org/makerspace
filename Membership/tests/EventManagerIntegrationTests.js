@@ -272,3 +272,25 @@ function test_getEventRooms() {
         Logger.log(`getEventRooms failed: ${error.message}`);
     }
 }
+
+function test_get_calendar_resources() {
+    const eventManager = modelFactory.eventManager();
+    try {
+        const resources = eventManager.getEventRooms();
+        Logger.log('getCalendarResources returned: ' + JSON.stringify(resources));
+        assert('Calendar resources should be an array', Array.isArray(resources), true);
+        assert('At least one calendar resource returned', resources.length > 0, true);
+        // Optionally, check that each resource has expected properties
+        resources.forEach((resource, idx) => {
+            assert(`Resource ${idx} has id`, typeof resource.id !== 'undefined', true);
+            assert(`Resource ${idx} has name`, typeof resource.name !== 'undefined', true);
+            assert(`Resource ${idx} has email`, typeof resource.email !== 'undefined', true);
+        });
+    } catch (error) {
+        Logger.log(`getCalendarResources failed: ${error.message}`);
+    }
+    finally {
+            // No cleanup needed for calendar resources
+        }   
+    Logger.log('getCalendarResources test completed.');
+}
