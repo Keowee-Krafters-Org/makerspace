@@ -10,10 +10,10 @@ const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
     date: new Date(),
     attendees: [],
+    location: 'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com',
     eventItem: {
         id: '',
         title: 'Test Event',
-        location: 'MakeKeowee, Woodshop, 4 Eagle Ln, Salem, SC 29676',
         sizeLimit: '3',
         host: { name: 'Test Host', id: '5636475000000295003' },
         description: 'This is a test event. Do not signup !!',
@@ -54,6 +54,7 @@ function test_getEventList() {
             assert(`Event ${idx} has id`, typeof event.id !== 'undefined', true);
             assert(`Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
             assert(`Event ${idx} has date`, event.date instanceof Date, true);
+            assert(`Event ${idx} has location`, event.location instanceof CalendarLocation, true);
         });
         Logger.log('Event list verification passed.');
 

@@ -9,6 +9,7 @@ class EventManager {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
+    this.config = getConfig();
   }
 
   getEventItemList(params = {}) {
@@ -27,7 +28,8 @@ class EventManager {
   }
 
   getUpcomingEvents(params = {}) {
-    const calendarEvents = this.calendarManager.getUpcomingEvents();
+    const eventHorizon = params.horizon || getConfig().eventHorizon;
+    const calendarEvents = this.calendarManager.getUpcomingEvents(eventHorizon);
     if (!calendarEvents || calendarEvents.length === 0) {
       return [];
     }
@@ -107,7 +109,7 @@ class EventManager {
       eventData.eventItem = eventItem;
       // Add the event to the calendar
       const calendarEvent = this.calendarManager.create(eventData);
-      const newCalendarEvent = this.addCalendarEvent(calendarEvent);
+      const newCalendarEvent = this.addCalendarEvent(calendarEvent, eventItem);
       newCalendarEvent.eventItem = eventItem;
       return { success: true, data: newCalendarEvent };
     } catch (err) {
@@ -121,8 +123,8 @@ class EventManager {
     return this.storageManager.add(event);
   }
 
-  addCalendarEvent(calendarEvent) {
-    return this.calendarManager.add(calendarEvent);
+  addCalendarEvent(calendarEvent, eventItem) {
+    return this.calendarManager.add(calendarEvent, eventItem);
   }
 
 
@@ -220,4 +222,8 @@ class EventManager {
   getEventRooms() {
     return this.calendarManager.getCalendarResources();
   }
+
+  getEventLocations() {
+    return this.config.locations;
+  } 
 }

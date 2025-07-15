@@ -1,6 +1,7 @@
 /**
  * Service managing calendars (Google)
  * Provides the CRUD operations to sync Events to the Calendar
+ * 
  */
 
 class CalendarManager extends StorageManager {
@@ -17,22 +18,35 @@ class CalendarManager extends StorageManager {
    * @param {Object} event 
    * @returns {string} calendarEventId
    */
-  add(calendarEvent) {
+  add(calendarEvent, eventItem) {
 
     const calendarRecord = calendarEvent.toRecord(); 
-    const calendarEventRecord = this.calendar.createEvent( 
+    const event = this.calendar.createEvent( 
       calendarRecord.title || 'Untitled Class',
       calendarRecord.start,
       calendarRecord.end,
-      {
-        description: calendarRecord.description,
-        location: calendarRecord.location,
-        guests: calendarRecord.attendees,
-      }
+  
     );
-    return CalendarEvent.fromRecord(calendarEventRecord);
+    // Set the description with the event item link
+    event.setDescription(CalendarManager.updateDescription(event.getId(), eventItem.id)); 
+    event.addGuest(calendarRecord.location); // Add the room as a guest
+    return this.fromRecord(event);
   }
 
+  fromRecord(googleEvent) {
+    const newCalendarEvent =  CalendarEvent.fromRecord(googleEvent);
+    const locationEmail = newCalendarEvent.location || '';
+    if (locationEmail) {
+      const calendarLocation = this.getCalendarResources().find(r => r.email === locationEmail);
+      newCalendarEvent.location = calendarLocation; // Store the room email for later use
+    }
+    return newCalendarEvent;
+  }
+  /**
+   * Updates an existing calendar event using a CalendarEvent object
+   * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
+   * @returns {CalendarEvent}
+   */
   create(eventData) {
     return CalendarEvent.createNew(eventData); 
   }
@@ -50,10 +64,12 @@ class CalendarManager extends StorageManager {
     event.setTitle(calendarEvent.title || event.getTitle());
     event.setTime(calendarEventRecord.start || event.getStartTime(), calendarEventRecord.end || event.getEndTime()) ;
     event.setLocation(calendarEventRecord.location || event.getLocation());
-    event.setDescription(calendarEventRecord.description || event.getDescription());
-     
-    this.calendar.updateEvent(event);
-    return CalendarEvent.fromRecord(event);
+    event.setDescription(CalendarManager.updateDescription(calendarEventRecord.id, event.eventItem.id));
+    if(calendarEventRecord.roomEmail) {
+      event.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => event.removeGuest(g.getEmail())),
+      event.addGuest(calendarEventRecord.roomEmail); // Add the room as a guest
+    }
+    return this.fromRecord(event);
   }
 
   /**
@@ -61,11 +77,11 @@ class CalendarManager extends StorageManager {
    * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
    * @returns {CalendarEvent}
    */
-  updateDescription(description, eventItemId) {
+  static updateDescription(eventId, eventItemId) {
 
-    // Update the description with the event item link
-    const updatedDescription = `${description}\nView Details: ${SharedConfig.baseUrl}/event?eventId=${eventItemId}`;
-    return updatedDescription;
+   // Update the description with the event item link
+      const updatedDescription = `<a href="${getConfig().baseUrl}?view=event&eventId=${eventId}&eventItemId=${eventItemId}">View Details</a>`;
+      return updatedDescription;
 
   }
   /**
@@ -89,7 +105,7 @@ class CalendarManager extends StorageManager {
    */
   getEvent(calendarId) {
     const event = this.calendar.getEventById(calendarId);
-    return event ? CalendarEvent.fromRecord(event) : null;
+    return event ? this.fromRecord(event) : null;
   }
 
   getUpcomingEvents(daysAhead = 14) {
@@ -112,7 +128,7 @@ class CalendarManager extends StorageManager {
     }
 
     const events = this.calendar.getEvents(start, end);
-    return events.map(event => CalendarEvent.fromRecord(event));
+    return events.map(event => this.fromRecord(event));
   }
 
   /**
@@ -158,11 +174,7 @@ class CalendarManager extends StorageManager {
     const customerId = 'my_customer';
     try {
       const resources = AdminDirectory.Resources.Calendars.list(customerId).items || [];
-      return resources.map(resource => ({
-        id: resource.resourceId,
-        name: resource.resourceName,
-        email: resource.resourceEmail
-      }));
+      return resources.map(resource => CalendarLocation.fromRecord(resource));
     } catch (e) {
       Logger.log('Error fetching calendar resources: ' + e);
       return [];
@@ -176,6 +188,6 @@ class CalendarManager extends StorageManager {
       throw new Error(`No calendar event found for ID: ${calendarId}`);
     }
     event.addGuest(emailAddress); 
-    return CalendarEvent.fromRecord(event); 
+    return this.fromRecord(event); 
   }
 }

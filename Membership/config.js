@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..71',
+  version: 'SNAPSHOT-..87',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -13,6 +13,10 @@ var SharedConfig = {
       baseUrl: 'https://script.google.com/macros/s/AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL/exec',
     }
   },
+  eventHorizon: 30, // days
+  upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
+  upcomingClassesSort: 'start', // sort by start date
+  upcomingClassesSortOrder: 'asc', // ascending order
   loginTokenExpirationMinutes: 15,
   sessionTokenExpirationMinutes: 60 * 24,
   services: {
@@ -68,7 +72,10 @@ var SharedConfig = {
     'Treasurer': 14,
     'Advisor': 15,
     'Administrator': 30
-  }
+  },
+  locations: ['Eagles Nest Arts Center,4 Eagle Lane, Salem, SC 29676',
+    'Keowee Key Clubhouse, Stamp Creek Road, Salem, SC 29676'
+  ]
 };
 
 function getConfig() {

@@ -1,4 +1,3 @@
-
 /**
  * CalendarEvent.js
  * Represents a calendar event with additional properties for event items.
@@ -49,6 +48,7 @@ class CalendarEvent extends Event {
             date: this.start,
             duration: this.duration,
             location: this.location,
+            room: this.room, // <-- Add this line
             attendees: this.attendees,
             creator: this.creator,
             status: this.status,
@@ -77,20 +77,20 @@ class CalendarEvent extends Event {
     }
 
     static fromRecord(googleEvent) {
-
         const record = {
             id: googleEvent.getId(),
             title: googleEvent.getTitle(),
             description: googleEvent.getDescription(),
             start: googleEvent.getStartTime(),
             end: googleEvent.getEndTime(),
-            location: googleEvent.getLocation(),
-            guests: googleEvent.getGuestList().filter(g => !(g.getEmail().includes('resource.calendar.google.com'))).map(g => g.getEmail()),
+            location: googleEvent.getGuestList().filter(g => CalendarEvent.resourceFilter(g)).map(g => g.getEmail())[0] || '', 
+            guests: googleEvent.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => g.getEmail()),
             creator: googleEvent.getCreators()?.[0] || '',
-            visibility: googleEvent.getVisibility(), 
-            
-        }; 
-        const data = {eventItem:{},...super.convertRecordToData(record, CalendarEvent.getFromRecordMap())};
+            visibility: googleEvent.getVisibility(),
+        };
+
+        const data = { eventItem: {}, ...super.convertRecordToData(record, CalendarEvent.getFromRecordMap()) };
+
         // Create a new CalendarEvent instance from the record data
         if (record.start) {
             data.date = new Date(record.start);
@@ -117,9 +117,13 @@ class CalendarEvent extends Event {
         this._eventItemId = this.eventItem.id; // Store eventItemId directly
         const start = this.date;
         const durationHours = Number(this.eventItem.duration) || 2;
-        this._end = start?new Date(start.getTime() + durationHours * 60 * 60 * 1000):undefined;
-        this._description = this.updateDescription()
+        this._end = start ? new Date(start.getTime() + durationHours * 60 * 60 * 1000) : undefined;
+        this._description = this.id ? this.updateDescription() : undefined;
         return super.convertDataToRecord(CalendarEvent.getToRecordMap());
+    }
+
+    static resourceFilter(guest) {
+        return (guest.getEmail().includes('resource.calendar.google.com')); 
     }
 
     /**
@@ -128,9 +132,8 @@ class CalendarEvent extends Event {
  * @returns {CalendarEvent}
  */
     updateDescription() {
-
-        // Update the description with the event item link
-        const updatedDescription = `<a href="${getConfig().baseUrl}?view=event&eventId=${this.id}&eventItemId=${this.eventItem.id}">View Details</a>`;
-        return updatedDescription;
+        return CalendarManager.updateDescription(this.id, this.eventItem.id)
     }
+
+   
 }

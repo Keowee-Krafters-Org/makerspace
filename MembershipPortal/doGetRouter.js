@@ -3,7 +3,7 @@ function doGet(e) {
     let html;
     const modelFactory = Membership.newModelFactory();
     let canSignup = false; // ✅ properly declare this
-
+    let event = undefined; // Initialize event to null
     // Default member object
     let member = {
         id: '',
@@ -28,8 +28,12 @@ function doGet(e) {
     }
 
     if (view === 'event') {
+        if(e.parameter.eventId) {
+            event = modelFactory.eventManager().getEventById(e.parameter.eventId);
+        }
         html = HtmlService.createTemplateFromFile('EventPortal/event');
         html.canSignup = canSignup;
+        html.event = event;
     } else {
         html = HtmlService.createTemplateFromFile('MemberPortal/member');
     }

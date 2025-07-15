@@ -72,7 +72,6 @@
         }
 
         .spinner {
-            display: none;
             margin: 20px auto;
             border: 6px solid #f3f3f3;
             border-top: 6px solid #3367d6;
@@ -171,6 +170,9 @@
     <script type="application/json" id="can-signup">
     <?!= JSON.stringify(canSignup) ?>
   </script>
+    <script type="application/json" id="event-data">
+    <?!= JSON.stringify(event) ?>
+  </script>
     <script>
         const currentMember = JSON.parse(document.getElementById('member-data').textContent);
         window.currentMemberId = currentMember.id;
@@ -178,6 +180,17 @@
         window.sharedConfig = sharedConfig;
         const canSignup = JSON.parse(document.getElementById('can-signup').textContent);
         window.canSignup = canSignup;
+        const eventData = document.getElementById('event-data').textContent;
+        let event;
+        console.log("Event data:", eventData);
+        if (eventData && eventData.trim() !== '') {
+            try {
+                event = JSON.parse(eventData);
+            } catch (e) {
+                console.error("Failed to parse event data:", e);
+            }
+        }
+        window.event = event;
     </script>
 
     <script>
@@ -191,16 +204,7 @@
             document.querySelector('.container').prepend(newBtn);
         }
 
-        // Display member name
-        document.getElementById('memberName').textContent =
-            `${currentMember.firstName} ${currentMember.lastName}`;
 
-        // Show version if available
-        if (sharedConfig.version?.eventPortal) {
-            document.getElementById('version').textContent = `Version: ${sharedConfig.version.eventPortal}`;
-        }
-
-        loadEvents();
 
         function showSpinner() {
             document.getElementById('spinner').classList.remove('hidden');
@@ -243,7 +247,7 @@
         /**
          * Renders the details of a specific class.
          * @param {Object} cls - The class object to render.
-         */ 
+         */
         function renderClass(cls) {
             const container = document.getElementById('classes');
             container.innerHTML = '';
@@ -309,7 +313,7 @@
          * Handles the signup process for a class.
          * @param {string} classId - The ID of the class to sign up for.
          * @param {string} memberId - The ID of the member signing up.
-         */ 
+         */
         function signup(classId, memberId) {
             showSpinner();
             google.script.run
@@ -360,8 +364,8 @@
          * Loads the list of events from the server and renders them.
          */
         function loadEvents() {
+            showSpinner();
             if (typeof google !== 'undefined' && google.script && google.script.run) {
-                showSpinner();
                 google.script.run.withSuccessHandler(res => {
                     const response = JSON.parse(res);
                     if (response.success !== true) {
@@ -507,6 +511,10 @@
             addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.eventItem.description));
             addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
 
+            // Add Duration field (in minutes)
+            addLabeledField(form, 'Duration (minutes):', createInput('edit-duration', cls.eventItem.duration || '', 'number'));
+
+
             // Placeholder for Location dropdown (replace the existing location input)
             const locationFieldContainer = document.createElement('div');
             locationFieldContainer.id = 'location-field-container';
@@ -525,13 +533,32 @@
                 // Use resource name for display, resource email as value
                 const dropdown = createDropdown(
                     'edit-location',
-                    resourceList.map(r => ({ id: r.email, name: r.name })),
-                    cls.location || ''
+                    resourceList.map(r => ({ id: r.email, name: r.description || r.name})),
+                    cls.location.email || ''
                 );
                 locationFieldContainer.innerHTML = '';
                 addLabeledField(locationFieldContainer, 'Location:', dropdown);
             }).getEventRooms();
-
+/*
+            // Fetch rooms from backend and populate the Room dropdown
+            google.script.run.withSuccessHandler(function (rooms) {
+                let roomList = rooms;
+                if (typeof rooms === 'string') {
+                    try {
+                        roomList = JSON.parse(rooms);
+                    } catch (e) {
+                        roomList = [];
+                    }
+                }
+                const dropdown = createDropdown(
+                    'edit-room',
+                    roomList.map(r => ({ id: r.id, name: r.name })),
+                    cls.room || ''
+                );
+                roomFieldContainer.innerHTML = '';
+                addLabeledField(roomFieldContainer, 'Room:', dropdown);
+            }).getEventRooms();
+*/
             // Placeholder for Host dropdown
             const hostFieldContainer = document.createElement('div');
             hostFieldContainer.id = 'host-field-container';
@@ -617,10 +644,12 @@
             const description = document.getElementById('edit-desc').value;
             const date = document.getElementById('edit-date').value;
             const location = document.getElementById('edit-location').value;
+         //   const room = document.getElementById('edit-room').value;
             const price = parseFloat(document.getElementById('edit-price').value) || 0;
             const sizeLimit = parseInt(document.getElementById('edit-size').value) || 0;
             const enabled = document.getElementById('edit-enabled').checked;
             const host = document.getElementById('edit-host').value;
+            const duration = parseInt(document.getElementById('edit-duration').value) || 0; // <-- Add this line
 
             return JSON.stringify({
                 id: eventItemId,
@@ -631,7 +660,9 @@
                     price: price,
                     sizeLimit: sizeLimit,
                     enabled: enabled,
-                    host: host
+                    host: host,
+//                    room: room,
+                    duration: duration // <-- Add this line
                 },
                 date: new Date(date),
                 location: location
@@ -648,6 +679,31 @@
             const min = String(d.getMinutes()).padStart(2, '0');
             return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
         }
+
+        // Load events when the page is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Display member name
+            document.getElementById('memberName').textContent =
+                `${currentMember.firstName} ${currentMember.lastName}`;
+
+            // Show version if available
+            if (sharedConfig.version?.eventPortal) {
+                document.getElementById('version').textContent = `Version: ${sharedConfig.version.eventPortal}`;
+            }
+            if (window.event) {
+                console.log("Rendering existing event:", window.event);
+                showSpinner();
+                document.getElementById('classes').innerHTML = '<p>Loading events...</p>';
+                renderClass(window.event)
+                hideSpinner();
+            } else {
+                console.log("Loading events from server...");
+                showSpinner();
+                document.getElementById('classes').innerHTML = '<p>Loading events...</p>';
+                loadEvents();
+                hideSpinner();
+            }
+        });
     </script>
 
 

@@ -62,6 +62,14 @@ function getEventRooms() {
   return JSON.stringify(resources);
 }
 
+function getEventLocations() {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  // Assuming getEventLocations is a method that returns an array of locations
+  const locations = eventManager.getEventLocations();
+  return JSON.stringify(locations);
+} 
+
 function getEventItemList() {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
