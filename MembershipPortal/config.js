@@ -6,11 +6,11 @@
 
 
 config = {
-  version: 'SNAPSHOT-0.0.27', 
+  version: 'SNAPSHOT-0.0.29', 
   deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
 
 };
 
 function getConfig() {
-  return {...Membership.SharedConfig, ...config};
+  return {...Membership.getConfig(), ...config};
 }

@@ -44,14 +44,21 @@ class EventManager {
    */
   enrichCalendarEvents(calendarEvents) {
     const enriched = calendarEvents.map(ce => {
-      const result = this.storageManager.getById(ce.eventItem.id);
+
+      return this.enrichCalendarEvent(ce);
+    });
+    return enriched.filter(e => e !== null);
+  }
+
+
+  enrichCalendarEvent(calendarEvent) {
+         const result = this.storageManager.getById(calendarEvent.eventItem.id);
       if (!result || !result.data) {
         return null;
       }
-      ce.eventItem = result.data;
-      return ce;
-    });
-    return enriched.filter(e => e !== null);
+      calendarEvent.eventItem = result.data;
+      return calendarEvent;
+
   }
   getPastEvents() {
     const response = this.calendarManager.getFiltered(event => event.isPast());
@@ -64,11 +71,12 @@ class EventManager {
   }
 
   getEventById(eventId) {
-    const result = this.calendarManager.getById(eventId);
-    if (result?.data) {
-      result.data = result.data.map(e => this.enrichCalendarEvents(e));
+    const event = this.calendarManager.getById(eventId);
+    if (!event) {
+      throw new Error(`Event Not Found for: ${eventId}`); 
     }
-    return result;
+    const newEvent = this.enrichCalendarEvent(event);
+    return newEvent;
   }
   getEventsByHost(host) {
     const calendarEvents = this.calendarManager.getFiltered(event => {

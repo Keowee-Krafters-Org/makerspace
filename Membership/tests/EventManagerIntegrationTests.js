@@ -63,6 +63,14 @@ function test_getEventList() {
     }
 }
 
+function test_get_event_by_id() {
+  eventId = 'n1vm21rudr0h4rdt1o46p9f0s8@google.com'; 
+  
+    const eventManager = modelFactory.eventManager();
+    const event = eventManager.getEventById(eventId); 
+    assert("Event Found", true, event!=undefined); 
+}
+
 function test_getUpcomingEvents() {
     const eventManager = modelFactory.eventManager();
     try {

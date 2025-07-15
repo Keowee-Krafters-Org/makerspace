@@ -302,7 +302,7 @@
         <div class="class-desc">${cls.eventItem.description}</div>
         <div class="class-info"><strong>Price:</strong> $${Number(cls.eventItem.price).toFixed(2)}</div>
         <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
-        <div class="class-info"><strong>Location:</strong> ${cls.location}</div>
+        <div class="class-info"><strong>Location:</strong> ${cls.location.description}</div>
         <div class="class-info"><strong>Instructor:</strong> ${cls.eventItem.host?.name || cls.eventItem.host || ''}</div>
         <div class="class-info"><strong>Max Attendees:</strong> ${cls.eventItem.sizeLimit}</div>
         <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
