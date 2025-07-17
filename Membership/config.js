@@ -1,10 +1,22 @@
 const config = {
-  version: 'SNAPSHOT-..56',
+  version: 'SNAPSHOT-..102',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
 var SharedConfig = {
-  ...config,
+  mode: 'prod',
+  modes: {
+    dev: {
+      baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
+    },
+    prod: {
+      baseUrl: 'https://script.google.com/macros/s/AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL/exec',
+    }
+  },
+  eventHorizon: 30, // days
+  upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
+  upcomingClassesSort: 'start', // sort by start date
+  upcomingClassesSortOrder: 'asc', // ascending order
   loginTokenExpirationMinutes: 15,
   sessionTokenExpirationMinutes: 60 * 24,
   services: {
@@ -46,10 +58,11 @@ var SharedConfig = {
     from: 'noreply@keoweekrafters.org'
   },
   levels: {
+    'Guest': 0,
     'Interested Party': 1,
     'Active': 2,
     'Full Access': 3,
-    'Lifetime': 4,    
+    'Lifetime': 4,
     'Host': 5,
     'Instructor': 6,
     'Board': 10,
@@ -59,6 +72,20 @@ var SharedConfig = {
     'Treasurer': 14,
     'Advisor': 15,
     'Administrator': 30
-  }
+  },
+  locations: ['Eagles Nest Arts Center,4 Eagle Lane, Salem, SC 29676',
+    'Keowee Key Clubhouse, Stamp Creek Road, Salem, SC 29676'
+  ],
+  defaultMember: {
+        id: '',
+        firstName: '',
+        lastName: 'Guest',
+        emailAddress: '',
+        registration: { status: 'NOT_REGISTERED', level: 'Guest' },
+        login: { status: 'UNVERIFIED' }
+    }
 };
 
+function getConfig() {
+  return {...SharedConfig, ...config, baseUrl: SharedConfig.modes[SharedConfig.mode].baseUrl};
+}

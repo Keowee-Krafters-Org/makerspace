@@ -1,4 +1,8 @@
-
+/**
+ * CalendarEvent.js
+ * Represents a calendar event with additional properties for event items.
+ * Extends the base Event class to include event item details.
+ */
 class CalendarEvent extends Event {
     constructor(eventData = {}) {
         if(!eventData.eventItem) {
@@ -37,12 +41,7 @@ class CalendarEvent extends Event {
     set costDescription(value) {
         this.eventItem.costDescription = value;
     }
-    get location() {
-        return this.eventItem.location || '';
-    }
-    set location(value) {
-        this.eventItem.location = value;
-    }
+
 
     toObject() {
         return {
@@ -50,6 +49,7 @@ class CalendarEvent extends Event {
             date: this.start,
             duration: this.duration,
             location: this.location,
+            room: this.room, // <-- Add this line
             attendees: this.attendees,
             creator: this.creator,
             status: this.status,
@@ -65,7 +65,7 @@ class CalendarEvent extends Event {
             date: 'start',
             _end: 'end',
             location: 'location',
-            _attendees: 'guests',
+            attendees: 'guests',
             creator: 'creator',
             status: 'status',
             _eventItemId: 'eventItemId'
@@ -78,20 +78,20 @@ class CalendarEvent extends Event {
     }
 
     static fromRecord(googleEvent) {
-
         const record = {
             id: googleEvent.getId(),
             title: googleEvent.getTitle(),
             description: googleEvent.getDescription(),
             start: googleEvent.getStartTime(),
             end: googleEvent.getEndTime(),
-            location: googleEvent.getLocation(),
-            attendees: googleEvent.getGuestList().map(g => g.getEmail()),
+            location: googleEvent.getGuestList().filter(g => CalendarEvent.resourceFilter(g)).map(g => g.getEmail())[0] || '', 
+            guests: googleEvent.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => g.getEmail()),
             creator: googleEvent.getCreators()?.[0] || '',
-            visibility: googleEvent.getVisibility(), 
-            
+            visibility: googleEvent.getVisibility(),
         };
-        const data = {eventItem:{},...super.convertRecordToData(record, CalendarEvent.getFromRecordMap())};
+
+        const data = { eventItem: {}, ...super.convertRecordToData(record, CalendarEvent.getFromRecordMap()) };
+
         // Create a new CalendarEvent instance from the record data
         if (record.start) {
             data.date = new Date(record.start);
@@ -99,12 +99,7 @@ class CalendarEvent extends Event {
         if (data._end) {
             data.duration = (new Date(record._end) - data.start) / (1000 * 60 * 60); // duration in hours
         }
-        if (data._attendees) {
-            data.attendees = data._attendees.split(',').map(a => a.trim());
-        } else {
-            data.attendees = [];
-        }
- 
+         
   
         // Extract the eventItemId from the description if it exists
         if (data._description) {
@@ -123,9 +118,13 @@ class CalendarEvent extends Event {
         this._eventItemId = this.eventItem.id; // Store eventItemId directly
         const start = this.date;
         const durationHours = Number(this.eventItem.duration) || 2;
-        this._end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
-        this._description = this.updateDescription(this.eventItem.description, this.eventItem.id)
+        this._end = start ? new Date(start.getTime() + durationHours * 60 * 60 * 1000) : undefined;
+        this._description = this.id ? this.updateDescription() : undefined;
         return super.convertDataToRecord(CalendarEvent.getToRecordMap());
+    }
+
+    static resourceFilter(guest) {
+        return (guest.getEmail().includes('resource.calendar.google.com')); 
     }
 
     /**
@@ -133,12 +132,9 @@ class CalendarEvent extends Event {
  * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
  * @returns {CalendarEvent}
  */
-    updateDescription(description, eventItemId) {
-
-        // Update the description with the event item link
-        const updatedDescription = `${description}\nView Details: ${SharedConfig.baseUrl}/event?eventItemId=${eventItemId}`;
-        return updatedDescription;
-
+    updateDescription() {
+        return CalendarManager.updateDescription(this.id, this.eventItem.id)
     }
 
+   
 }

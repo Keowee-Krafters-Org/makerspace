@@ -6,7 +6,7 @@ class ZohoEvent extends Event {
 
   static getResourceNameSingular() { return 'item'; }
   static getResourceNamePlural() { return 'items'; }
-  static getFilter() { return { type: 'Event', eventType: 'Class', enabled: 'true' }; }
+  static getFilter() { return { type: 'Event', enabled: 'true' }; }
 
   static getToRecordMap() {
     return {
@@ -51,7 +51,7 @@ class ZohoEvent extends Event {
     // Flatten the host record to id only
     this._hostId = this.host?this.host.id:'';
     const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
-    record.product_type = 'service';
+    //record.product_type = 'service';
     return record; 
   }
 

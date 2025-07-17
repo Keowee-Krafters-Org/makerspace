@@ -9,6 +9,7 @@ class EventManager {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
+    this.config = getConfig();
   }
 
   getEventItemList(params = {}) {
@@ -27,7 +28,8 @@ class EventManager {
   }
 
   getUpcomingEvents(params = {}) {
-    const calendarEvents = this.calendarManager.getUpcomingEvents();
+    const eventHorizon = params.horizon || getConfig().eventHorizon;
+    const calendarEvents = this.calendarManager.getUpcomingEvents(eventHorizon);
     if (!calendarEvents || calendarEvents.length === 0) {
       return [];
     }
@@ -42,14 +44,21 @@ class EventManager {
    */
   enrichCalendarEvents(calendarEvents) {
     const enriched = calendarEvents.map(ce => {
-      const result = this.storageManager.getById(ce.eventItem.id);
+
+      return this.enrichCalendarEvent(ce);
+    });
+    return enriched.filter(e => e !== null);
+  }
+
+
+  enrichCalendarEvent(calendarEvent) {
+         const result = this.storageManager.getById(calendarEvent.eventItem.id);
       if (!result || !result.data) {
         return null;
       }
-      ce.eventItem = result.data;
-      return ce;
-    });
-    return enriched.filter(e => e !== null);
+      calendarEvent.eventItem = result.data;
+      return calendarEvent;
+
   }
   getPastEvents() {
     const response = this.calendarManager.getFiltered(event => event.isPast());
@@ -62,11 +71,12 @@ class EventManager {
   }
 
   getEventById(eventId) {
-    const result = this.calendarManager.getById(eventId);
-    if (result?.data) {
-      result.data = result.data.map(e => this.enrichCalendarEvents(e));
+    const event = this.calendarManager.getById(eventId);
+    if (!event) {
+      throw new Error(`Event Not Found for: ${eventId}`); 
     }
-    return result;
+    const newEvent = this.enrichCalendarEvent(event);
+    return newEvent;
   }
   getEventsByHost(host) {
     const calendarEvents = this.calendarManager.getFiltered(event => {
@@ -92,7 +102,7 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-      const event = new CalendarEvent(eventData);
+      const event = this.createEvent(eventData);
       let eventItem = event.eventItem;
       if (eventItem && eventItem.id) {
         const eventItemResponse = this.updateEventItem(eventItem);
@@ -107,7 +117,7 @@ class EventManager {
       eventData.eventItem = eventItem;
       // Add the event to the calendar
       const calendarEvent = this.calendarManager.create(eventData);
-      const newCalendarEvent = this.addCalendarEvent(calendarEvent);
+      const newCalendarEvent = this.addCalendarEvent(calendarEvent, eventItem);
       newCalendarEvent.eventItem = eventItem;
       return { success: true, data: newCalendarEvent };
     } catch (err) {
@@ -121,18 +131,18 @@ class EventManager {
     return this.storageManager.add(event);
   }
 
-  addCalendarEvent(calendarEvent) {
-    return this.calendarManager.add(calendarEvent);
+  addCalendarEvent(calendarEvent, eventItem) {
+    return this.calendarManager.add(calendarEvent, eventItem);
   }
 
 
   updateEvent(calendarEvent) {
     try {
-      this.calendarManager.update(calendarEvent);
+      const updatedEvent = this.calendarManager.update(calendarEvent.id,calendarEvent);
       if (calendarEvent.eventItem) {
-        return this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
+        updatedEvent.eventItem = this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
       }
-      return { success: true };
+      return new Response(true, updatedEvent, 'Event updated successfully.');
     } catch (err) {
       console.error('Failed to update calendar event:', err);
       return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
@@ -164,7 +174,21 @@ class EventManager {
   }
 
   createEvent(data = {}) {
-    return this.calendarManager.create(data);
+    const calendarEvent =  this.calendarManager.create(data);
+    if (!calendarEvent) {
+      throw new Error('Failed to create calendar event.');
+    }
+    const eventItem = this.storageManager.createNew(data.eventItem || {});
+    if (!eventItem) {
+      throw new Error('Failed to create event item.');
+    }
+    const host = this.membershipManager.createNew(data.host || {});
+    if (!host) {
+      throw new Error('Failed to create host.');
+    }
+    eventItem.host= host;
+    calendarEvent.eventItem = eventItem;
+    return calendarEvent;
   }
 
   /**
@@ -174,11 +198,10 @@ class EventManager {
    * @returns Response(EventConfirmation) 
    */
   signup(eventId, memberId) {
-    const eventResponse = this.storageManager.getById(eventId);
-    if (!(eventResponse && eventResponse.data)) {
-      return { success: false, error: 'Event not found.' };
+    const event = this.calendarManager.getById(eventId);
+    if (!event) {
+      throw new Error('Event not found.' );
     }
-    const event = eventResponse.data;
     // Prevent duplicate signups
     if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
       return { success: false, error: 'Member already signed up for this event.' };
@@ -189,18 +212,34 @@ class EventManager {
       return { success: false, error: 'Event is full.' };
     }
 
-
-    // Add member to attendees
-    event.attendees = Array.isArray(event.attendees) ? event.attendees : [];
-    event.attendees.push(memberId);
-
-    const updatedEvent = this.storageManager.create({ id: event.id, attendees: event.attendees })
-    // Persist the updated event
-    this.storageManager.update(eventId, updatedEvent);
+    const memberResponse= this.membershipManager.getMember(memberId); 
+    if (!(memberResponse && memberResponse.success)) {
+      throw new Error('Member not found'); 
+    }
+    const member = memberResponse.data; 
+    this.calendarManager.addAttendee(eventId, member.emailAddress);
 
     return {
       success: true, data: { message: `You are successfully signed up successfully for: ${event.name}`, eventId: eventId }
     }
+  }
+
+  /**
+   * Unregister a member from an event
+   * @param {string} eventId - The ID of the event
+   * @param {string} memberId - The ID of the member
+   * @returns {Object} Response indicating success or failure
+   */
+  unregister(eventId, memberId) {
+    const memberResponse = this.membershipManager.getMember(memberId);
+    if (!(memberResponse && memberResponse.success)) {
+      return { success: false, error: 'Member not found.' };
+    }
+
+    const member = memberResponse.data;
+
+    // Delegate the unregistration to the CalendarManager
+    return this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
   }
 
   enrichWithCalendarData(event) {
@@ -223,4 +262,8 @@ class EventManager {
   getEventRooms() {
     return this.calendarManager.getCalendarResources();
   }
+
+  getEventLocations() {
+    return this.config.locations;
+  } 
 }

@@ -3,12 +3,14 @@
  * This function acts as a secure relay to expose necessary configuration
  * such as form URLs and entry mappings, while keeping the config centralized. See: Membership.config project
  */
-function getConfig() {
-  return {...Membership.SharedConfig, ...config};
-}
+
 
 config = {
-  version: 'SNAPSHOT-0.1.80',
-  deploymentId: 'AKfycbzu3_5bzUEXaoqYMjczvq3BFLIxoYB4z7stAzu5qIk3L2MWbdTi09wsao3IVg6HoKV5'
-}
+  version: 'SNAPSHOT-0.0.49', 
+  deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
 
+};
+
+function getConfig() {
+  return {...Membership.getConfig(), ...config};
+}

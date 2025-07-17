@@ -19,8 +19,8 @@ class MembershipManager {
     if (!member.id) throw new Error(`Member ID missing: ${member.emailAddress}`);
     if (!member.name) throw new Error(`Member name missing: ${member.name}`);
     try {
-      this.storageManager.update(member.id, member);
-      return member;
+      const response = this.storageManager.update(member.id, member);
+      return response;
     } catch (error) {
       console.error(`Failed to update member record for ${member.emailAddress}: ${error.message}`);
       return false;
@@ -43,12 +43,12 @@ class MembershipManager {
     if (expired) {
       member.login.authentication = this.generateAuthentication();
       member.login.status = "VERIFYING";
-      this.storageManager.update(member.id, member);
+      member= this.storageManager.update(member.id, member).data;
     }
 
     if (!expired && member.registration && member.registration.status === 'REGISTERED') {
       member.login.status = 'VERIFIED';
-      this.storageManager.update(member.id, member);
+      member = this.storageManager.update(member.id, member).data;
     }
 
     if (member.login && member.login.status === 'VERIFYING') {
@@ -68,25 +68,46 @@ class MembershipManager {
   }
 
   verifyMemberToken(emailAddress, userToken) {
-    const member = this.memberLookup(emailAddress);
+    // Lookup the member by email address
+    let member = this.memberLookup(emailAddress);
+
+    // Default response - no access
+    let response = new Response(false, 
+      this.storageManager.createNew(getConfig().defaultMember), 
+      'Member not found');
     if (!member) {
-      return { success: false, status: 'UNVERIFIED', message: 'Email record not found - please login again to correct' };
+      return response;
     }
 
+    // Use the member's login authentication
+    response.data = member;
     if (!member.login || !member.login.authentication) {
+      // No in verification mode
       member.login.status = 'UNVERIFIED';
-      this.storageManager.update(member.id, member);
-      return { success: false, status: 'UNVERIFIED', message: 'Verification required. Please request a code.' };
+      response = this.storageManager.update(member.id, member);
+      response.success = false;
+      response.message = 'Member login not found. Please request a verification code.';
+      return response;
     }
 
     const authentication = member.login.authentication;
     const expirationTime = authentication.expirationTime;
     if (new Date() > new Date(expirationTime)) {
-      return new Response(false, member.toObject(), 'Token expired. Please request a new one.');
+      // Token expired
+      response.message = 'Token expired. Please request a new one.';
+      return response;
     }
 
     if (userToken !== authentication.token) {
-      return { success: false, status: member.login.status, message: 'Invalid token. Please check and try again.' };
+      // Token mismatch
+      response.message = 'Invalid token. Please check and try again.';
+      return response;
+    }
+
+    if (member.login.status === 'REMOVE') {
+      // Member is banned
+      response.message = 'Access denied. Please contact administrator.';
+      return response;
     }
 
     if (member.login.status === 'VERIFYING' || member.login.status === 'TOKEN_EXPIRED') {
@@ -95,13 +116,13 @@ class MembershipManager {
       const newAuth = this.generateAuthentication(240);
       newAuth.token = authentication.token;
       member.login.authentication = newAuth;
-      this.storageManager.update(member.id, member);
+      response = this.storageManager.update(member.id, member);
     }
 
     if (member.login.status === 'REMOVE') {
-      return new Response(false, member.toObject(), 'Access denied. Please contact administrator.');
+      response = new Response(false, member, 'Access denied. Please contact administrator.');
     }
-    return new Response(true, member.toObject());
+    return response;
   }
 
   memberLookup(emailAddress) {
@@ -170,7 +191,7 @@ class MembershipManager {
     const member = this.memberLookup(emailAddress);
     if (!member) return { success: false, message: 'Member not found' };
 
-    member.login.status = 'UNVERIFIED';
+    member.login = this.storageManager.createNew({status:'UNVERIFIED'});
     this.storageManager.update(member.id, member);
     return { success: true, login: { status: 'UNVERIFIED' } };
   }
@@ -196,12 +217,15 @@ class MembershipManager {
       member => {
         const memberLevel = SharedConfig.levels[member.registration.level]; 
         // Ensure level is a number for comparison
-        return memberLevel > instructorLevel;
+        return memberLevel >= instructorLevel;
       }, {per_page:200}
     );
     // Return only the data array (list of instructors)
     return response.data;
   }
 
+  createNew(data = {}) {
+    return this.storageManager.createNew(data); 
+  }
   
 }

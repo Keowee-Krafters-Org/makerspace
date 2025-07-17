@@ -72,11 +72,27 @@
 
 <body>
   <div id="app"></div>
+    
+    <div id="spinner" class="spinner"></div>
+    <h5>
+    <p id="version"></p>
+    </h5>
+  <script type="application/json" id="member-data">
+    <?!= JSON.stringify(member) ?>
+    </script>
+  <script type="application/json" id="shared-config">
+    <?!= JSON.stringify(sharedConfig) ?>
+  </script>
+
+  <script>
+    const currentMember = JSON.parse(document.getElementById('member-data').textContent);
+    window.currentMember = currentMember;
+    const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
+    window.sharedConfig = sharedConfig;
+  </script>
 
   <script>
     // Main application logic for the member portal dashboard
-
-
     const isEmbedded = window.self !== window.top;
     if (isEmbedded) {
       console.log("Running inside Google Sites iframe");
@@ -106,8 +122,8 @@
     /**
      * Generate the document 
      */
-    function getDashboardContent(member, config) {
-      console.log(`Generating content with ${member} + ${config}`);
+    function getDashboardContent(member) {
+      console.log(`Generating content with ${JSON.stringify(member)} + ${JSON.stringify(sharedConfig)}`);
       let content = '<div class="dashboard">';
 
       if (member.firstName && member.lastName) {
@@ -141,32 +157,28 @@
           break;
 
         case 'VERIFIED':
-            if (member.registration.status === 'NEW') {
-            const registrationUrl = buildPrefilledFormUrl(config.forms.registration, member);
+          if (member.registration.status === 'NEW') {
+            const registrationUrl = buildPrefilledFormUrl(sharedConfig.forms.registration, member);
             content += `<p>You're almost done! Please complete your registration below.</p>
               <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p> then... `;
             content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
-      
+
           } else if (member.registration.status === 'REGISTERED') {
             content += '<p>Thanks for verifying your email!</p>';
-            const levelNumber = getLevelNumber(config, member.registration.level);
-
-            if (levelNumber >= 1) {
-              content += `<ul>
-                <li><a href="https://sites.google.com/keoweekrafters.org/makekeowee/schedule-of-classes-and-events" target="_blank">View the Schedule of Classes and Events</a></li>`;
-            }
+            const levelNumber = sharedConfig.levels[member.registration.level];
+            console.log(`Member level: ${member.registration.level} (${levelNumber})`);
+            content += `<ul>
+                <li><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}" target="_blank">Sign Up For Classes</a></li>`;
 
             if (levelNumber >= 2) {
-              if (config?.forms?.volunteer?.url && config?.forms?.volunteer?.entryMap) {
-                const volunteerUrl = buildPrefilledFormUrl(config.forms.volunteer, member);
+              if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
+                const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
                 content += `<li><a href="${volunteerUrl}" target="_blank">Volunteer Hours Form</a></li>`;
               }
-              content += `<li><a href="https://forms.gle/YOUR_OTHER_FORM" target="_blank">Class Proposal Form</a></li>
-                <li><a href="https://drive.google.com/drive/folders/YOUR_SHARED_FOLDER" target="_blank">Shared Member Documents</a></li>`;
             }
 
             if (levelNumber >= 10) {
-              content += `<li><strong><a href="https://script.google.com/a/macros/keoweekrafters.org/s/AKfycbzlHKHF6RB8g1P3NyjEMMXfpGDtT_WO2CDkb7K_nB7ybQXNj_VwjhGXirWl54RXf9r3/exec?emailAddress=${member.emailAddress}">Member Admin</a></strong></li>`;
+              content += `<li><strong><a href="https://script.google.com/a/macros/keoweekrafters.org/s/AKfycbzlHKHF6RB8g1P3NyjEMMXfpGDtT_WO2CDkb7K_nB7ybQXNj_VwjhGXirWl54RXf9r3/exec?emailAddress=${member.emailAddress} target="_blank"">Member Admin</a></strong></li>`;
             }
 
             if (levelNumber >= 20) {
@@ -176,10 +188,10 @@
             content += '</ul>';
 
           } else if (member.registration.status === 'APPLIED') {
-            const waiverUrl = buildPrefilledFormUrl(config.forms.waiver, member);
+            const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
             content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
-              <p><a href="${waiverUrl}" target="_blank">Sign Waiver Form</a></p> <p>then...</p>`;
-              
+              <p><a "${waiverUrl}" target="_blank">Sign Waiver Form</a></p> <p>then...</p>`;
+
             content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
 
           } else if (member.registration.status === 'PENDING') {
@@ -203,14 +215,14 @@
     }
 
     function renderDashboard(user) {
-      google.script.run.withSuccessHandler(config => {
-        document.getElementById('app').innerHTML = getDashboardContent(user, config);
-        document.getElementById('version').textContent = `Version: ${config.version}`;
-      }).getConfig();
+      
+        document.getElementById('app').innerHTML = getDashboardContent(user, sharedConfig);
+        document.getElementById('version').textContent = `Version: ${sharedConfig.version}`;
+     
     }
 
     function requestToken(emailAddress) {
-      let email = emailAddress; 
+      let email = emailAddress;
       if (!email) {
         // If emailAddress is not provided, get it from the input field
         const emailInput = document.getElementById('email');
@@ -269,6 +281,7 @@
           renderDashboard(member);
         }
         hideSpinner();
+
       }).verifyToken(currentEmail, token);
     }
 
@@ -313,19 +326,10 @@
       }).logout(email);
     }
 
-    /**
-     * Convert the level tet to the equivelent number
-     */
-    function getLevelNumber(config, levelString) {
-      return config.levels[levelString];
-
-    }
-    renderDashboard({ login: { status: 'UNVERIFIED' } });
+  
+    renderDashboard(currentMember);
   </script>
-  <h5>
-    <div id="spinner" class="spinner"></div>
-    <p id="version"></p>
-  </h5>
+
 </body>
 
 </html>
