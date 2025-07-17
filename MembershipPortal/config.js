@@ -6,7 +6,7 @@
 
 
 config = {
-  version: 'SNAPSHOT-0.0.49', 
+  version: 'RELEASE-0.1.0', 
   deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
 
 };

@@ -8,7 +8,7 @@ function getConfig() {
 }
 
 config = {
-  version: 'SNAPSHOT-0.1.4',
+  version: 'RELEASE-0.1.0',
   deploymentId: 'AKfycbyyYNF_v_RoSAWZaXqrRBi_1RfWYnKUL9Q3FeyrAhE8tsZqkz6bxYAzUCxgWZRhFchXSw'
 }
 
