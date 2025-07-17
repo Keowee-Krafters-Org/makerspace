@@ -10,7 +10,7 @@ const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
     date: new Date(),
     attendees: [],
-    location: 'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com',
+    location: {email:'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com'},
     eventItem: {
         id: '',
         title: 'Test Event',
@@ -302,4 +302,81 @@ function test_get_calendar_resources() {
             // No cleanup needed for calendar resources
         }   
     Logger.log('getCalendarResources test completed.');
+}
+
+function test_failed_event_update() {
+  const description = "Ever wonder how those beautiful turned pens that you see at craft fairs are made? Here is your chance to learn how easy it is to turn wood blanks on the lathe and assemble them into stunning keepsake pens. They make great gifts and can be custom engraved with our Glowforge laser printer (2D Design and Fabrication Class)!\n\nCost includes all materials and tools. \n\nTools Needed\n3 pen mandrels\n3 pen making live centers \n1 pen blank machining bit\nSpindel roughing gouge\nSpindel gouge\n7 mm drill bit\n1 pen making sandpaper kit\n1 pen blank insertion tool\nMaterials Needed:  \n7-pen blanks (1 for instructor demo)\n7 pen kits (1 for instructor demo)\n1 bottle Medium CA glue\n1 bottle pen finish\nCourse Outline:\nWood Properties \nLathe introduction\nLathe Speeds\nIntro to pen turning\nWood sizing\nDrilling pen blanks\nPen tube insertion\nMachining pen blanks to size\nMounting pen blanks on mandrel\nTurning pen blanks\nSanding pen blanks\nFinishing pen blanks\nAssembling pens\n".replace(/\n/g, '\\n');
+  const eventText = `{
+  "id": "n1vm21rudr0h4rdt1o46p9f0s8@google.com",
+  "eventItem": {
+    "id": "5636475000000506001",
+    "title": "Woodturning Class Number 3: Basic Pen Turning",
+    "description": "${description}",
+    "price": 75,
+    "sizeLimit": 3,
+    "enabled": true,
+    "host": {
+      "id": "5636475000000620039"
+    },
+    "duration": 4
+  },
+  "date": "2025-07-30T15:00:00.000Z",
+  "location": {
+    "email": "c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com"
+  }
+}`;
+  const eventData = JSON.parse(eventText); 
+  const eventManager = newModelFactory().eventManager(); 
+  const event = eventManager.createEvent(eventData);
+  const updatedEvent = eventManager.updateEvent(event); 
+  assert("Event updated:", true, updatedEvent!=undefined); 
+}
+
+function test_unregister_member_from_event() {
+    const eventManager = modelFactory.eventManager();
+    const membershipManager = modelFactory.membershipManager();
+    const calendarManager = modelFactory.calendarManager();
+
+    let testEventId;
+    let testMemberId;
+
+    try {
+        // Step 1: Create a test member
+        const testMember = membershipManager.memberLookup(TEST_USER_EMAIL);
+        assert('Test member should exist', testMember != undefined, true);
+        testMemberId = testMember.id;
+
+        // Step 2: Create a test event
+        const testEventData = JSON.parse(JSON.stringify(eventData)); // Clone eventData
+        const addEventResponse = eventManager.addEvent(testEventData);
+        assert('Event should be added successfully', addEventResponse.success, true);
+        const testEvent = addEventResponse.data;
+        testEventId = testEvent.id;
+
+        // Step 3: Sign up the member for the event
+        const signupResponse = eventManager.signup(testEventId, testMemberId);
+        assert('Member should be signed up successfully', signupResponse.success, true);
+
+        // Step 4: Verify the member is in the attendee list
+        const updatedEvent = calendarManager.getById(testEventId);
+        assert('Event should have attendees', Array.isArray(updatedEvent.attendees), true);
+        assert('Member should be in the attendee list', updatedEvent.attendees.includes(testMember.emailAddress), true);
+
+        // Step 5: Unregister the member from the event
+        const unregisterResponse = eventManager.unregister(testEventId, testMemberId);
+        assert('Member should be unregistered successfully', unregisterResponse.success, true);
+
+        // Step 6: Verify the member is no longer in the attendee list
+        const finalEvent = calendarManager.getById(testEventId);
+        assert('Member should no longer be in the attendee list', !finalEvent.attendees.includes(testMember.emailAddress), true);
+
+        Logger.log('test_unregister_member_from_event passed successfully.');
+    } catch (error) {
+        Logger.log(`test_unregister_member_from_event failed: ${error.message}`);
+    } finally {
+        // Cleanup: Delete the test event
+        if (testEventId) {
+            eventManager.deleteEvent({ id: testEventId });
+        }
+    }
 }

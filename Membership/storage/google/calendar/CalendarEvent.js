@@ -42,6 +42,7 @@ class CalendarEvent extends Event {
         this.eventItem.costDescription = value;
     }
 
+
     toObject() {
         return {
             id: this.id,

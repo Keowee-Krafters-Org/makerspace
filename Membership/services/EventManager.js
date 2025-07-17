@@ -102,7 +102,7 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-      const event = new CalendarEvent(eventData);
+      const event = this.createEvent(eventData);
       let eventItem = event.eventItem;
       if (eventItem && eventItem.id) {
         const eventItemResponse = this.updateEventItem(eventItem);
@@ -138,11 +138,11 @@ class EventManager {
 
   updateEvent(calendarEvent) {
     try {
-      this.calendarManager.update(calendarEvent);
+      const updatedEvent = this.calendarManager.update(calendarEvent.id,calendarEvent);
       if (calendarEvent.eventItem) {
-        return this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
+        updatedEvent.eventItem = this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
       }
-      return { success: true };
+      return new Response(true, updatedEvent, 'Event updated successfully.');
     } catch (err) {
       console.error('Failed to update calendar event:', err);
       return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
@@ -174,7 +174,21 @@ class EventManager {
   }
 
   createEvent(data = {}) {
-    return this.calendarManager.create(data);
+    const calendarEvent =  this.calendarManager.create(data);
+    if (!calendarEvent) {
+      throw new Error('Failed to create calendar event.');
+    }
+    const eventItem = this.storageManager.createNew(data.eventItem || {});
+    if (!eventItem) {
+      throw new Error('Failed to create event item.');
+    }
+    const host = this.membershipManager.createNew(data.host || {});
+    if (!host) {
+      throw new Error('Failed to create host.');
+    }
+    eventItem.host= host;
+    calendarEvent.eventItem = eventItem;
+    return calendarEvent;
   }
 
   /**
@@ -208,6 +222,24 @@ class EventManager {
     return {
       success: true, data: { message: `You are successfully signed up successfully for: ${event.name}`, eventId: eventId }
     }
+  }
+
+  /**
+   * Unregister a member from an event
+   * @param {string} eventId - The ID of the event
+   * @param {string} memberId - The ID of the member
+   * @returns {Object} Response indicating success or failure
+   */
+  unregister(eventId, memberId) {
+    const memberResponse = this.membershipManager.getMember(memberId);
+    if (!(memberResponse && memberResponse.success)) {
+      return { success: false, error: 'Member not found.' };
+    }
+
+    const member = memberResponse.data;
+
+    // Delegate the unregistration to the CalendarManager
+    return this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
   }
 
   enrichWithCalendarData(event) {

@@ -29,7 +29,7 @@ class CalendarManager extends StorageManager {
     );
     // Set the description with the event item link
     event.setDescription(CalendarManager.updateDescription(event.getId(), eventItem.id)); 
-    event.addGuest(calendarRecord.location); // Add the room as a guest
+    event.addGuest(calendarRecord.location.email); // Add the room as a guest
     return this.fromRecord(event);
   }
 
@@ -63,11 +63,10 @@ class CalendarManager extends StorageManager {
     const calendarEventRecord = calendarEvent.toRecord();
     event.setTitle(calendarEvent.title || event.getTitle());
     event.setTime(calendarEventRecord.start || event.getStartTime(), calendarEventRecord.end || event.getEndTime()) ;
-    event.setLocation(calendarEventRecord.location || event.getLocation());
-    event.setDescription(CalendarManager.updateDescription(calendarEventRecord.id, event.eventItem.id));
-    if(calendarEventRecord.roomEmail) {
+    event.setDescription(CalendarManager.updateDescription(calendarEventRecord.id, calendarEvent.eventItem.id));
+    if(calendarEventRecord.location) {
       event.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => event.removeGuest(g.getEmail())),
-      event.addGuest(calendarEventRecord.roomEmail); // Add the room as a guest
+      event.addGuest(calendarEventRecord.location.email); // Add the room as a guest
     }
     return this.fromRecord(event);
   }
@@ -189,5 +188,34 @@ class CalendarManager extends StorageManager {
     }
     event.addGuest(emailAddress); 
     return this.fromRecord(event); 
+  }
+
+  /**
+   * Unregister an attendee from an event
+   * @param {string} eventId - The ID of the event
+   * @param {string} email - The email of the attendee to remove
+   * @returns {Object} Response indicating success or failure
+   */
+  unregisterAttendee(eventId, email) {
+    const event = this.getById(eventId);
+    if (!event) {
+      return { success: false, error: 'Event not found.' };
+    }
+
+    // Check if the attendee is registered
+    if (!Array.isArray(event.attendees) || !event.attendees.includes(email)) {
+      return { success: false, error: 'Attendee is not registered for this event.' };
+    }
+
+    // Remove the attendee
+    event.attendees = event.attendees.filter(attendee => attendee !== email);
+
+    // Save the updated event (if applicable)
+    this.update(eventId, event);
+
+    return {
+      success: true,
+      data: { message: `Attendee with email ${email} has been successfully unregistered from: ${event.name}`, eventId: eventId }
+    };
   }
 }

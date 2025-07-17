@@ -137,6 +137,7 @@ function test_if_registration_form_ignores_missing_fields() {
 
 function test_when_user_logs_in__then_user_status_is_VERIFYING() {
   const emailAddress = testMember.emailAddress; 
+  membershipManager.memberLogout(emailAddress); 
   let result = membershipManager.loginMember(emailAddress); 
   assert("Success", true, result.success); 
   assert("Status", "VERIFYING", result.data.login.status); 
@@ -146,7 +147,8 @@ function test_verifyToken_transitions_user_to_VERIFIED() {
   const emailAddress = testMember.emailAddress;
   let member = membershipManager.memberLookup(emailAddress); 
   member.login.status='VERIFYING'; 
-  member= membershipManager.updateMember(member); 
+  const response = membershipManager.updateMember(member); 
+  member = response.data; 
   assert("Status", "VERIFYING", member.login.status); 
   member = membershipManager.memberLookup(emailAddress); 
   const authentication = member.login.authentication;

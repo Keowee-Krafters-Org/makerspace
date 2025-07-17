@@ -3,7 +3,7 @@ function getEventList() {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
   const events = eventManager.getUpcomingEvents();
-  return JSON.stringify({success: true, data: events});
+  return JSON.stringify({ success: true, data: events });
 }
 
 function signup(classId, memberId) {
@@ -30,19 +30,25 @@ function createEvent(eventData) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
   const event = JSON.parse(eventData);
-  
+
   const response = eventManager.addEvent(event); // assumes addEvent creates a new record and calendar event
   return JSON.stringify(response);
 }
 
 function updateEvent(eventData) {
 
-  const modelFactory = Membership.newModelFactory();
-  const event = JSON.parse(eventData);
-  const eventManager = modelFactory.eventManager();
-  const eventInstance = eventManager.createEvent(event);
-  const response = eventManager.updateEvent(eventInstance);
-  return JSON.stringify(response);
+  try {
+    
+  const eventManager = Membership.newModelFactory().eventManager();
+    const event = JSON.parse(eventData);
+    const eventInstance = eventManager.createEvent(event);
+
+    const response = eventManager.updateEvent(eventInstance);
+    return JSON.stringify(response);
+  } catch (e) {
+    throw new Error('Failed to parse event JSON: ' + e.message);
+  }
+
 }
 
 function getInstructors() {
@@ -68,18 +74,35 @@ function getEventLocations() {
   // Assuming getEventLocations is a method that returns an array of locations
   const locations = eventManager.getEventLocations();
   return JSON.stringify(locations);
-} 
+}
 
 function getEventItemList() {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
   const items = eventManager.getEventItemList();
   return JSON.stringify(items);
-} 
+}
 
 function getEventItemById(eventItemId) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
   const item = eventManager.getEventItemById(eventItemId);
   return JSON.stringify(item);
+}
+
+function unregister(classId, memberId) {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+
+  // Call the eventManager's method to unregister the member
+  const response = eventManager.unregister(classId, memberId);
+
+  return JSON.stringify(response);
+}
+
+function getEventById(eventId) {
+    const modelFactory = Membership.newModelFactory();
+    const eventManager = modelFactory.eventManager();
+    const event = eventManager.getEventById(eventId);
+    return JSON.stringify({ success: true, data: event });
 }

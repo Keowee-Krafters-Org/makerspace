@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..90',
+  version: 'SNAPSHOT-..100',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -75,7 +75,15 @@ var SharedConfig = {
   },
   locations: ['Eagles Nest Arts Center,4 Eagle Lane, Salem, SC 29676',
     'Keowee Key Clubhouse, Stamp Creek Road, Salem, SC 29676'
-  ]
+  ],
+  defaultMember: {
+        id: '',
+        firstName: 'Anonymous',
+        lastName: 'Guest',
+        emailAddress: '',
+        registration: { status: 'NOT_REGISTERED', level: 'Guest' },
+        login: { status: 'UNVERIFIED' }
+    }
 };
 
 function getConfig() {

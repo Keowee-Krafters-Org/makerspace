@@ -155,11 +155,13 @@
         <h1>Classes and Events</h1>
         <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
         <div id="classes" class="classes-grid"></div>
+        <div id="confirmation-message" style="text-align: center; color: green; margin-top: 20px;"></div>
+        <div id="spinner" class="spinner"></div>
+        <h5>
+            <p id="version"></p>
+        </h5>
     </div>
-    <div id="spinner" class="spinner"></div>
-    <h5>
-        <p id="version"></p>
-    </h5>
+
 
     <script type="application/json" id="member-data">
     <?!= JSON.stringify(member) ?>
@@ -260,11 +262,21 @@
             card.appendChild(infoDiv);
 
             if (canSignup) {
-                const btn = document.createElement('button');
-                btn.className = 'signup-btn';
-                btn.textContent = 'Sign Me Up';
-                btn.onclick = () => signup(cls.id, currentMember.id);
-                card.appendChild(btn);
+                const isRegistered = cls.attendees && cls.attendees.some(attendee => attendee === currentMember.emailAddress);
+
+                if (isRegistered) {
+                    const unregisterBtn = document.createElement('button');
+                    unregisterBtn.className = 'signup-btn';
+                    unregisterBtn.textContent = 'Unregister';
+                    unregisterBtn.onclick = () => unregister(cls.id, currentMember.id);
+                    card.appendChild(unregisterBtn);
+                } else {
+                    const signupBtn = document.createElement('button');
+                    signupBtn.className = 'signup-btn';
+                    signupBtn.textContent = 'Sign Me Up';
+                    signupBtn.onclick = () => signup(cls.id, currentMember.id);
+                    card.appendChild(signupBtn);
+                }
             } else {
                 const msg = document.createElement('div');
                 msg.style.color = 'gray';
@@ -302,6 +314,7 @@
         <div class="class-desc">${cls.eventItem.description}</div>
         <div class="class-info"><strong>Price:</strong> $${Number(cls.eventItem.price).toFixed(2)}</div>
         <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
+        <div class="class-info"><strong>Duration:</strong> ${cls.eventItem.duration || 0} hours</div>
         <div class="class-info"><strong>Location:</strong> ${cls.location.description}</div>
         <div class="class-info"><strong>Instructor:</strong> ${cls.eventItem.host?.name || cls.eventItem.host || ''}</div>
         <div class="class-info"><strong>Max Attendees:</strong> ${cls.eventItem.sizeLimit}</div>
@@ -336,7 +349,19 @@
 
                     confirmation.textContent = msg;
                     confirmation.style.color = isSuccess ? 'green' : 'red';
-                }).signup(classId, memberId);
+
+                    // Reload the specific event
+                    if (isSuccess) {
+                        reloadEvent(classId);
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideSpinner();
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = `Failed to sign up. ${err}`;
+                    confirmation.style.color = 'red';
+                })
+                .signup(classId, memberId);
         }
 
         /**
@@ -451,7 +476,7 @@
             form.className = 'class-card';
 
             const isNew = !cls.id;
-            const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? createEvent() : saveEvent(cls.id));
+            const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? addEvent() : saveEvent(cls.id));
 
             // --- Event Item Dropdown at the top ---
             const eventItemFieldContainer = document.createElement('div');
@@ -489,7 +514,8 @@
                         if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
                         if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
                         if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
-                        if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit; // <-- Add this line
+                        if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit;
+                        if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
                         // Add more fields as needed
                     }
                 });
@@ -502,6 +528,7 @@
                         if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
                         if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
                         if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit; // <-- Add this line
+                        if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
                     }
                 }
             }).getEventItemList();
@@ -511,8 +538,8 @@
             addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.eventItem.description));
             addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
 
-            // Add Duration field (in minutes)
-            addLabeledField(form, 'Duration (minutes):', createInput('edit-duration', cls.eventItem.duration || '', 'number'));
+            // Add Duration field (in hours)
+            addLabeledField(form, 'Duration (hours):', createInput('edit-duration', cls.eventItem.duration || '', 'number'));
 
 
             // Placeholder for Location dropdown (replace the existing location input)
@@ -533,32 +560,13 @@
                 // Use resource name for display, resource email as value
                 const dropdown = createDropdown(
                     'edit-location',
-                    resourceList.map(r => ({ id: r.email, name: r.description || r.name})),
+                    resourceList.map(r => ({ id: r.email, name: r.description || r.name })),
                     cls.location.email || ''
                 );
                 locationFieldContainer.innerHTML = '';
                 addLabeledField(locationFieldContainer, 'Location:', dropdown);
             }).getEventRooms();
-/*
-            // Fetch rooms from backend and populate the Room dropdown
-            google.script.run.withSuccessHandler(function (rooms) {
-                let roomList = rooms;
-                if (typeof rooms === 'string') {
-                    try {
-                        roomList = JSON.parse(rooms);
-                    } catch (e) {
-                        roomList = [];
-                    }
-                }
-                const dropdown = createDropdown(
-                    'edit-room',
-                    roomList.map(r => ({ id: r.id, name: r.name })),
-                    cls.room || ''
-                );
-                roomFieldContainer.innerHTML = '';
-                addLabeledField(roomFieldContainer, 'Room:', dropdown);
-            }).getEventRooms();
-*/
+
             // Placeholder for Host dropdown
             const hostFieldContainer = document.createElement('div');
             hostFieldContainer.id = 'host-field-container';
@@ -593,31 +601,40 @@
             for (const id of requiredFields) {
                 const field = document.getElementById(id);
                 if (!field.value.trim()) {
-                    alert(`${field.previousSibling.textContent.replace(':', '')} is required.`);
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = `${field.previousSibling.textContent.replace(':', '')} is required.`;
+                    confirmation.style.color = 'red';
                     return;
                 }
             }
-
+            const updated = createEventObject(eventId);
+            console.log(JSON.stringify(updated, null, 2));
             showSpinner();
             google.script.run
                 .withSuccessHandler(() => {
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = "Event updated successfully.";
+                    confirmation.style.color = 'green';
+                    reloadEvent(eventId); // Reload the specific event
                     hideSpinner();
-                    alert("Event updated.");
-                    loadEvents();
                 })
                 .withFailureHandler(err => {
                     hideSpinner();
-                    alert(`Failed to update event. ${err}`);
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = `Failed to update event. ${err}`;
+                    confirmation.style.color = 'red';
                 })
-                .updateEvent(updated);
+                .updateEvent(JSON.stringify(updated));
         }
 
-        function createEvent() {
-            const requiredFields = ['edit-date', 'edit-location', 'edit-event-item'];
+        function addEvent() {
+            const requiredFields = ['edit-date', 'edit-location', 'edit-event-item', 'edit-host', 'edit-title', 'edit-desc', 'edit-price', 'edit-size', 'edit-duration'];
             for (const id of requiredFields) {
                 const field = document.getElementById(id);
                 if (!field.value.trim()) {
-                    alert(`${field.previousSibling.textContent.replace(':', '')} is required.`);
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = `${field.previousSibling.textContent.replace(':', '')} is required.`;
+                    confirmation.style.color = 'red';
                     return;
                 }
             }
@@ -626,33 +643,43 @@
             console.log("Creating event object:", newEvent);
             showSpinner();
             google.script.run
-                .withSuccessHandler(() => {
+                .withSuccessHandler(res => {
+                    const response = JSON.parse(res);
+                    const confirmation = document.getElementById('confirmation-message');
+                    if (response.success) {
+                        confirmation.textContent = "Event created successfully.";
+                        confirmation.style.color = 'green';
+                        reloadEvent(response.data.id); // Reload the newly created event
+                    } else {
+                        confirmation.textContent = `Failed to create event: ${response.error || 'Unknown error.'}`;
+                        confirmation.style.color = 'red';
+                    }
                     hideSpinner();
-                    alert("Event created.");
-                    loadEvents();
                 })
                 .withFailureHandler(err => {
                     hideSpinner();
-                    alert(`Failed to create event. ${err}`);
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = `Failed to create event. ${err}`;
+                    confirmation.style.color = 'red';
                 })
-                .createEvent(newEvent);
+                .createEvent(JSON.stringify(newEvent));
         }
 
-        function createEventObject() {
+        function createEventObject(eventId = null) {
+
             const eventItemId = document.getElementById('edit-event-item').value;
             const title = document.getElementById('edit-title').value;
             const description = document.getElementById('edit-desc').value;
             const date = document.getElementById('edit-date').value;
-            const location = document.getElementById('edit-location').value;
-         //   const room = document.getElementById('edit-room').value;
+            const location = { email: document.getElementById('edit-location').value };
             const price = parseFloat(document.getElementById('edit-price').value) || 0;
             const sizeLimit = parseInt(document.getElementById('edit-size').value) || 0;
             const enabled = document.getElementById('edit-enabled').checked;
-            const host = document.getElementById('edit-host').value;
+            const host = { id: document.getElementById('edit-host').value };
             const duration = parseInt(document.getElementById('edit-duration').value) || 0; // <-- Add this line
 
-            return JSON.stringify({
-                id: eventItemId,
+            return {
+                id: eventId,
                 eventItem: {
                     id: eventItemId,
                     title: title,
@@ -661,12 +688,11 @@
                     sizeLimit: sizeLimit,
                     enabled: enabled,
                     host: host,
-//                    room: room,
-                    duration: duration // <-- Add this line
+                    duration: duration
                 },
                 date: new Date(date),
                 location: location
-            });
+            };
         }
 
         function formatDateForInput(date) {
@@ -680,9 +706,75 @@
             return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
         }
 
+        /**
+         * Handles the unregistration process for a class.
+         * @param {string} classId - The ID of the class to unregister from.
+         * @param {string} memberId - The ID of the member unregistering.
+         */
+        function unregister(classId, memberId) {
+            showSpinner();
+            google.script.run
+                .withSuccessHandler(res => {
+                    hideSpinner();
+                    const confirmation = document.getElementById('confirmation-message');
+                    let msg = '';
+                    let isSuccess = false;
+
+                    try {
+                        const response = JSON.parse(res);
+                        isSuccess = response.success;
+                        msg = response.success
+                            ? (response.message || "You have been successfully unregistered.")
+                            : (response.error || "Failed to unregister from the event.");
+                    } catch (err) {
+                        msg = "Unexpected error during unregistration.";
+                        console.error("Parse error:", err);
+                    }
+
+                    confirmation.textContent = msg;
+                    confirmation.style.color = isSuccess ? 'green' : 'red';
+
+                    // Reload the specific event
+                    if (isSuccess) {
+                        reloadEvent(classId);
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideSpinner();
+                    const confirmation = document.getElementById('confirmation-message');
+                    confirmation.textContent = `Failed to unregister. ${err}`;
+                    confirmation.style.color = 'red';
+                })
+                .unregister(classId, memberId);
+        }
+
+        /**
+         * Fetches and renders a specific event by its ID.
+         * @param {string} eventId - The ID of the event to fetch and render.
+         */
+        function reloadEvent(eventId) {
+            showSpinner();
+            google.script.run
+                .withSuccessHandler(res => {
+                    hideSpinner();
+                    const response = JSON.parse(res);
+                    if (response.success) {
+                        renderClass(response.data); // Render the specific event
+                    } else {
+                        alert(`Failed to reload event: ${response.error || 'Unknown error.'}`);
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideSpinner();
+                    alert(`Failed to reload event. ${err}`);
+                })
+                .getEventById(eventId); // Backend method to fetch a single event
+        }
+
         // Load events when the page is ready
         document.addEventListener('DOMContentLoaded', () => {
             // Display member name
+            showSpinner();
             document.getElementById('memberName').textContent =
                 `${currentMember.firstName} ${currentMember.lastName}`;
 
@@ -692,7 +784,7 @@
             }
             if (window.event) {
                 console.log("Rendering existing event:", window.event);
-                showSpinner();
+
                 document.getElementById('classes').innerHTML = '<p>Loading events...</p>';
                 renderClass(window.event)
                 hideSpinner();
