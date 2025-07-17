@@ -5,14 +5,7 @@ function doGet(e) {
     let canSignup = false; // ✅ properly declare this
     let event = undefined; // Initialize event to null
     // Default member object
-    let member = {
-        id: '',
-        firstName: 'Anonymous',
-        lastName: 'Guest',
-        emailAddress: '',
-        registration: { status: 'NOT_REGISTERED', level: 'Guest' },
-        login: { status: 'UNVERIFIED' }
-    };
+    let member = getConfig().defaultMember;
 
     if (e.parameter.memberId) {
         const response = getMember(e.parameter.memberId);

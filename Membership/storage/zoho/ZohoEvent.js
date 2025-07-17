@@ -6,7 +6,7 @@ class ZohoEvent extends Event {
 
   static getResourceNameSingular() { return 'item'; }
   static getResourceNamePlural() { return 'items'; }
-  static getFilter() { return { type: 'Event', eventType: 'Class', enabled: 'true' }; }
+  static getFilter() { return { type: 'Event', enabled: 'true' }; }
 
   static getToRecordMap() {
     return {

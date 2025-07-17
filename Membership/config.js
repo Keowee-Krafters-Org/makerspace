@@ -1,5 +1,5 @@
 const config = {
-  version: 'SNAPSHOT-..100',
+  version: 'SNAPSHOT-..102',
   deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
 }
 
@@ -78,7 +78,7 @@ var SharedConfig = {
   ],
   defaultMember: {
         id: '',
-        firstName: 'Anonymous',
+        firstName: '',
         lastName: 'Guest',
         emailAddress: '',
         registration: { status: 'NOT_REGISTERED', level: 'Guest' },

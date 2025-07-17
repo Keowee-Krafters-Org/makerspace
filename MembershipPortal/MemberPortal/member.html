@@ -168,7 +168,7 @@
             const levelNumber = sharedConfig.levels[member.registration.level];
             console.log(`Member level: ${member.registration.level} (${levelNumber})`);
             content += `<ul>
-                <li><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}">View Classes</a></li>`;
+                <li><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}" target="_blank">Sign Up For Classes</a></li>`;
 
             if (levelNumber >= 2) {
               if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
@@ -178,7 +178,7 @@
             }
 
             if (levelNumber >= 10) {
-              content += `<li><strong><a href="https://script.google.com/a/macros/keoweekrafters.org/s/AKfycbzlHKHF6RB8g1P3NyjEMMXfpGDtT_WO2CDkb7K_nB7ybQXNj_VwjhGXirWl54RXf9r3/exec?emailAddress=${member.emailAddress}">Member Admin</a></strong></li>`;
+              content += `<li><strong><a href="https://script.google.com/a/macros/keoweekrafters.org/s/AKfycbzlHKHF6RB8g1P3NyjEMMXfpGDtT_WO2CDkb7K_nB7ybQXNj_VwjhGXirWl54RXf9r3/exec?emailAddress=${member.emailAddress} target="_blank"">Member Admin</a></strong></li>`;
             }
 
             if (levelNumber >= 20) {
@@ -190,7 +190,7 @@
           } else if (member.registration.status === 'APPLIED') {
             const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
             content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
-              <p><a href="${waiverUrl}" target="_blank">Sign Waiver Form</a></p> <p>then...</p>`;
+              <p><a "${waiverUrl}" target="_blank">Sign Waiver Form</a></p> <p>then...</p>`;
 
             content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
 
