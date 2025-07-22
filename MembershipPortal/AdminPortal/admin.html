@@ -158,7 +158,7 @@
     </label>
 
     <label>Waiver PDF Link:</label>
-    <a id="editWaiverLink" class="readonly-link" href="#" target="_blank">View Waiver</a>
+    <a id="editWaiverLink" class="readonly-link" href="#" target="_blank" hidden="true">View Waiver</a>
 
     <button onclick="saveMember()">Save Changes</button>
   </div>
@@ -180,7 +180,7 @@
       select.innerHTML = '';
       Object.entries(sharedConfig.levels || {}).forEach(([label, value]) => {
         const option = document.createElement('option');
-        option.value = value;
+        option.value = label;
         option.textContent = label;
         select.appendChild(option);
       });
@@ -195,8 +195,8 @@
         const members = response.data;
         const filtered = members.filter(m => {
           const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) ||
-                                m.firstName?.toLowerCase().includes(search) ||
-                                m.lastName?.toLowerCase().includes(search);
+            m.firstName?.toLowerCase().includes(search) ||
+            m.lastName?.toLowerCase().includes(search);
           const matchesFilter = !filter || m.registration.status === filter;
           return matchesSearch && matchesFilter;
         });
@@ -204,7 +204,7 @@
         const tbody = document.getElementById('memberRows');
         tbody.innerHTML = '';
         filtered.forEach(member => {
-          const levelName = Object.entries(sharedConfig.levels || {}).find(([key, val]) => key == member.registration.level)?.[1] || member.registration.level;
+          const levelName = member.registration.level;
           const row = document.createElement('tr');
           row.innerHTML = `
             <td>${member.emailAddress || ''}</td>
@@ -230,23 +230,40 @@
         document.getElementById('editLastName').value = member.lastName;
         document.getElementById('editLevel').value = member.registration?.level;
         document.getElementById('editStatus').value = member.registration?.status || '';
-        document.getElementById('editWaiverSigned').value = String(member.registration?.waiverSigned || 'false');
+        const waiverSigned = member.registration?.waiverSigned || false;
+        document.getElementById('editWaiverSigned').value = String(waiverSigned);
         const waiverLink = member.registration?.waiverPdfLink || '#';
         const linkElement = document.getElementById('editWaiverLink');
-        linkElement.href = waiverLink;
-        linkElement.textContent = waiverLink !== '' ? 'View Waiver' : 'No Waiver Available';
+        if (waiverSigned && waiverLink !== '#') {
+          linkElement.href = waiverLink;
+          linkElement.textContent = 'View Waiver';
+          linkElement.hidden = false;
+        } else {
+          linkElement.href = '#';
+          linkElement.hidden = true;
+        }
+
         document.getElementById('memberEditor').classList.remove('hidden');
         hideSpinner();
       }).getMemberByEmail(email);
     }
 
     function saveMember() {
+      const firstName = document.getElementById('editFirstName').value.trim();
+      const lastName = document.getElementById('editLastName').value.trim();
+      let name = selectedMember.name; 
+      if (firstName != selectedMember.firstName || lastName != selectedMember.lastName) {
+        // Update name and first and last name fields
+        name  = `${firstName} ${lastName}`;
+      }
       const updateMemberRequest = {
+        id:selectedMember.id,
+        name: name,
         emailAddress: document.getElementById('editEmail').value,
         firstName: document.getElementById('editFirstName').value,
         lastName: document.getElementById('editLastName').value,
         registration: {
-          level: parseInt(document.getElementById('editLevel').value,10),
+          level: document.getElementById('editLevel').value,
           status: document.getElementById('editStatus').value,
           waiverSigned: document.getElementById('editWaiverSigned').value === 'true',
           waiverPdfLink: selectedMember.registration?.waiverPdfLink || ''
@@ -262,10 +279,10 @@
     }
     google.script.run.withSuccessHandler(config => {
       sharedConfig = config;
-      document.getElementById('version').textContent = `Version: ${config.version.adminPortal}`;
+      document.getElementById('version').textContent = `Version: ${config.version}\nService Version: ${config.membershipVersion}`;
       populateLevelDropdown();
       hideSpinner();
-    }).getSharedConfig();
+    }).getConfig();
 
     loadMembers();
   </script>

@@ -4,9 +4,9 @@
     "libraries": [
       {
         "userSymbol": "Membership",
-        "version": "172",
+        "version": "0",
         "libraryId": "1_OXo1tPc0uKCDLjvnXiz78FTQM8MBDR8J1R1Y4h43armSoNnWDNtvYG0",
-        "developmentMode": false
+        "developmentMode": true
       }
     ]
   },

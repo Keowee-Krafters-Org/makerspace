@@ -5,20 +5,14 @@ const testMember = {
   phoneNumber: '123-456-7890',
   address: '123 Mock St, Faketown',
   interests: 'Woodworking, Quilting',
-  level: 1, 
-  memberStatus: 'NEW'
+  registration: {
+    waiverSigned: false,
+    status: 'NEW',
+    level: 'Interested Party'
+  },
+
 };
 
-/** 
- * Assert block for tests
- */
-const assert = (label, expected, actual) => {
-  if (expected !== actual) {
-    throw new Error(`${label} mismatch. Expected: ${expected}, Got: ${actual}`);
-  } else {
-    Logger.log(`${label} verified: ${actual}`);
-  }
-};
 
 /**
  * Test that getAllMembers() returns the correct structure

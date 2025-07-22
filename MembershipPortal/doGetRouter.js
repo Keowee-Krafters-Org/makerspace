@@ -4,8 +4,9 @@ function doGet(e) {
     const modelFactory = Membership.newModelFactory();
     let canSignup = false; // ✅ properly declare this
     let event = undefined; // Initialize event to null
+    const config = getConfig();
     // Default member object
-    let member = getConfig().defaultMember;
+    let member = config.defaultMember;
 
     if (e.parameter.memberId) {
         const response = getMember(e.parameter.memberId);
@@ -21,17 +22,24 @@ function doGet(e) {
     }
 
     if (view === 'event') {
-        if(e.parameter.eventId) {
+        if (e.parameter.eventId) {
             event = modelFactory.eventManager().getEventById(e.parameter.eventId);
         }
         html = HtmlService.createTemplateFromFile('EventPortal/event');
         html.canSignup = canSignup;
         html.event = event;
-    } else {
+    } else if (view === 'admin') {
+        if (config.levels[member.level] < config.levels.Administrator) {
+            return HtmlService.createHtmlOutput('Access denied. Not an admin.');
+        }
+        html = HtmlService.createTemplateFromFile('AdminPortal/admin');
+    }
+    else {
+        // Default to member view
         html = HtmlService.createTemplateFromFile('MemberPortal/member');
     }
 
-    html.sharedConfig = getConfig();
+    html.sharedConfig = config;
     html.member = member;
 
     return html.evaluate()

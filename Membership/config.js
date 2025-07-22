@@ -1,6 +1,6 @@
 const config = {
   dev: {
-    version: 'SNAPSHOT-0.1.2',
+    version: 'SNAPSHOT-0.1.4',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
   }, 
   prod: {
@@ -10,15 +10,7 @@ const config = {
 }
 
 var SharedConfig = {
-  mode: 'prod',
-  modes: {
-    dev: {
-      baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
-    },
-    prod: {
-      baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',
-    }
-  },
+  mode: 'dev',
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date
@@ -93,5 +85,5 @@ var SharedConfig = {
 };
 
 function getConfig() {
-  return {...SharedConfig, ...config[SharedConfig.mode], baseUrl: SharedConfig.modes[SharedConfig.mode].baseUrl};
+  return {...SharedConfig, ...config[SharedConfig.mode]};
 }
