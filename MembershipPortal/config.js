@@ -6,11 +6,19 @@
 
 
 config = {
-  version: 'SNAPSHOT-0.0.49', 
-  deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
+  dev: {
+    version: 'SNAPSHOT-0.2.3',
+    deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL'
+  },
+  prod: {
+    // Production configuration
+    version: 'RELEASE-0.1.6',
+    deploymentId: 'AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR'
+  }
 
 };
 
 function getConfig() {
-  return {...Membership.getConfig(), ...config};
+  const mode = Membership.getConfig().mode;
+  return { ...Membership.getConfig(), ...config[mode] };
 }
