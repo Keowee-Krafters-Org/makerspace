@@ -1,14 +1,16 @@
 
-class Response {
+class Response extends Entity{
   constructor(success, data = {}, message, error) {
-    this.success = success; 
-    this.message = message; 
-    this.error = error;
-    this.data = data;
-    this. redirectToForm = false; 
+    super(); 
+    this.success = success || false;
+    this.data = data || {};
+    this.message = message || '';
+    this.error = error || '';
   }
 
   toObject() {
     return this; 
   }
+
+
 }

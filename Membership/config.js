@@ -1,18 +1,16 @@
 const config = {
-  version: 'SNAPSHOT-..102',
-  deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
+  dev: {
+    version: 'SNAPSHOT-0.1.5',
+    deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
+  }, 
+  prod: {
+    version: 'RELEASE-0.1.6',
+    deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
+  }
 }
 
 var SharedConfig = {
   mode: 'prod',
-  modes: {
-    dev: {
-      baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
-    },
-    prod: {
-      baseUrl: 'https://script.google.com/macros/s/AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL/exec',
-    }
-  },
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date
@@ -87,5 +85,5 @@ var SharedConfig = {
 };
 
 function getConfig() {
-  return {...SharedConfig, ...config, baseUrl: SharedConfig.modes[SharedConfig.mode].baseUrl};
+  return {...SharedConfig, ...config[SharedConfig.mode]};
 }

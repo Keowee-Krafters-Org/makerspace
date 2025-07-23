@@ -8,7 +8,13 @@ function getConfig() {
 }
 
 config = {
+  dev: {
   version: 'SNAPSHOT-0.1.25',
   deploymentId: 'AKfycbyOY43cm2W0Mli3AVU_dSC2BuWBidLjd-OEzP6DpFj_dlzIdSp9_Sol4cXFkYzLkwpL'
+  },
+  prod: {
+    version: 'RELEASE-0.1.1',
+    deploymentId: 'AKfycbzLMvzt44a19qa8tvF4OSkDSha3y6ZN5zwVjeiWe1z8ZnLOeL58tZOxCwF-kwZ8bwHh'
+  }
 }
 

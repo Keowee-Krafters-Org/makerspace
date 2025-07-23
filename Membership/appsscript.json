@@ -1,22 +1,22 @@
 {
   "timeZone": "America/New_York",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
   "dependencies": {
-    "libraries": [
-      {
-        "userSymbol": "ZohoAPI",
-        "version": "0",
-        "libraryId": "15s7wHQQVgKV1mQP7PjZHfv9_nFH59NzDuVrzbsmgibukQIn7brL0BHTr",
-        "developmentMode": true
-      }
-    ],
     "enabledAdvancedServices": [
       {
         "userSymbol": "AdminDirectory",
-        "version": "directory_v1",
-        "serviceId": "admin"
+        "serviceId": "admin",
+        "version": "directory_v1"
+      }
+    ],
+    "libraries": [
+      {
+        "userSymbol": "ZohoAPI",
+        "version": "29",
+        "libraryId": "15s7wHQQVgKV1mQP7PjZHfv9_nFH59NzDuVrzbsmgibukQIn7brL0BHTr",
+        "developmentMode": false
       }
     ]
-  },
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  }
 }
