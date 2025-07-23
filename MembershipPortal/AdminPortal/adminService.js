@@ -13,8 +13,8 @@ function membershipManager() {
 /**
  * Returns all members for admin listing.
  */
-function getAllMembers() {
-  const response = membershipManager().getAllMembers(); 
+function getAllMembers(params) {
+  const response = membershipManager().getAllMembers(params); 
   const responseString=JSON.stringify(response); 
   return responseString; 
 }

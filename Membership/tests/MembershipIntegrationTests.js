@@ -173,6 +173,15 @@ function test_getAllMembers_returns_members() {
   //deleteTestMember(testMember.emailAddress);
 }
 
+function test_getAllMembers_by_page_returns_members() {
+  let allResponse = membershipManager.getAllMembers({page:1});
+  const page1 = allResponse.data; 
+  const member1 = page1[0];
+  const page2 = membershipManager.getAllMembers({page:2}).data; 
+  const member2 = page2[0]; 
+  assert('Found different members', true, member1.emailAddress != member2.emailAddress);
+  //deleteTestMember(testMember.emailAddress);
+}
 function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
   membershipManager.addMemberRegistration(Member.fromObject(testMember));
   const member = membershipManager.memberLookup(testMember.emailAddress); 

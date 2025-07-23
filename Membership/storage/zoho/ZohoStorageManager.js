@@ -22,7 +22,8 @@ class ZohoStorageManager extends StorageManager {
   /**
    * Get all entity records from Zoho Books and Zoho CRM.
    * @returns {Array} An array of entity records.   
-   * @returns Response {Error} If the API call fails.
+   * @returns Response {Error} If the API call fails - with pagination information.
+   * @throws {Error} If the API call fails or no data is found.
    * @example
    */
   getAll(params = {}) {
@@ -33,7 +34,8 @@ class ZohoStorageManager extends StorageManager {
       throw new Error(`No data found for resource: ${this.resourceName}`);
     }
     const entities = response[this.resourceName].map(row => this.clazz.fromRecord(row));
-    return new Response(response.message === 'success', entities, response.message);
+
+    return ZohoResponse.fromRecord(response, entities);
   }
 
   convertParams(params) {

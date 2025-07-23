@@ -102,20 +102,21 @@
 <body>
   <div id="spinner" class="spinner"></div>
   <div id="app"></div>
-  <h2>Admin Portal</h2>
-  <div>
-    <input type="text" id="search" placeholder="Search by name or email" />
-    <select id="filter">
-      <option value="">All Statuses</option>
-      <option value="NEW">New</option>
-      <option value="REGISTERED">Registered</option>
-      <option value="VERIFIED">Verified</option>
-      <option value="APPLIED">Applied</option>
-      <option value="PENDING">Pending</option>
-    </select>
-    <button onclick="loadMembers()">Search</button>
-  </div>
+  <h2>Member Admin Portal</h2>
+
   <div id="memberListContainer">
+    <div>
+      <input type="text" id="search" placeholder="Search by name or email" />
+      <select id="filter">
+        <option value="">All Statuses</option>
+        <option value="NEW">New</option>
+        <option value="REGISTERED">Registered</option>
+        <option value="VERIFIED">Verified</option>
+        <option value="APPLIED">Applied</option>
+        <option value="PENDING">Pending</option>
+      </select>
+      <button onclick="loadMembers()">Search</button>
+    </div>
     <table class="member-list" id="memberList">
       <thead>
         <tr>
@@ -128,6 +129,7 @@
       </thead>
       <tbody id="memberRows"></tbody>
     </table>
+    <div id="paginationControls"></div>
   </div>
 
   <div id="memberEditor" class="member-editor hidden">
@@ -161,6 +163,7 @@
     <a id="editWaiverLink" class="readonly-link" href="#" target="_blank" hidden="true">View Waiver</a>
 
     <button onclick="saveMember()">Save Changes</button>
+    <button onclick="cancelEdit()">Cancel</button>
   </div>
 
   <script>
@@ -186,39 +189,88 @@
       });
     }
 
-    function loadMembers() {
+    const pageSize = 10;
+    let filteredMembers = [];
+
+    /**
+     * Loads members with optional pagination and filtering.
+     * @param {Object} page - Pagination object with currentPage and pageSize.
+     */
+    function loadMembers(page = { currentPage: 1, pageSize: pageSize }) {
       const search = document.getElementById('search').value.toLowerCase();
       const filter = document.getElementById('filter').value;
       showSpinner();
       google.script.run.withSuccessHandler(res => {
+        
+      document.getElementById('memberEditor').classList.add('hidden');
+      document.getElementById('memberListContainer').classList.remove('hidden');
         const response = JSON.parse(res);
-        const members = response.data;
-        const filtered = members.filter(m => {
-          const matchesSearch = !search || m.emailAddress?.toLowerCase().includes(search) ||
-            m.firstName?.toLowerCase().includes(search) ||
-            m.lastName?.toLowerCase().includes(search);
-          const matchesFilter = !filter || m.registration.status === filter;
-          return matchesSearch && matchesFilter;
-        });
 
-        const tbody = document.getElementById('memberRows');
-        tbody.innerHTML = '';
-        filtered.forEach(member => {
-          const levelName = member.registration.level;
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${member.emailAddress || ''}</td>
-            <td>${member.firstName || ''} ${member.lastName || ''}</td>
-            <td>${member.registration?.status || ''}</td>
-            <td>${levelName}</td>
-            <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
-          `;
-          tbody.appendChild(row);
-          hideSpinner();
-        });
-      }).getAllMembers();
+        renderCurrentPage(response);
+        hideSpinner();
+      }).getAllMembers({ ...page });
     }
 
+    /**
+     * Cancels the member edit and returns to the member list.
+     */
+    function cancelEdit() {
+      loadMembers();
+    }
+    /**
+     * Renders the current page of members in the table.
+     * @param {Object} response - Response object containing member data and pagination info.
+     */
+    function renderCurrentPage(response) {
+      const tbody = document.getElementById('memberRows');
+      tbody.innerHTML = '';
+
+      const pageMembers = response.data || [];
+      const page = response.page || { currentPage: 1, hasMore: false };
+      pageMembers.forEach(member => {
+        const levelName = member.registration.level;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+      <td>${member.emailAddress || ''}</td>
+      <td>${member.firstName || ''} ${member.lastName || ''}</td>
+      <td>${member.registration?.status || ''}</td>
+      <td>${levelName}</td>
+      <td><button onclick="editMember('${member.emailAddress}')">Edit</button></td>
+    `;
+        tbody.appendChild(row);
+      });
+
+      renderPaginationControls(page);
+    }
+
+    /**
+     * Renders pagination controls based on the current page and whether there are more pages.
+     * @param {Object} page - Pagination object with currentPage and hasMore properties.
+     */
+    function renderPaginationControls(page) {
+      let controls = document.getElementById('paginationControls');
+
+      const hasMore = page.hasMore || false;
+      controls.innerHTML = `
+    <button onclick="goToPage({page:${page.currentPage - 1}})" ${page.currentPage === 1 ? 'disabled' : ''}>Previous</button>
+    Page ${page.currentPage}
+    <button onclick="goToPage({page:${page.currentPage + 1}})" ${page.hasMore ? 'disabled' : ''}>Next</button>
+  `;
+    }
+
+    /**
+     * Navigates to a specific page of members.
+     * @param {Object} page - Page object with the desired page number.
+     */
+    function goToPage(page) {
+
+      loadMembers(page);
+    }
+
+    /**
+     * Opens the member editor for a specific member by email.
+     * @param {string} email - The email address of the member to edit.
+     */
     function editMember(email) {
       showSpinner();
       google.script.run.withSuccessHandler(res => {
@@ -244,6 +296,7 @@
         }
 
         document.getElementById('memberEditor').classList.remove('hidden');
+        document.getElementById('memberListContainer').classList.add('hidden');
         hideSpinner();
       }).getMemberByEmail(email);
     }
@@ -251,13 +304,13 @@
     function saveMember() {
       const firstName = document.getElementById('editFirstName').value.trim();
       const lastName = document.getElementById('editLastName').value.trim();
-      let name = selectedMember.name; 
+      let name = selectedMember.name;
       if (firstName != selectedMember.firstName || lastName != selectedMember.lastName) {
         // Update name and first and last name fields
-        name  = `${firstName} ${lastName}`;
+        name = `${firstName} ${lastName}`;
       }
       const updateMemberRequest = {
-        id:selectedMember.id,
+        id: selectedMember.id,
         name: name,
         emailAddress: document.getElementById('editEmail').value,
         firstName: document.getElementById('editFirstName').value,

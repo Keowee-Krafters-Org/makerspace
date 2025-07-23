@@ -9,8 +9,8 @@ class MembershipManager {
     this.storageManager = storageManager;
   }
 
-  getAllMembers() {
-    return this.storageManager.getAll();
+  getAllMembers(params={}) {
+    return this.storageManager.getAll(params);
   }
 
   /**

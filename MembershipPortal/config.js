@@ -14,7 +14,7 @@ config = {
 
   prod: {
     // Production configuration
-    version: 'RELEASE-0.1.6',
+    version: 'RELEASE-0.1.10',
     deploymentId: 'AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',
   }
