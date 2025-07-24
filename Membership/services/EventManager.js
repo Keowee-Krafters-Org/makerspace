@@ -27,6 +27,16 @@ class EventManager {
     return this.enrichCalendarEvents(calendarEvents);
   }
 
+  /**
+   * Retrieves upcoming events based on the specified horizon.
+   * The horizon can be specified in the params, otherwise it defaults to the configured event horizon.
+   * @param {*} params 
+   * @returns   {Array} An array of upcoming events enriched with event item data.
+   * If no upcoming events are found, an empty array is returned.
+   * If an error occurs, it logs the error and returns an empty array.
+   * @throws {Error} If there is an issue retrieving the events from the calendar manager
+   * or enriching the events with event item data.
+   */
   getUpcomingEvents(params = {}) {
     const eventHorizon = params.horizon || getConfig().eventHorizon;
     const calendarEvents = this.calendarManager.getUpcomingEvents(eventHorizon);
@@ -36,6 +46,27 @@ class EventManager {
     return this.enrichCalendarEvents(calendarEvents);
   }
 
+  /**
+   *  Retrieves upcoming classes based on the specified parameters.
+   *  It filters the events to include only those of type 'Class'.
+   *  The events are sorted by start date in ascending order.
+   *  The maximum number of classes to show is limited by the `upcomingClassesLimit` configuration.
+   *  @param {Object} params - Optional parameters to filter the events.
+   *  @param {number} params.limit - Optional limit on the number of classes to retrieve.
+   *  @returns {Array} An array of upcoming classes, each enriched with event
+   *  @returns  {Array} An array of upcoming classes, each enriched with event item data.
+   *  If no upcoming classes are found, an empty array is returned.
+   *  @throws {Error} If there is an issue retrieving the events from the calendar
+   */
+  getUpcomingClasses(params = {}) {
+    const events = this.getUpcomingEvents(params);
+    if (!events || events.length === 0) {
+      return [];
+    }
+    return events.filter(event => {
+      return event.eventItem && event.eventItem.type === 'Event' && event.eventItem.eventType === 'Class';
+    });
+  }
   /**
    * Merges calendar events with event items from storage.
    * This function enriches calendar events with additional data from the event items.
@@ -52,12 +83,14 @@ class EventManager {
 
 
   enrichCalendarEvent(calendarEvent) {
-         const result = this.storageManager.getById(calendarEvent.eventItem.id);
+    if (calendarEvent.eventItem.id) {
+      const result = this.storageManager.getById(calendarEvent.eventItem.id);
       if (!result || !result.data) {
         return null;
       }
       calendarEvent.eventItem = result.data;
-      return calendarEvent;
+    }
+    return calendarEvent;
 
   }
   getPastEvents() {
@@ -73,7 +106,7 @@ class EventManager {
   getEventById(eventId) {
     const event = this.calendarManager.getById(eventId);
     if (!event) {
-      throw new Error(`Event Not Found for: ${eventId}`); 
+      throw new Error(`Event Not Found for: ${eventId}`);
     }
     const newEvent = this.enrichCalendarEvent(event);
     return newEvent;
@@ -106,7 +139,7 @@ class EventManager {
       let eventItem = event.eventItem;
       if (eventItem && eventItem.id) {
         const eventItemResponse = this.updateEventItem(eventItem);
-        eventItem= eventItemResponse.data; 
+        eventItem = eventItemResponse.data;
       } else {
         eventItem = this.addEventItem(eventItem);
       }
@@ -138,7 +171,7 @@ class EventManager {
 
   updateEvent(calendarEvent) {
     try {
-      const updatedEvent = this.calendarManager.update(calendarEvent.id,calendarEvent);
+      const updatedEvent = this.calendarManager.update(calendarEvent.id, calendarEvent);
       if (calendarEvent.eventItem) {
         updatedEvent.eventItem = this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
       }
@@ -151,7 +184,7 @@ class EventManager {
 
   updateEventItem(eventItemData) {
     const eventItem = this.storageManager.createNew(eventItemData);
-     return this.storageManager.update(eventItem.id, eventItem);
+    return this.storageManager.update(eventItem.id, eventItem);
   }
 
   deleteEventItem(eventItemId) {
@@ -174,7 +207,7 @@ class EventManager {
   }
 
   createEvent(data = {}) {
-    const calendarEvent =  this.calendarManager.create(data);
+    const calendarEvent = this.calendarManager.create(data);
     if (!calendarEvent) {
       throw new Error('Failed to create calendar event.');
     }
@@ -186,7 +219,7 @@ class EventManager {
     if (!host) {
       throw new Error('Failed to create host.');
     }
-    eventItem.host= host;
+    eventItem.host = host;
     calendarEvent.eventItem = eventItem;
     return calendarEvent;
   }
@@ -200,7 +233,7 @@ class EventManager {
   signup(eventId, memberId) {
     const event = this.calendarManager.getById(eventId);
     if (!event) {
-      throw new Error('Event not found.' );
+      throw new Error('Event not found.');
     }
     // Prevent duplicate signups
     if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
@@ -212,11 +245,11 @@ class EventManager {
       return { success: false, error: 'Event is full.' };
     }
 
-    const memberResponse= this.membershipManager.getMember(memberId); 
+    const memberResponse = this.membershipManager.getMember(memberId);
     if (!(memberResponse && memberResponse.success)) {
-      throw new Error('Member not found'); 
+      throw new Error('Member not found');
     }
-    const member = memberResponse.data; 
+    const member = memberResponse.data;
     this.calendarManager.addAttendee(eventId, member.emailAddress);
 
     return {
@@ -265,5 +298,5 @@ class EventManager {
 
   getEventLocations() {
     return this.config.locations;
-  } 
+  }
 }

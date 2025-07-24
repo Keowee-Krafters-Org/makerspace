@@ -147,7 +147,32 @@
             grid-column: span 2;
             margin-top: 12px;
         }
-    </style>
+    
+        .class-image {
+            width: 100%;
+            max-height: 160px;
+            overflow: hidden;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+        .class-image img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+        .class-desc.truncate {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .class-desc.truncate.expanded {
+            -webkit-line-clamp: unset;
+            white-space: normal;
+        }
+
+</style>
 </head>
 
 <body>
@@ -229,6 +254,7 @@
             }
 
             classes.forEach(cls => {
+                
                 const card = document.createElement('div');
                 card.className = 'class-card';
 
@@ -305,22 +331,26 @@
             container.appendChild(card);
         }
 
+        
         function generateClassDiv(cls) {
             const dateObj = new Date(cls.date);
             const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
             const spotsAvailable = cls.eventItem.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
+            const imageHtml = cls.eventItem.imageUrl ? `<div class="class-image"><img src="${cls.eventItem.imageUrl}" alt="Class Image" /></div>` : '';
             return `
-        <div class="class-title">${cls.eventItem.title}</div>
-        <div class="class-desc">${cls.eventItem.description}</div>
-        <div class="class-info"><strong>Price:</strong> $${Number(cls.eventItem.price).toFixed(2)}</div>
-        <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
-        <div class="class-info"><strong>Duration:</strong> ${cls.eventItem.duration || 0} hours</div>
-        <div class="class-info"><strong>Location:</strong> ${cls.location.description}</div>
-        <div class="class-info"><strong>Instructor:</strong> ${cls.eventItem.host?.name || cls.eventItem.host || ''}</div>
-        <div class="class-info"><strong>Max Attendees:</strong> ${cls.eventItem.sizeLimit}</div>
-        <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
-      `;
+                ${imageHtml}
+                <div class="class-title">${cls.eventItem.title}</div>
+                <div class="class-desc truncate" onclick="this.classList.toggle('expanded')">${cls.eventItem.description}</div>
+                <div class="class-info"><strong>Price:</strong> $${Number(cls.eventItem.price).toFixed(2)}</div>
+                <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
+                <div class="class-info"><strong>Duration:</strong> ${cls.eventItem.duration || 0} hours</div>
+                <div class="class-info"><strong>Location:</strong> ${cls.location.description}</div>
+                <div class="class-info"><strong>Instructor:</strong> ${cls.eventItem.host?.name || cls.eventItem.host || ''}</div>
+                <div class="class-info"><strong>Max Attendees:</strong> ${cls.eventItem.sizeLimit}</div>
+                <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
+            `;
         }
+
 
         /**
          * Handles the signup process for a class.
@@ -784,8 +814,7 @@
             }
             if (window.event) {
                 console.log("Rendering existing event:", window.event);
-
-                document.getElementById('classes').innerHTML = '<p>Loading events...</p>';
+                document.getElementById('classes').innerHTML = '<p>Loading event...</p>';
                 renderClass(window.event)
                 hideSpinner();
             } else {

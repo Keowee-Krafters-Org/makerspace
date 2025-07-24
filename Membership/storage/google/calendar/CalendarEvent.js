@@ -106,6 +106,11 @@ class CalendarEvent extends Event {
             const match = data._description.match(/eventItemId=(\d*)/);
             if (match) {
                 data.eventItem.id = match[1];
+            } else {
+              // No id here - just description
+              data.eventItem.description = data._description
+              data.eventItem.type = 'Event'; // Default type if not specified
+              data.eventItem.eventType = 'Meeting'; // Default eventType if not specified
             }
         }
         

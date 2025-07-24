@@ -1,16 +1,16 @@
 const config = {
   dev: {
-    version: 'SNAPSHOT-0.1.5',
+    version: 'SNAPSHOT-0.2.0',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
   }, 
   prod: {
-    version: 'RELEASE-0.1.6',
+    version: 'RELEASE-0.1.7',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
   }
 }
 
 var SharedConfig = {
-  mode: 'prod',
+  mode: 'dev',
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date

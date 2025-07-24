@@ -91,6 +91,26 @@ function test_getUpcomingEvents() {
     }
 }
 
+function test_getUpcomingClasses() {
+    const eventManager = modelFactory.eventManager();
+    try {
+        const events = eventManager.getUpcomingClasses();
+        Logger.log(`Retrieved ${events.length} upcoming classes.`);
+        Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
+        assert('Upcoming events should be an array', Array.isArray(events), true);
+        assert('Upcoming events should not be empty', events.length > 0, true);
+        events.forEach((event, idx) => {
+            assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
+            assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+            assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
+        });
+        Logger.log('Upcoming events verification passed.');
+
+    } catch (error) {
+        Logger.log(`getUpcomingEvents failed: ${error.message}`);
+    }
+}
+
 function test_getAvailableEvents() {
     const eventManager = modelFactory.eventManager();
     try {
