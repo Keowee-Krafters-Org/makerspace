@@ -2,7 +2,7 @@ function getEventList() {
 
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const events = eventManager.getUpcomingEvents();
+  const events = eventManager.getUpcomingClasses();
   return JSON.stringify({ success: true, data: events });
 }
 
