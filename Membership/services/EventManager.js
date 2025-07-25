@@ -5,10 +5,11 @@
  */
 class EventManager {
 
-  constructor(storageManager, calendarManager, membershipManager) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
+    this.fileManager = fileManager;
     this.config = getConfig();
   }
 
@@ -88,7 +89,13 @@ class EventManager {
       if (!result || !result.data) {
         return null;
       }
-      calendarEvent.eventItem = result.data;
+      const eventItem = result.data;
+
+      if (eventItem.image && eventItem.image.id) {
+        const imageFile = this.fileManager.get(eventItem.image.id);
+        eventItem.image = imageFile;
+      }
+      calendarEvent.eventItem = eventItem;
     }
     return calendarEvent;
 
@@ -137,6 +144,19 @@ class EventManager {
     try {
       const event = this.createEvent(eventData);
       let eventItem = event.eventItem;
+
+ 
+      // Handle image upload if image is a base64 string
+      if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
+        const imageData = eventItem.image.data; 
+        // Extract base64 data
+        const base64Data = imageData.split(',')[1];
+        const contentType = imageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/)[1];
+        const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, 'event-image.png');
+        const file = this.fileManager.add(blob);
+        eventItem.image = file; // Store DriveFile object
+      }
+
       if (eventItem && eventItem.id) {
         const eventItemResponse = this.updateEventItem(eventItem);
         eventItem = eventItemResponse.data;
@@ -146,10 +166,7 @@ class EventManager {
       if (!eventItem) {
         throw new Error('Failed to create event item.');
       }
-
-      eventData.eventItem = eventItem;
       // Add the event to the calendar
-      const calendarEvent = this.calendarManager.create(eventData);
       const newCalendarEvent = this.addCalendarEvent(calendarEvent, eventItem);
       newCalendarEvent.eventItem = eventItem;
       return { success: true, data: newCalendarEvent };

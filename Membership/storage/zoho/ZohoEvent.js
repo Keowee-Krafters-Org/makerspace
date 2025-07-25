@@ -23,7 +23,8 @@ class ZohoEvent extends Event {
       sizeLimit: 'cf_attendance_limit',
       type: 'cf_type',
       eventType: 'cf_event_type',
-      enabled: 'cf_enabled'
+      enabled: 'cf_enabled',
+      _imageId: 'cf_image_id'
     }
   };
 
@@ -42,6 +43,10 @@ class ZohoEvent extends Event {
     
     if (data._attendees) {
       data.attendees = JSON.parse(data._attendees);
+    }
+
+    if (record.cf_image_id) {
+      data.image = {id:record.cf_image_id } ;
     }
     return new ZohoEvent(data);
   }

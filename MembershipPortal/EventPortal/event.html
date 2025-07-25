@@ -147,7 +147,7 @@
             grid-column: span 2;
             margin-top: 12px;
         }
-    
+
         .class-image {
             width: 100%;
             max-height: 160px;
@@ -155,11 +155,13 @@
             border-radius: 4px;
             margin-bottom: 12px;
         }
+
         .class-image img {
             width: 100%;
             height: auto;
             object-fit: cover;
         }
+
         .class-desc.truncate {
             display: -webkit-box;
             -webkit-line-clamp: 3;
@@ -167,12 +169,12 @@
             overflow: hidden;
             cursor: pointer;
         }
+
         .class-desc.truncate.expanded {
             -webkit-line-clamp: unset;
             white-space: normal;
         }
-
-</style>
+    </style>
 </head>
 
 <body>
@@ -606,6 +608,41 @@
             addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
             addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
+            // --- Image Upload Field and Preview ---
+            const imageFieldContainer = document.createElement('div');
+            imageFieldContainer.id = 'image-field-container';
+            form.appendChild(imageFieldContainer);
+
+            // Image preview
+            const imagePreview = document.createElement('img');
+            imagePreview.id = 'edit-image-preview';
+            imagePreview.style.maxWidth = '200px';
+            imagePreview.style.display = cls.eventItem.image ? 'block' : 'none';
+            if (cls.eventItem.image) imagePreview.src = cls.eventItem.image;
+            imageFieldContainer.appendChild(imagePreview);
+
+            // File input
+            const imageInput = document.createElement('input');
+            imageInput.type = 'file';
+            imageInput.id = 'edit-image';
+            imageInput.accept = 'image/*';
+            imageFieldContainer.appendChild(imageInput);
+
+            // Show preview on file select and store base64 in a property
+            imageInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        // Store the base64 string for later use in createEventObject
+                        form._imageBase64 = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
             form.appendChild(saveBtn);
             container.appendChild(form);
 
@@ -707,6 +744,17 @@
             const enabled = document.getElementById('edit-enabled').checked;
             const host = { id: document.getElementById('edit-host').value };
             const duration = parseInt(document.getElementById('edit-duration').value) || 0; // <-- Add this line
+            const imageInput = document.getElementById('edit-image');
+            let imageBase64 = '';
+            // Try to get the base64 from the form property (set by the FileReader)
+            const form = imageInput.closest('form');
+            if (form && form._imageBase64) {
+                imageBase64 = form._imageBase64;
+            } else if (document.getElementById('edit-image-preview').src && document.getElementById('edit-image-preview').src.startsWith('data:image')) {
+                imageBase64 = document.getElementById('edit-image-preview').src;
+            } else if (window.event && window.event.eventItem && window.event.eventItem.image) {
+                imageBase64 = window.event.eventItem.image;
+            }
 
             return {
                 id: eventId,
@@ -718,7 +766,8 @@
                     sizeLimit: sizeLimit,
                     enabled: enabled,
                     host: host,
-                    duration: duration
+                    duration: duration,
+                    image: imageBase64 // <-- Add this line
                 },
                 date: new Date(date),
                 location: location

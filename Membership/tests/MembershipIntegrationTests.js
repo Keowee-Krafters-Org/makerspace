@@ -334,3 +334,9 @@ function test_EventManagerGetsFilteredEvents() {
   const events = eventManager.getUpcomingEvents() ;
   assert('Events are there', events.length > 1 ,true); 
 }
+
+function test_when_get_config__then_key_parameters_are_set() {
+  const configMerged = getConfig(); 
+  assert("Config contains base URL: ", true, configMerged.baseUrl != undefined); 
+  assert("Config point to correct URL", configMerged.mode==='dev'?config.dev.baseUrl:config.prod.baseUrl, configMerged.baseUrl); 
+}
