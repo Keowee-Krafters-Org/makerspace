@@ -1,4 +1,3 @@
-
 /**
  * GoogleDriveService handles file storage in a configured Drive folder.
  * It provides methods to add, retrieve, and delete files.
@@ -24,6 +23,23 @@ class GoogleDriveService {
       mimeType: file.getMimeType(),
       url: file.getUrl()
     });
+  }
+
+  /**
+   * Uploads an image to Drive from a Base64 string and returns a DriveFile instance.
+   * @param {string} base64Image - The Base64 string of the image
+   * @param {string} defaultName - The default name for the image file
+   * @returns {DriveFile}
+   */
+  addImage(base64Image, defaultName = 'event-image.png') {
+    const base64Data = base64Image.split(',')[1];
+    const contentType = base64Image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/)[1];
+
+    // Generate a random name for the image file
+    const randomName = `${defaultName}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`;
+
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, randomName);
+    return this.add(blob); // Use the existing add() method to upload the file
   }
 
   /**

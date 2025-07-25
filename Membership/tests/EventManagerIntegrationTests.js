@@ -5,6 +5,7 @@
  * @example
  * eventManagerIntegrationTests();  
  */
+const TEST_IMAGE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
@@ -160,7 +161,7 @@ function test_addEvent() {
     let event; 
     try {
         // Sample 1x1 transparent PNG (replace with a real image for production tests)
-        const base64Image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg==";
+        const base64Image = TEST_IMAGE;
 
         // Clone and add image to event data
         const eventDataWithImage = JSON.parse(JSON.stringify(eventData));

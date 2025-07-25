@@ -24,7 +24,7 @@ class ZohoEvent extends Event {
       type: 'cf_type',
       eventType: 'cf_event_type',
       enabled: 'cf_enabled',
-      _imageId: 'cf_image_id'
+      _imageUrl: 'cf_image_url'
     }
   };
 
@@ -45,8 +45,8 @@ class ZohoEvent extends Event {
       data.attendees = JSON.parse(data._attendees);
     }
 
-    if (record.cf_image_id) {
-      data.image = {id:record.cf_image_id } ;
+    if (record.cf_image_url) {
+      data.image = {url:record.cf_image_url } ;
     }
     return new ZohoEvent(data);
   }
@@ -55,6 +55,7 @@ class ZohoEvent extends Event {
   
     // Flatten the host record to id only
     this._hostId = this.host?this.host.id:'';
+    this._imageUrl = this.image?this.image.url:''; 
     const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
     //record.product_type = 'service';
     return record; 

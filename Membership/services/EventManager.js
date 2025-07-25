@@ -142,43 +142,36 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-      const event = this.createEvent(eventData);
-      let eventItem = event.eventItem;
+        const event = this.createEvent(eventData);
+        let eventItem = event.eventItem;
 
- 
-      // Handle image upload if image is a base64 string
-      if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
-        const imageData = eventItem.image.data; 
-        // Extract base64 data
-        const base64Data = imageData.split(',')[1];
-        const contentType = imageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/)[1];
-        const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, 'event-image.png');
-        const file = this.fileManager.add(blob);
-        eventItem.image = file; // Store DriveFile object
-      }
+        // Handle image upload if image is a base64 string
+        if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
+            const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
+            eventItem.image = file; // Store DriveFile object
+        }
 
-      if (eventItem && eventItem.id) {
-        const eventItemResponse = this.updateEventItem(eventItem);
-        eventItem = eventItemResponse.data;
-      } else {
-        eventItem = this.addEventItem(eventItem);
-      }
-      if (!eventItem) {
-        throw new Error('Failed to create event item.');
-      }
-      // Add the event to the calendar
-      const newCalendarEvent = this.addCalendarEvent(calendarEvent, eventItem);
-      newCalendarEvent.eventItem = eventItem;
-      return { success: true, data: newCalendarEvent };
+        if (eventItem && eventItem.id) {
+            const eventItemResponse = this.updateEventItem(eventItem);
+            eventItem = eventItemResponse.data;
+        } else {
+            eventItem = this.addEventItem(eventItem);
+        }
+        if (!eventItem) {
+            throw new Error('Failed to create event item.');
+        }
+        // Add the event to the calendar
+        const newCalendarEvent = this.addCalendarEvent(event, eventItem);
+        newCalendarEvent.eventItem = eventItem;
+        return { success: true, data: newCalendarEvent };
     } catch (err) {
-      console.error('Failed to create event:', err);
-      return { success: false, message: 'Failed to create event.', error: err.toString() };
+        console.error('Failed to create event:', err);
+        return { success: false, message: 'Failed to create event.', error: err.toString() };
     }
   }
 
   addEventItem(eventItem) {
-    const event = this.storageManager.createNew(eventItem);
-    return this.storageManager.add(event);
+    return this.storageManager.add(eventItem);
   }
 
   addCalendarEvent(calendarEvent, eventItem) {
