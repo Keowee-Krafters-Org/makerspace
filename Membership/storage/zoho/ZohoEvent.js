@@ -13,7 +13,7 @@ class ZohoEvent extends Event {
       id: 'item_id',
       title: 'name',
       cost: 'purchase_rate',
-      costDescription: 'purchase_description',
+      costDescription: 'purchase_description',      
       price: 'rate',
       _hostId: 'cf_host',
       location: 'cf_location',
@@ -56,13 +56,18 @@ class ZohoEvent extends Event {
     // Flatten the host record to id only
     this._hostId = this.host?this.host.id:'';
     this._imageUrl = this.image?this.image.url:''; 
+
     const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
-    //record.product_type = 'service';
+    record.prodcut_type = 'service'; 
     return record; 
   }
 
   static createNew(data = {}) {
-    return super.createNew(data); 
+
+    const event =  super.createNew(data);
+    event.type = 'Event';
+    event.enabled = true; // Default to enabled 
+    return event; 
   }
 }
 

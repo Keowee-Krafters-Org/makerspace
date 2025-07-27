@@ -22,12 +22,30 @@ function doGet(e) {
     }
 
     if (view === 'event') {
+        html = HtmlService.createTemplateFromFile('EventPortal/event');
         if (e.parameter.eventId) {
             event = modelFactory.eventManager().getEventById(e.parameter.eventId);
+            if (event) {
+                html.event = event; 
+            } else {
+                html.event = {
+                    title: 'Event Not Found',
+                    description: 'The event you are looking for does not exist.',
+                    date: '',
+                    location: 'Unknown',
+                    eventItem: {
+                        image: '',
+                        host: 'N/A',
+                        price: 0,
+                        sizeLimit: 0,
+                        duration: 0
+                    }
+                }; 
+            }
+        } else {
+            html.event = undefined
         }
-        html = HtmlService.createTemplateFromFile('EventPortal/event');
         html.canSignup = canSignup;
-        html.event = event;
     } else if (view === 'admin') {
         if (config.levels[member.level] < config.levels.Administrator) {
             return HtmlService.createHtmlOutput('Access denied. Not an admin.');

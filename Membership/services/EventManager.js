@@ -146,12 +146,10 @@ class EventManager {
         let eventItem = event.eventItem;
 
         // Handle image upload if image is a base64 string
-        if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
-            const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
-            eventItem.image = file; // Store DriveFile object
-        }
+       this.saveEventImage(eventItem);
+        // If eventItem already exists, update it; otherwise, create a new one
 
-        if (eventItem && eventItem.id) {
+        if (eventItem && eventItem.id && eventItem.id !== 'null') {
             const eventItemResponse = this.updateEventItem(eventItem);
             eventItem = eventItemResponse.data;
         } else {
@@ -170,6 +168,27 @@ class EventManager {
     }
   }
 
+  saveEventImage(eventItem) {
+    if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
+        // Upload the image and get the DriveFile object
+        const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
+        
+        // Modify the URL to use the thumbnail format
+        if (file && file.id) {
+            file.url = `https://drive.google.com/thumbnail?id=${file.id}`;
+        }
+
+        // Store the updated DriveFile object in the eventItem
+        eventItem.image = file;
+    }
+    return eventItem;
+  }
+  /**
+   * Adds a new event item to the storage.
+   * @param {*} eventItem 
+   * @returns 
+   */
+
   addEventItem(eventItem) {
     return this.storageManager.add(eventItem);
   }
@@ -183,7 +202,10 @@ class EventManager {
     try {
       const updatedEvent = this.calendarManager.update(calendarEvent.id, calendarEvent);
       if (calendarEvent.eventItem) {
-        updatedEvent.eventItem = this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
+        const eventItem = calendarEvent.eventItem;
+        this.saveEventImage(eventItem);
+        let response = this.storageManager.update(eventItem.id, eventItem);
+        updatedEvent.eventItem = response.data;
       }
       return new Response(true, updatedEvent, 'Event updated successfully.');
     } catch (err) {

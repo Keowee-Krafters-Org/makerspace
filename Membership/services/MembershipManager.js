@@ -237,7 +237,7 @@ class MembershipManager {
         const memberLevel = SharedConfig.levels[member.registration.level]; 
         // Ensure level is a number for comparison
         return memberLevel >= instructorLevel;
-      }, {per_page:200}
+      }, {contactType:'vendor', per_page:200}
     );
     // Return only the data array (list of instructors)
     return response.data;

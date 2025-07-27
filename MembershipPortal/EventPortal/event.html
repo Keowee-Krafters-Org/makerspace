@@ -149,9 +149,9 @@
         }
 
         .class-image {
-            width: 100%;
-            max-height: 160px;
-            overflow: hidden;
+            max-width: 400px;
+            max-height: 400px;
+            overflow: scroll;
             border-radius: 4px;
             margin-bottom: 12px;
         }
@@ -159,7 +159,7 @@
         .class-image img {
             width: 100%;
             height: auto;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .class-desc.truncate {
@@ -210,16 +210,16 @@
         const canSignup = JSON.parse(document.getElementById('can-signup').textContent);
         window.canSignup = canSignup;
         const eventData = document.getElementById('event-data').textContent;
-        let event;
+        let activeEvent;
         console.log("Event data:", eventData);
         if (eventData && eventData.trim() !== '') {
             try {
-                event = JSON.parse(eventData);
+                activeEvent = JSON.parse(eventData);
             } catch (e) {
                 console.error("Failed to parse event data:", e);
             }
         }
-        window.event = event;
+        window.activeEvent = activeEvent;
     </script>
 
     <script>
@@ -256,7 +256,7 @@
             }
 
             classes.forEach(cls => {
-                
+
                 const card = document.createElement('div');
                 card.className = 'class-card';
 
@@ -333,12 +333,12 @@
             container.appendChild(card);
         }
 
-        
+
         function generateClassDiv(cls) {
             const dateObj = new Date(cls.date);
             const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
             const spotsAvailable = cls.eventItem.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
-            const imageHtml = cls.eventItem.imageUrl ? `<div class="class-image"><img src="${cls.eventItem.imageUrl}" alt="Class Image" /></div>` : '';
+            const imageHtml = cls.eventItem.image.url ? `<div class="class-image"><img src="${cls.eventItem.image.url}" alt="Class Image" /></div>` : '';
             return `
                 ${imageHtml}
                 <div class="class-title">${cls.eventItem.title}</div>
@@ -499,6 +499,49 @@
             return select;
         }
 
+        /**
+ * Creates an image upload field with a preview.
+ * @param {Object} cls - The class object containing the image data.
+ * @param {HTMLFormElement} form - The form element to store the base64 image data.
+ * @returns {HTMLDivElement} The container with the image upload field and preview.
+ */
+        function createImageUploadField(cls, form) {
+            const imageFieldContainer = document.createElement('div');
+            // imageFieldContainer.id = 'image-field-container';
+
+            // Image preview
+            const imagePreview = document.createElement('img');
+            imagePreview.id = 'edit-image-preview';
+            imagePreview.style.maxWidth = '200px';
+            imagePreview.style.display = cls.eventItem.image ? 'block' : 'none';
+            if (cls.eventItem.image.url) imagePreview.src = cls.eventItem.image.url;
+            imageFieldContainer.appendChild(imagePreview);
+
+            // File input
+            const imageInput = document.createElement('input');
+            imageInput.type = 'file';
+            imageInput.id = 'edit-image';
+            imageInput.accept = 'image\/\*';
+            imageFieldContainer.appendChild(imageInput);
+
+            // Show preview on file select and store base64 in a property
+            imageInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        // Store the base64 string for later use in createEventObject
+                        form._imageBase64 = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            return imageFieldContainer;
+        }
+
         function editEvent(cls) {
             showSpinner();
             const container = document.getElementById('classes');
@@ -532,7 +575,7 @@
 
                 const dropdown = createDropdown(
                     'edit-event-item',
-                    [{ id: '', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
+                    [{ id: 'null', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
                     cls.eventItem.id || ''
                 );
                 eventItemFieldContainer.innerHTML = '';
@@ -609,39 +652,10 @@
             addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
             // --- Image Upload Field and Preview ---
-            const imageFieldContainer = document.createElement('div');
-            imageFieldContainer.id = 'image-field-container';
+            // Add the image upload field
+            const imageFieldContainer = createImageUploadField(cls, form);
             form.appendChild(imageFieldContainer);
 
-            // Image preview
-            const imagePreview = document.createElement('img');
-            imagePreview.id = 'edit-image-preview';
-            imagePreview.style.maxWidth = '200px';
-            imagePreview.style.display = cls.eventItem.image ? 'block' : 'none';
-            if (cls.eventItem.image) imagePreview.src = cls.eventItem.image;
-            imageFieldContainer.appendChild(imagePreview);
-
-            // File input
-            const imageInput = document.createElement('input');
-            imageInput.type = 'file';
-            imageInput.id = 'edit-image';
-            imageInput.accept = 'image/*';
-            imageFieldContainer.appendChild(imageInput);
-
-            // Show preview on file select and store base64 in a property
-            imageInput.addEventListener('change', function () {
-                const file = this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        imagePreview.src = e.target.result;
-                        imagePreview.style.display = 'block';
-                        // Store the base64 string for later use in createEventObject
-                        form._imageBase64 = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
 
             form.appendChild(saveBtn);
             container.appendChild(form);
@@ -752,14 +766,15 @@
                 imageBase64 = form._imageBase64;
             } else if (document.getElementById('edit-image-preview').src && document.getElementById('edit-image-preview').src.startsWith('data:image')) {
                 imageBase64 = document.getElementById('edit-image-preview').src;
-            } else if (window.event && window.event.eventItem && window.event.eventItem.image) {
-                imageBase64 = window.event.eventItem.image;
+            } else if (window.activeEvent && window.activeEvent.eventItem && window.activeEvent.eventItem.image) {
+                imageBase64 = window.activeEvent.eventItem.image;
             }
 
             return {
-                id: eventId,
+                id: eventId==='null' ? null : eventId,
                 eventItem: {
                     id: eventItemId,
+                    type:'event',
                     title: title,
                     description: description,
                     price: price,
@@ -767,7 +782,7 @@
                     enabled: enabled,
                     host: host,
                     duration: duration,
-                    image: imageBase64 // <-- Add this line
+                    image: {data:imageBase64} 
                 },
                 date: new Date(date),
                 location: location
@@ -861,10 +876,10 @@
             if (sharedConfig.version?.eventPortal) {
                 document.getElementById('version').textContent = `Version: ${sharedConfig.version.eventPortal}`;
             }
-            if (window.event) {
-                console.log("Rendering existing event:", window.event);
+            if (activeEvent) {
+                console.log("Rendering existing event:", activeEvent);
                 document.getElementById('classes').innerHTML = '<p>Loading event...</p>';
-                renderClass(window.event)
+                renderClass(activeEvent)
                 hideSpinner();
             } else {
                 console.log("Loading events from server...");
@@ -875,8 +890,5 @@
             }
         });
     </script>
-
-
 </body>
-
 </html>
