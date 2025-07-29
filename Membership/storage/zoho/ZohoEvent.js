@@ -23,7 +23,7 @@ class ZohoEvent extends Event {
       sizeLimit: 'cf_attendance_limit',
       type: 'cf_type',
       eventType: 'cf_event_type',
-      enabled: 'cf_enabled',
+      enabled: 'cf_enabled_unformatted',
       _imageUrl: 'cf_image_url'
     }
   };

@@ -7,7 +7,7 @@ const config = {
     imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
   },
   prod: {
-    version: 'RELEASE-0.1.8',
+    version: 'RELEASE-0.1.9',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',    
     calendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com',
@@ -16,7 +16,7 @@ const config = {
 }
 
 var SharedConfig = {
-  mode: 'dev',
+  mode: 'prod',
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date

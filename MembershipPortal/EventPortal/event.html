@@ -310,7 +310,7 @@
                 msg.style.color = 'gray';
                 msg.style.textAlign = 'center';
                 msg.style.margin = '16px 0';
-                msg.innerHTML = `Please <a href="${sharedConfig.baseUrl}?view=member" target="_blank" style="color: #3367d6;">Login</a> to sign up for this class.`;
+                msg.innerHTML = `Please <a href="${sharedConfig.baseUrl}?view=member&eventId=${cls.id}" target="_blank" style="color: #3367d6;">Provide an Email</a> to sign up for this class.`;
                 card.appendChild(msg);
 
             }
@@ -876,7 +876,7 @@
             if (sharedConfig.version?.eventPortal) {
                 document.getElementById('version').textContent = `Version: ${sharedConfig.version.eventPortal}`;
             }
-            if (activeEvent) {
+            if (activeEvent && activeEvent.id && activeEvent.id !== 'null') {
                 console.log("Rendering existing event:", activeEvent);
                 document.getElementById('classes').innerHTML = '<p>Loading event...</p>';
                 renderClass(activeEvent)

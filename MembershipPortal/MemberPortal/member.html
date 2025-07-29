@@ -72,11 +72,11 @@
 
 <body>
   <div id="app"></div>
-    
-    <div id="spinner" class="spinner"></div>
-    <h5>
+
+  <div id="spinner" class="spinner"></div>
+  <h5>
     <p id="version"></p>
-    </h5>
+  </h5>
   <script type="application/json" id="member-data">
     <?!= JSON.stringify(member) ?>
     </script>
@@ -84,11 +84,18 @@
     <?!= JSON.stringify(sharedConfig) ?>
   </script>
 
+  <script type="application/json" id="event-data">
+    <?!= JSON.stringify(event) ?>
+  </script>
+
   <script>
     const currentMember = JSON.parse(document.getElementById('member-data').textContent);
     window.currentMember = currentMember;
     const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
     window.sharedConfig = sharedConfig;
+    const event = JSON.parse(document.getElementById('event-data').textContent);
+    console.log(`Event ID: ${event.id}`);
+    window.event = event; 
   </script>
 
   <script>
@@ -164,28 +171,36 @@
             content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
 
           } else if (member.registration.status === 'REGISTERED') {
-            content += '<p>Thanks for verifying your email!</p>';
-            const levelNumber = sharedConfig.levels[member.registration.level];
-            console.log(`Member level: ${member.registration.level} (${levelNumber})`);
-            content += `<ul>
+            if (event && event.id !== 'null') {
+              console.log(`Event ID provided: ${event.id}`);
+              // Initiated from event sign-up
+              content += `<p>Thank you for Loging in! You can now sign up for your event.</p>`;
+              content += `<p><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}&eventId=${event.id}" target="_blank">Sign Up For Event</a></p>`;
+            } else {
+
+              content += '<p>Thanks for verifying your email!</p>';
+              const levelNumber = sharedConfig.levels[member.registration.level];
+              console.log(`Member level: ${member.registration.level} (${levelNumber})`);
+              content += `<ul>
                 <li><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}" target="_blank">Sign Up For Classes</a></li>`;
 
-            if (levelNumber >= 2) {
-              if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
-                const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
-                content += `<li><a href="${volunteerUrl}" target="_blank">Volunteer Hours Form</a></li>`;
+              if (levelNumber >= 2) {
+                if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
+                  const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
+                  content += `<li><a href="${volunteerUrl}" target="_blank">Volunteer Hours Form</a></li>`;
+                }
               }
-            }
 
-            if (levelNumber >= 10) {
-              content += `<li><strong><a href="${sharedConfig.baseUrl}?view=admin&memberId=${member.id}" target="_blank"">Member Admin</a></strong></li>`;
-            }
+              if (levelNumber >= 10) {
+                content += `<li><strong><a href="${sharedConfig.baseUrl}?view=admin&memberId=${member.id}" target="_blank"">Member Admin</a></strong></li>`;
+              }
 
-            if (levelNumber >= 20) {
-              content += `<li><strong>Admin Dashboard</strong></li>`;
-            }
+              if (levelNumber >= 20) {
+                content += `<li><strong>Admin Dashboard</strong></li>`;
+              }
 
-            content += '</ul>';
+              content += '</ul>';
+            }
 
           } else if (member.registration.status === 'APPLIED') {
             const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
@@ -215,10 +230,10 @@
     }
 
     function renderDashboard(user) {
-      
-        document.getElementById('app').innerHTML = getDashboardContent(user, sharedConfig);
-        document.getElementById('version').textContent = `Version: ${sharedConfig.version}`;
-     
+
+      document.getElementById('app').innerHTML = getDashboardContent(user, sharedConfig);
+      document.getElementById('version').textContent = `Version: ${sharedConfig.version}`;
+
     }
 
     function requestToken(emailAddress) {
@@ -326,7 +341,7 @@
       }).logout(email);
     }
 
-  
+
     renderDashboard(currentMember);
   </script>
 

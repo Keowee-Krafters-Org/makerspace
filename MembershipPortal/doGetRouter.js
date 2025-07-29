@@ -1,9 +1,10 @@
 function doGet(e) {
     const view = e.parameter.view || 'member';
+    const eventId = e.parameter.eventId || 'null';
     let html;
     const modelFactory = Membership.newModelFactory();
     let canSignup = false; // ✅ properly declare this
-    let event = undefined; // Initialize event to null
+    let event = {id: eventId}; // Initialize event to null
     const config = getConfig();
     // Default member object
     let member = config.defaultMember;
@@ -42,8 +43,6 @@ function doGet(e) {
                     }
                 }; 
             }
-        } else {
-            html.event = undefined
         }
         html.canSignup = canSignup;
     } else if (view === 'admin') {
@@ -55,8 +54,10 @@ function doGet(e) {
     else {
         // Default to member view
         html = HtmlService.createTemplateFromFile('MemberPortal/member');
+
     }
 
+    html.event = event;
     html.sharedConfig = config;
     html.member = member;
 
