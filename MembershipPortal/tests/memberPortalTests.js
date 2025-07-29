@@ -65,3 +65,10 @@ function test_failed_event_update() {
   const updatedEvent = updateEvent(eventText); 
   assert("Event updated:", true, updatedEvent!=undefined); 
 }
+
+function test_when_get_config__then_key_parameters_are_set() {
+  const configMerged = getConfig(); 
+  const sharedConfig = Membership.getConfig();
+  assert("Config contains base URL: ", true, configMerged.baseUrl != undefined); 
+  assert("Config points to correct URL", sharedConfig.baseUrl, configMerged.baseUrl); 
+}

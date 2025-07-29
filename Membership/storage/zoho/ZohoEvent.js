@@ -13,7 +13,7 @@ class ZohoEvent extends Event {
       id: 'item_id',
       title: 'name',
       cost: 'purchase_rate',
-      costDescription: 'purchase_description',
+      costDescription: 'purchase_description',      
       price: 'rate',
       _hostId: 'cf_host',
       location: 'cf_location',
@@ -23,7 +23,8 @@ class ZohoEvent extends Event {
       sizeLimit: 'cf_attendance_limit',
       type: 'cf_type',
       eventType: 'cf_event_type',
-      enabled: 'cf_enabled'
+      enabled: 'cf_enabled_unformatted',
+      _imageUrl: 'cf_image_url'
     }
   };
 
@@ -43,6 +44,10 @@ class ZohoEvent extends Event {
     if (data._attendees) {
       data.attendees = JSON.parse(data._attendees);
     }
+
+    if (record.cf_image_url) {
+      data.image = {url:record.cf_image_url } ;
+    }
     return new ZohoEvent(data);
   }
 
@@ -50,13 +55,19 @@ class ZohoEvent extends Event {
   
     // Flatten the host record to id only
     this._hostId = this.host?this.host.id:'';
+    this._imageUrl = this.image?this.image.url:''; 
+
     const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
-    //record.product_type = 'service';
+    record.prodcut_type = 'service'; 
     return record; 
   }
 
   static createNew(data = {}) {
-    return super.createNew(data); 
+
+    const event =  super.createNew(data);
+    event.type = 'Event';
+    event.enabled = true; // Default to enabled 
+    return event; 
   }
 }
 

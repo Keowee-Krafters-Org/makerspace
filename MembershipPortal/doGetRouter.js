@@ -1,9 +1,10 @@
 function doGet(e) {
     const view = e.parameter.view || 'member';
+    const eventId = e.parameter.eventId || 'null';
     let html;
     const modelFactory = Membership.newModelFactory();
     let canSignup = false; // ✅ properly declare this
-    let event = undefined; // Initialize event to null
+    let event = {id: eventId}; // Initialize event to null
     const config = getConfig();
     // Default member object
     let member = config.defaultMember;
@@ -22,12 +23,28 @@ function doGet(e) {
     }
 
     if (view === 'event') {
+        html = HtmlService.createTemplateFromFile('EventPortal/event');
         if (e.parameter.eventId) {
             event = modelFactory.eventManager().getEventById(e.parameter.eventId);
+            if (event) {
+                html.event = event; 
+            } else {
+                html.event = {
+                    title: 'Event Not Found',
+                    description: 'The event you are looking for does not exist.',
+                    date: '',
+                    location: 'Unknown',
+                    eventItem: {
+                        image: '',
+                        host: 'N/A',
+                        price: 0,
+                        sizeLimit: 0,
+                        duration: 0
+                    }
+                }; 
+            }
         }
-        html = HtmlService.createTemplateFromFile('EventPortal/event');
         html.canSignup = canSignup;
-        html.event = event;
     } else if (view === 'admin') {
         if (config.levels[member.level] < config.levels.Administrator) {
             return HtmlService.createHtmlOutput('Access denied. Not an admin.');
@@ -37,8 +54,10 @@ function doGet(e) {
     else {
         // Default to member view
         html = HtmlService.createTemplateFromFile('MemberPortal/member');
+
     }
 
+    html.event = event;
     html.sharedConfig = config;
     html.member = member;
 

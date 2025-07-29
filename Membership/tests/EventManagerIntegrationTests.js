@@ -5,6 +5,7 @@
  * @example
  * eventManagerIntegrationTests();  
  */
+const TEST_IMAGE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
@@ -159,14 +160,23 @@ function test_addEvent() {
     let eventId; 
     let event; 
     try {
+        // Sample 1x1 transparent PNG (replace with a real image for production tests)
+        const base64Image = TEST_IMAGE;
 
-        const response = eventManager.addEvent(eventData);
+        // Clone and add image to event data
+        const eventDataWithImage = JSON.parse(JSON.stringify(eventData));
+        eventDataWithImage.eventItem.image = {data: base64Image, name: 'New Image'};
+
+        const response = eventManager.addEvent(eventDataWithImage);
         Logger.log(`addEvent response: ${response.message}`);
         assert('Event should be added successfully', response.success, true);
         event = response.data;
 
         assert('Event ID should be returned', event.id != undefined, true);
         assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
+
+        // Validate the image was saved (DriveFile or URL expected)
+        assert('Event Item should have an image', !!event.eventItem.image, true);
 
         // Validate the calendar event was created
         const calendarEvent = calendarManager.calendar.getEventById(event.id);
@@ -177,7 +187,9 @@ function test_addEvent() {
     } catch (error) {
         Logger.log(`addEvent failed: ${error.message}`);
     } finally {
-      eventManager.deleteEvent(event);
+        if (event) {
+            eventManager.deleteEvent(event);
+        }
     }
 }
 
@@ -399,4 +411,10 @@ function test_unregister_member_from_event() {
             eventManager.deleteEvent({ id: testEventId });
         }
     }
+}
+
+function test_when_calendar_manager_is_created__then_configuration_is_correct() {
+    const calendarManager = newModelFactory().calendarManager();
+    const calendarId = config[SharedConfig.mode].calendarId; 
+    assert("Calendar is correct", calendarId, calendarManager.calendar.getId())
 }

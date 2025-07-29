@@ -28,7 +28,7 @@ class ZohoStorageManager extends StorageManager {
    */
   getAll(params = {}) {
 
-    const zohoParams = this.convertParams({ ...params, ...this.filter }); 
+    const zohoParams = this.convertParams({...this.filter , ...params }); 
     const response = this.zohoAPI.getEntities(this.resourceName, zohoParams);
     if (!response || !response[this.resourceName]) {
       throw new Error(`No data found for resource: ${this.resourceName}`);
