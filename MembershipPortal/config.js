@@ -14,7 +14,7 @@ config = {
 
   prod: {
     // Production configuration
-    version: 'RELEASE-0.2.2',
+    version: 'RELEASE-0.2.3',
     deploymentId: 'AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR',
     imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
    }
