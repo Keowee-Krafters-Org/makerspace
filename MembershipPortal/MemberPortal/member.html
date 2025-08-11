@@ -35,12 +35,16 @@
     }
 
     button {
-      padding: 10px 16px;
+      width: 100%;
+      padding: 12px 16px;
       border: none;
       background: #3367d6;
       color: #fff;
       border-radius: 4px;
       cursor: pointer;
+      text-align: center;
+      font-size: 16px;
+      margin-bottom: 10px;
     }
 
     button:hover {
@@ -66,6 +70,18 @@
       100% {
         transform: rotate(360deg);
       }
+    }
+
+    /* Remove ul dot styling */
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Add spacing between list items */
+    ul li {
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -140,85 +156,74 @@
       switch (member.login.status) {
         case 'UNVERIFIED':
           content += `<h2>Member Login</h2>
-            <label for="email">Email Address:</label>
-            <input type="email" id="email" required />
-            <div id="step1">
-              <button onclick="requestToken()">Login</button>
-            </div>
-            <p id="error" class="error">${member.error || ''}</p>`;
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" required />
+                <div id="step1">
+                    <button onclick="requestToken()">Login</button>
+                </div>
+                <p id="error" class="error">${member.error || ''}</p>`;
           break;
 
         case 'TOKEN_EXPIRED':
         case 'VERIFYING':
           content += `<p>A verification code has been sent to:</p>
-    <input type="email" id="email" value="${member.emailAddress}" />
-    <p><label for="token">Enter the code:</label></p>
-    <input type="text" id="token" maxlength="6" />
-    <p>
-      <button onclick="verifyCode()">Verify</button>
-      <button onclick="resendToken()">Resend Code</button>
-    </p>
-    <p id="error" class="error">${member.error || ''}</p>`;
-
-
+                <input type="email" id="email" value="${member.emailAddress}" />
+                <p><label for="token">Enter the code:</label></p>
+                <input type="text" id="token" maxlength="6" />
+                <p>
+                    <button onclick="verifyCode()">Verify</button>
+                    <button onclick="resendToken()">Resend Code</button>
+                </p>
+                <p id="error" class="error">${member.error || ''}</p>`;
           break;
 
         case 'VERIFIED':
-          if (member.registration.status === 'NEW') {
-            const registrationUrl = buildPrefilledFormUrl(sharedConfig.forms.registration, member);
-            content += `<p>You're almost done! Please complete your registration below.</p>
-              <p><a href="${registrationUrl}" target="_blank">Complete Registration Form</a></p> then... `;
-            content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            if (member.registration.status === 'NEW') {
+                const registrationUrl = buildPrefilledFormUrl(sharedConfig.forms.registration, member);
+                content += `<p>You're almost done! Please complete your registration below.</p>
+                    <p><button onclick="window.open('${registrationUrl}', '_blank')">Complete Registration Form</button></p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else if (member.registration.status === 'REGISTERED') {
+                if (event && event.id !== 'null') {
+                    console.log(`Event ID provided: ${event.id}`);
+                    content += `<p>Thank you for logging in! You can now sign up for your event.</p>`;
+                    content += `<p><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}&eventId=${event.id}', '_blank')">Sign Up For Event</button></p>`;
+                } else {
+                    content += '<p>Thanks for verifying your email!</p>';
+                    const levelNumber = sharedConfig.levels[member.registration.level];
+                    console.log(`Member level: ${member.registration.level} (${levelNumber})`);
+                    content += `<ul>
+                        <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">Sign Up For Classes</button></li>`;
 
-          } else if (member.registration.status === 'REGISTERED') {
-            if (event && event.id !== 'null') {
-              console.log(`Event ID provided: ${event.id}`);
-              // Initiated from event sign-up
-              content += `<p>Thank you for Loging in! You can now sign up for your event.</p>`;
-              content += `<p><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}&eventId=${event.id}" target="_blank">Sign Up For Event</a></p>`;
-            } else {
+                    if (levelNumber >= 2) {
+                        if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
+                            const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
+                            content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
+                        }
+                    }
 
-              content += '<p>Thanks for verifying your email!</p>';
-              const levelNumber = sharedConfig.levels[member.registration.level];
-              console.log(`Member level: ${member.registration.level} (${levelNumber})`);
-              content += `<ul>
-                <li><a href="${sharedConfig.baseUrl}?view=event&memberId=${member.id}" target="_blank">Sign Up For Classes</a></li>`;
+                    if (levelNumber >= 10) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&memberId=${member.id}', '_blank')">Member Admin</button></li>`;
+                    }
 
-              if (levelNumber >= 2) {
-                if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
-                  const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
-                  content += `<li><a href="${volunteerUrl}" target="_blank">Volunteer Hours Form</a></li>`;
+                    if (levelNumber >= 20) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=adminDashboard&memberId=${member.id}', '_blank')">Admin Dashboard</button></li>`;
+                    }
+
+                    content += '</ul>';
                 }
-              }
-
-              if (levelNumber >= 10) {
-                content += `<li><strong><a href="${sharedConfig.baseUrl}?view=admin&memberId=${member.id}" target="_blank"">Member Admin</a></strong></li>`;
-              }
-
-              if (levelNumber >= 20) {
-                content += `<li><strong>Admin Dashboard</strong></li>`;
-              }
-
-              content += '</ul>';
+            } else if (member.registration.status === 'APPLIED') {
+                const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
+                content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
+                    <p><button onclick="window.open('${waiverUrl}', '_blank')">Sign Waiver Form</button></p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else if (member.registration.status === 'PENDING') {
+                content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>
+                    <p>Once verified, you will receive an email with further instructions.</p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else {
+                content += `<p>Your membership status is ${member.registration.status.toLowerCase()}.</p>`;
             }
-
-          } else if (member.registration.status === 'APPLIED') {
-            const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
-            content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
-              <p><a href="${waiverUrl}" target="_blank">Sign Waiver Form</a></p> <p>then...</p>`;
-
-            content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
-
-          } else if (member.registration.status === 'PENDING') {
-            content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p> 
-              <p>Once verified, you will receive an email with further instructions.</p>`;
-            content += `<p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
-
-          } else {
-            content += `<p>Your membership status is ${member.registration.status.toLowerCase()}.</p>`;
-          }
-
-          //content += `<button onclick="logout()">Logout</button>`;
           break;
 
         default:

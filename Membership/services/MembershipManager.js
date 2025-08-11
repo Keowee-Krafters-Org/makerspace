@@ -210,9 +210,9 @@ class MembershipManager {
     const member = this.memberLookup(emailAddress);
     if (!member) return { success: false, message: 'Member not found' };
 
-    member.login = this.storageManager.createNew({status:'UNVERIFIED'});
+    member.login = ZohoLogin.createNew({status:'UNVERIFIED'});
     this.storageManager.update(member.id, member);
-    return { success: true, login: { status: 'UNVERIFIED' } };
+    return { success: true, data: member};
   }
 
   getAuthentication(emailAddress) {

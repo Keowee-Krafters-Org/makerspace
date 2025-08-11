@@ -289,7 +289,19 @@
             infoDiv.innerHTML = generateClassDiv(cls);
             card.appendChild(infoDiv);
 
-            if (canSignup) {
+            const eventDate = new Date(cls.date);
+            const now = new Date();
+
+            if (eventDate < now) {
+                // Event is in the past
+                const msg = document.createElement('div');
+                msg.style.color = 'gray';
+                msg.style.textAlign = 'center';
+                msg.style.margin = '16px 0';
+                msg.textContent = 'Event is in the past.';
+                card.appendChild(msg);
+            } else if (canSignup) {
+                // Event is in the future and signup is allowed
                 const isRegistered = cls.attendees && cls.attendees.some(attendee => attendee === currentMember.emailAddress);
 
                 if (isRegistered) {
@@ -306,13 +318,13 @@
                     card.appendChild(signupBtn);
                 }
             } else {
+                // Signup is not allowed
                 const msg = document.createElement('div');
                 msg.style.color = 'gray';
                 msg.style.textAlign = 'center';
                 msg.style.margin = '16px 0';
                 msg.innerHTML = `Please <a href="${sharedConfig.baseUrl}?view=member&eventId=${cls.id}" target="_blank" style="color: #3367d6;">Provide an Email</a> to sign up for this class.`;
                 card.appendChild(msg);
-
             }
 
             if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
@@ -338,7 +350,7 @@
             const dateObj = new Date(cls.date);
             const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
             const spotsAvailable = cls.eventItem.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
-            const imageHtml = cls.eventItem.image.url ? `<div class="class-image"><img src="${cls.eventItem.image.url}" alt="Class Image" /></div>` : '';
+            const imageHtml = cls.eventItem.image && cls.eventItem.image.url ? `<div class="class-image"><img src="${cls.eventItem.image.url}" alt="Class Image" /></div>` : '';
             return `
                 ${imageHtml}
                 <div class="class-title">${cls.eventItem.title}</div>
@@ -514,7 +526,7 @@
             imagePreview.id = 'edit-image-preview';
             imagePreview.style.maxWidth = '200px';
             imagePreview.style.display = cls.eventItem.image ? 'block' : 'none';
-            if (cls.eventItem.image.url) imagePreview.src = cls.eventItem.image.url;
+            if (cls.eventItem.image && cls.eventItem.image.url) imagePreview.src = cls.eventItem.image.url;
             imageFieldContainer.appendChild(imagePreview);
 
             // File input

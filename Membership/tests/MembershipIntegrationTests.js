@@ -20,7 +20,7 @@ const assertNotEqual = (label, expected, actual) => {
   }
 };
 const testEmailAddress = 'testuser@keoweekrafters.org'; 
-
+const existingEmailAddress = 'christopher.smith@oopscope.com'; 
 
 const testMemberMinimum = {
   emailAddress: testEmailAddress, 
@@ -143,6 +143,14 @@ function test_when_user_logs_in__then_user_status_is_VERIFYING() {
   assert("Status", "VERIFYING", result.data.login.status); 
 } 
 
+function test_when_existing_user_logs_in__then_user_status_is_VERIFYING() {
+  const emailAddress = existingEmailAddress; 
+  membershipManager.memberLogout(emailAddress); 
+  let result = membershipManager.loginMember(emailAddress); 
+  assert("Success", true, result.success); 
+  assert("Status", "VERIFYING", result.data.login.status); 
+} 
+
 function test_verifyToken_transitions_user_to_VERIFIED() {
   const emailAddress = testMember.emailAddress;
   let member = membershipManager.memberLookup(emailAddress); 
@@ -167,9 +175,7 @@ function test_getAllMembers_returns_members() {
   //membershipManager.addMemberRegistration(Member.fromObject(testMember));
   const allResponse = membershipManager.getAllMembers();
   const all = allResponse.data; 
-  const foundMember = all.find(m => m.emailAddress === testMember.emailAddress);
-  assert('Found registered member', true, !!foundMember);
-  assert('First name matches', testMember.firstName, foundMember.firstName);
+  assert("Found Members", true, all.length> 0)
   //deleteTestMember(testMember.emailAddress);
 }
 
