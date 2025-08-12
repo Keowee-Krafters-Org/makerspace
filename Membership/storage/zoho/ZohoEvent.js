@@ -23,7 +23,7 @@ class ZohoEvent extends Event {
       sizeLimit: 'cf_attendance_limit',
       type: 'cf_type',
       eventType: 'cf_event_type',
-      enabled: 'cf_enabled_unformatted',
+      enabled: 'cf_enabled',
       _imageUrl: 'cf_image_url'
     }
   };
@@ -47,6 +47,11 @@ class ZohoEvent extends Event {
 
     if (record.cf_image_url) {
       data.image = {url:record.cf_image_url } ;
+    }
+    if (record.cf_enabled === 'true') {
+      data.enabled = true;
+    } else {
+      data.enabled = false;
     }
     return new ZohoEvent(data);
   }

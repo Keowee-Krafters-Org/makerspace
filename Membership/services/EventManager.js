@@ -106,7 +106,7 @@ class EventManager {
     return response;
   }
   getAvailableEvents() {
-    const calendarEvents = this.calendarManager.getAvailableEvents();
+    const calendarEvents = this.calendarManager.getUpcomingEvents();
     return this.enrichCalendarEvents(calendarEvents);
   }
 

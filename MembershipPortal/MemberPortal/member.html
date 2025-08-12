@@ -193,7 +193,7 @@
                     const levelNumber = sharedConfig.levels[member.registration.level];
                     console.log(`Member level: ${member.registration.level} (${levelNumber})`);
                     content += `<ul>
-                        <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">Sign Up For Classes</button></li>`;
+                        <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
 
                     if (levelNumber >= 2) {
                         if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
