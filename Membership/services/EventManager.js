@@ -5,10 +5,11 @@
  */
 class EventManager {
 
-  constructor(storageManager, calendarManager, membershipManager) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
+    this.fileManager = fileManager;
     this.config = getConfig();
   }
 
@@ -88,7 +89,13 @@ class EventManager {
       if (!result || !result.data) {
         return null;
       }
-      calendarEvent.eventItem = result.data;
+      const eventItem = result.data;
+
+      if (eventItem.image && eventItem.image.id) {
+        const imageFile = this.fileManager.get(eventItem.image.id);
+        eventItem.image = imageFile;
+      }
+      calendarEvent.eventItem = eventItem;
     }
     return calendarEvent;
 
@@ -99,7 +106,7 @@ class EventManager {
     return response;
   }
   getAvailableEvents() {
-    const calendarEvents = this.calendarManager.getAvailableEvents();
+    const calendarEvents = this.calendarManager.getUpcomingEvents();
     return this.enrichCalendarEvents(calendarEvents);
   }
 
@@ -135,33 +142,55 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-      const event = this.createEvent(eventData);
-      let eventItem = event.eventItem;
-      if (eventItem && eventItem.id) {
-        const eventItemResponse = this.updateEventItem(eventItem);
-        eventItem = eventItemResponse.data;
-      } else {
-        eventItem = this.addEventItem(eventItem);
-      }
-      if (!eventItem) {
-        throw new Error('Failed to create event item.');
-      }
+        const event = this.createEvent(eventData);
+        let eventItem = event.eventItem;
 
-      eventData.eventItem = eventItem;
-      // Add the event to the calendar
-      const calendarEvent = this.calendarManager.create(eventData);
-      const newCalendarEvent = this.addCalendarEvent(calendarEvent, eventItem);
-      newCalendarEvent.eventItem = eventItem;
-      return { success: true, data: newCalendarEvent };
+        // Handle image upload if image is a base64 string
+       this.saveEventImage(eventItem);
+        // If eventItem already exists, update it; otherwise, create a new one
+
+        if (eventItem && eventItem.id && eventItem.id !== 'null') {
+            const eventItemResponse = this.updateEventItem(eventItem);
+            eventItem = eventItemResponse.data;
+        } else {
+            eventItem = this.addEventItem(eventItem);
+        }
+        if (!eventItem) {
+            throw new Error('Failed to create event item.');
+        }
+        // Add the event to the calendar
+        const newCalendarEvent = this.addCalendarEvent(event, eventItem);
+        newCalendarEvent.eventItem = eventItem;
+        return { success: true, data: newCalendarEvent };
     } catch (err) {
-      console.error('Failed to create event:', err);
-      return { success: false, message: 'Failed to create event.', error: err.toString() };
+        console.error('Failed to create event:', err);
+        return { success: false, message: 'Failed to create event.', error: err.toString() };
     }
   }
 
+  saveEventImage(eventItem) {
+    if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
+        // Upload the image and get the DriveFile object
+        const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
+        
+        // Modify the URL to use the thumbnail format
+        if (file && file.id) {
+            file.url = `https://drive.google.com/thumbnail?id=${file.id}`;
+        }
+
+        // Store the updated DriveFile object in the eventItem
+        eventItem.image = file;
+    }
+    return eventItem;
+  }
+  /**
+   * Adds a new event item to the storage.
+   * @param {*} eventItem 
+   * @returns 
+   */
+
   addEventItem(eventItem) {
-    const event = this.storageManager.createNew(eventItem);
-    return this.storageManager.add(event);
+    return this.storageManager.add(eventItem);
   }
 
   addCalendarEvent(calendarEvent, eventItem) {
@@ -173,7 +202,10 @@ class EventManager {
     try {
       const updatedEvent = this.calendarManager.update(calendarEvent.id, calendarEvent);
       if (calendarEvent.eventItem) {
-        updatedEvent.eventItem = this.storageManager.update(calendarEvent.eventItem.id, calendarEvent.eventItem);
+        const eventItem = calendarEvent.eventItem;
+        this.saveEventImage(eventItem);
+        let response = this.storageManager.update(eventItem.id, eventItem);
+        updatedEvent.eventItem = response.data;
       }
       return new Response(true, updatedEvent, 'Event updated successfully.');
     } catch (err) {

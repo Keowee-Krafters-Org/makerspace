@@ -7,17 +7,17 @@
 
 config = {
   dev: {
-    version: 'SNAPSHOT-0.2.6',
+    version: 'SNAPSHOT-0.2.8',
     deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
-    baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev'
+    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
   },
 
   prod: {
     // Production configuration
-    version: 'RELEASE-0.1.11',
+    version: 'RELEASE-0.2.10',
     deploymentId: 'AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR',
-    baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',
-  }
+    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
+   }
 
 };
 

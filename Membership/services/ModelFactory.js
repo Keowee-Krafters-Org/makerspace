@@ -32,14 +32,15 @@ class ModelFactory {
   }
 
   calendarManager() {
-    const calendarId = this._config.services?.calendar?.defaultCalendarId;
+    const calendarId = this._config.calendarId;
     return new CalendarManager(calendarId);
   }
 
   eventManager() {
     return new EventManager(new ZohoStorageManager(ZohoEvent), 
     this.calendarManager(),
-    this.membershipManager());
+    this.membershipManager(), 
+    this.googleDriveService());
   }
 
   membershipManager() {
@@ -54,6 +55,9 @@ class ModelFactory {
     return new WaiverManager(new FormStorageManager(FormWaiver), this.membershipManager());
   }
 
+  googleDriveService() {
+    return new GoogleDriveService(this._config); 
+  }
   /**
    * The system configuration
    * @returns the injected configuration file
@@ -68,7 +72,7 @@ class ModelFactory {
 }
 
 function newModelFactory() {
-  return new ModelFactory(SharedConfig);
+  return new ModelFactory(getConfig());
 }
 
 const modelFactory = newModelFactory() ;
