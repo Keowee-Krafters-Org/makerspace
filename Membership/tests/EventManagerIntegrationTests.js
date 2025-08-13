@@ -198,7 +198,8 @@ function test_add_event_item() {
     const eventManager = modelFactory.eventManager();
     let eventItemId ; 
     try {
-       const eventItem = eventManager.addEventItem(eventData.eventItem);
+
+       const eventItem = eventManager.addEventItemFromData(eventData.eventItem);
       eventItemId = eventItem.id; 
       Logger.log(`addEvent response: ${eventItem}`);
       assert('Event should be added successfully', (eventItem!=undefined), true);

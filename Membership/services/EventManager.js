@@ -193,6 +193,16 @@ class EventManager {
     return this.storageManager.add(eventItem);
   }
 
+  /**
+   * Adds a new event item to the storage.
+   * @param {*} eventItem 
+   * @returns 
+   */
+
+  addEventItemFromData(eventItemData) {
+    const eventItem = this.storageManager.createNew(eventItemData);
+    return this.addEventItem(eventItem);
+  }
   addCalendarEvent(calendarEvent, eventItem) {
     return this.calendarManager.add(calendarEvent, eventItem);
   }
@@ -330,5 +340,12 @@ class EventManager {
 
   getEventLocations() {
     return this.config.locations;
+  }
+
+  getEventItemByTitle(title) {
+    const eventItemListResponse = this.storageManager.getAll({title:title}); 
+    if (eventItemListResponse && eventItemListResponse.success && eventItemListResponse.data.length > 0) {
+      return eventItemListResponse.data[0]; 
+    }
   }
 }
