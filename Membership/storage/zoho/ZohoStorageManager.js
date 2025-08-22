@@ -52,12 +52,18 @@ class ZohoStorageManager extends StorageManager {
    * @param {Object} entity - The entity data to add.
    * @returns {Object} The added entity record with an ID.
    */
-  add(entity) {
+  add(entityData, params = {}) {
     // Implementation for adding a entity to Zoho Books and Zoho CRM
     // This would typically involve making API calls to Zoho services
+    let entity = entityData; 
+    if(!entityData.toRecord) {
+      // Create the entity from raw data
+      entity = this.create(entityData) 
+    }
+    // Should not have an id
     delete entity.id;
-    const entityData = entity.toRecord();
-    const response = this.zohoAPI.createEntity(this.clazz.getResourceNamePlural(), entityData);
+    const entityRecord = entity.toRecord();
+    const response = this.zohoAPI.createEntity(this.clazz.getResourceNamePlural(), entityRecord, params);
     return this.clazz.fromRecord(response[this.resourceNameSingular]);
   }
 

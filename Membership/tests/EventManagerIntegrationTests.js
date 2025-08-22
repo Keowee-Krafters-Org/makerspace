@@ -5,336 +5,348 @@
  * @example
  * eventManagerIntegrationTests();  
  */
-const TEST_IMAGE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
+const TEST_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
-    date: new Date(),
-    attendees: [],
-    location: {email:'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com'},
-    eventItem: {
-        id: '',
-        title: 'Test Event',
-        sizeLimit: '3',
-        host: { name: 'Test Host', id: '5636475000000295003' },
-        description: 'This is a test event. Do not signup !!',
-        price: 20,
-        cost: 5,
-        duration: 4,
-        type: 'Event',
-        eventType: 'Class',
-        costDescription: 'Resin Supplies',
-        enabled: true
-    }
+  date: new Date(),
+  attendees: [],
+  location: { email: 'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com' },
+  eventItem: {
+    id: '',
+    title: 'Test Event',
+    sizeLimit: '3',
+    host: { name: 'Test Host', id: '5636475000000295003' },
+    description: 'This is a test event. Do not signup !!',
+    price: 20,
+    cost: 5,
+    duration: 4,
+    type: 'Event',
+    eventType: 'Class',
+    costDescription: 'Resin Supplies',
+    enabled: true
+  }
 };
 
 const eventManager = modelFactory.eventManager();
 
 function eventManagerIntegrationTests() {
-    Logger.log('Starting EventManager integration tests...');
+  Logger.log('Starting EventManager integration tests...');
 
-    test_getEventList();
-    test_getUpcomingEvents();
-    test_getAvailableEvents();
-    // test_addEvent();
-    test_updateEvent();
-    // test_deleteEvent();
+  test_getEventList();
+  test_getUpcomingEvents();
+  test_getAvailableEvents();
+  // test_addEvent();
+  test_updateEvent();
+  // test_deleteEvent();
 
-    Logger.log('EventManager integration tests completed.');
+  Logger.log('EventManager integration tests completed.');
 }
 
 function test_getEventList() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const events = eventManager.getEventList();
-        Logger.log('getEventList response: ' + JSON.stringify(events));
-        assert('Event list should not be null or undefined', events != undefined, true);
-        assert('Event list should be an array', Array.isArray(events), true);
-        assert('Event list should have at least one event', events.length > 0, true);
-        events.forEach((event, idx) => {
-            assert(`Event ${idx} has id`, typeof event.id !== 'undefined', true);
-            assert(`Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
-            assert(`Event ${idx} has date`, event.date instanceof Date, true);
-            assert(`Event ${idx} has location`, event.location instanceof CalendarLocation, true);
-        });
-        Logger.log('Event list verification passed.');
+  const eventManager = modelFactory.eventManager();
+  try {
+    const events = eventManager.getEventList();
+    Logger.log('getEventList response: ' + JSON.stringify(events));
+    assert('Event list should not be null or undefined', events != undefined, true);
+    assert('Event list should be an array', Array.isArray(events), true);
+    assert('Event list should have at least one event', events.length > 0, true);
+    events.forEach((event, idx) => {
+      assert(`Event ${idx} has id`, typeof event.id !== 'undefined', true);
+      assert(`Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+      assert(`Event ${idx} has date`, event.date instanceof Date, true);
+      assert(`Event ${idx} has location`, event.location instanceof CalendarLocation, true);
+    });
+    Logger.log('Event list verification passed.');
 
-    } catch (error) {
-        Logger.log(`getEventList failed: ${error.message}`);
-    }
+  } catch (error) {
+    Logger.log(`getEventList failed: ${error.message}`);
+  }
 }
 
 function test_get_event_by_id() {
-  eventId = 'n1vm21rudr0h4rdt1o46p9f0s8@google.com'; 
-  
-    const eventManager = modelFactory.eventManager();
-    const event = eventManager.getEventById(eventId); 
-    assert("Event Found", true, event!=undefined); 
+  eventId = 'n1vm21rudr0h4rdt1o46p9f0s8@google.com';
+
+  const eventManager = modelFactory.eventManager();
+  const event = eventManager.getEventById(eventId);
+  assert("Event Found", true, event != undefined);
 }
 
 function test_getUpcomingEvents() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const events = eventManager.getUpcomingEvents();
-        Logger.log(`Retrieved ${events.length} upcoming events.`);
-        Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
-        assert('Upcoming events should be an array', Array.isArray(events), true);
-        assert('Upcoming events should not be empty', events.length > 0, true);
-        events.forEach((event, idx) => {
-            assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
-            assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
-            assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
-        });
-        Logger.log('Upcoming events verification passed.');
+  const eventManager = modelFactory.eventManager();
+  try {
+    const events = eventManager.getUpcomingEvents();
+    Logger.log(`Retrieved ${events.length} upcoming events.`);
+    Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
+    assert('Upcoming events should be an array', Array.isArray(events), true);
+    assert('Upcoming events should not be empty', events.length > 0, true);
+    events.forEach((event, idx) => {
+      assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
+      assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+      assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
+    });
+    Logger.log('Upcoming events verification passed.');
 
-    } catch (error) {
-        Logger.log(`getUpcomingEvents failed: ${error.message}`);
-    }
+  } catch (error) {
+    Logger.log(`getUpcomingEvents failed: ${error.message}`);
+  }
 }
 
 function test_getUpcomingClasses() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const events = eventManager.getUpcomingClasses();
-        Logger.log(`Retrieved ${events.length} upcoming classes.`);
-        Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
-        assert('Upcoming events should be an array', Array.isArray(events), true);
-        assert('Upcoming events should not be empty', events.length > 0, true);
-        events.forEach((event, idx) => {
-            assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
-            assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
-            assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
-        });
-        Logger.log('Upcoming events verification passed.');
+  const eventManager = modelFactory.eventManager();
+  try {
+    const events = eventManager.getUpcomingClasses();
+    Logger.log(`Retrieved ${events.length} upcoming classes.`);
+    Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
+    assert('Upcoming events should be an array', Array.isArray(events), true);
+    assert('Upcoming events should not be empty', events.length > 0, true);
+    events.forEach((event, idx) => {
+      assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
+      assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+      assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
+    });
+    Logger.log('Upcoming events verification passed.');
 
-    } catch (error) {
-        Logger.log(`getUpcomingEvents failed: ${error.message}`);
-    }
+  } catch (error) {
+    Logger.log(`getUpcomingEvents failed: ${error.message}`);
+  }
 }
 
 function test_getAvailableEvents() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const response = eventManager.getAvailableEvents();
-        Logger.log(`getAvailableEvents response: ${response.message}`);
-        const events = response.data;
-        Logger.log(`Retrieved ${events.length} available events.`);
-        assert('Available events should not be null or undefined', events != undefined, true);
-        assert(`${events.length} Available Events are retrieved`, events.length > 0, true);
-    } catch (error) {
-        Logger.log(`getAvailableEvents failed: ${error.message}`);
-    }
+  const eventManager = modelFactory.eventManager();
+  try {
+    const response = eventManager.getAvailableEvents();
+    Logger.log(`getAvailableEvents response: ${response.message}`);
+    const events = response.data;
+    Logger.log(`Retrieved ${events.length} available events.`);
+    assert('Available events should not be null or undefined', events != undefined, true);
+    assert(`${events.length} Available Events are retrieved`, events.length > 0, true);
+  } catch (error) {
+    Logger.log(`getAvailableEvents failed: ${error.message}`);
+  }
 }
 
 function test_when_event_item_exists__then_only_calendar_event_is_added() {
-    const eventManager = modelFactory.eventManager();
-    const calendarManager = modelFactory.calendarManager();
-    const eventDataWithId = JSON.parse(JSON.stringify(eventData));
-    eventDataWithId.eventItem = {id:'5636475000000531001'};
-    const response = eventManager.addEvent(eventDataWithId); 
-    try {
-        Logger.log(`addEvent response: ${response.message}`);
-        assert('Event should be added successfully', response.success, true);
-        event = response.data;
+  const eventManager = modelFactory.eventManager();
+  const calendarManager = modelFactory.calendarManager();
+  const eventDataWithId = JSON.parse(JSON.stringify(eventData));
+  eventDataWithId.eventItem = { id: '5636475000000531001' };
+  const response = eventManager.addEvent(eventDataWithId);
+  try {
+    Logger.log(`addEvent response: ${response.message}`);
+    assert('Event should be added successfully', response.success, true);
+    event = response.data;
 
-        assert('Event ID should be returned', event.id != undefined, true);
-        assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
+    assert('Event ID should be returned', event.id != undefined, true);
+    assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
 
-        // Validate the calendar event was created
-        const calendarEvent = calendarManager.calendar.getEventById(event.id);
-        assert('Calendar event should exist', calendarEvent != null, true);
-        assert('Calendar event title matches', calendarEvent.getTitle().startsWith('Woodturning '), true);
-        Logger.log('Calendar event verification passed.');
+    // Validate the calendar event was created
+    const calendarEvent = calendarManager.calendar.getEventById(event.id);
+    assert('Calendar event should exist', calendarEvent != null, true);
+    assert('Calendar event title matches', calendarEvent.getTitle().startsWith('Woodturning '), true);
+    Logger.log('Calendar event verification passed.');
 
-    } catch (error) {
-        Logger.log(`addEvent failed: ${error.message}`);
-    } finally {
-      eventManager.deleteCalendarEvent(event);
-    }
-    
+  } catch (error) {
+    Logger.log(`addEvent failed: ${error.message}`);
+  } finally {
+    eventManager.deleteCalendarEvent(event);
+  }
+
 
 }
 function test_addEvent() {
-    const eventManager = modelFactory.eventManager();
-    const calendarManager = modelFactory.calendarManager();
-    let eventId; 
-    let event; 
-    try {
-        // Sample 1x1 transparent PNG (replace with a real image for production tests)
-        const base64Image = TEST_IMAGE;
+  const eventManager = modelFactory.eventManager();
+  const calendarManager = modelFactory.calendarManager();
+  let eventId;
+  let event;
+  try {
+    // Sample 1x1 transparent PNG (replace with a real image for production tests)
+    const base64Image = TEST_IMAGE;
 
-        // Clone and add image to event data
-        const eventDataWithImage = JSON.parse(JSON.stringify(eventData));
-        eventDataWithImage.eventItem.image = {data: base64Image, name: 'New Image'};
+    // Clone and add image to event data
+    const eventDataWithImage = JSON.parse(JSON.stringify(eventData));
+    eventDataWithImage.eventItem.image = { data: base64Image, name: 'New Image' };
 
-        const response = eventManager.addEvent(eventDataWithImage);
-        Logger.log(`addEvent response: ${response.message}`);
-        assert('Event should be added successfully', response.success, true);
-        event = response.data;
+    const response = eventManager.addEvent(eventDataWithImage);
+    Logger.log(`addEvent response: ${response.message}`);
+    assert('Event should be added successfully', response.success, true);
+    event = response.data;
 
-        assert('Event ID should be returned', event.id != undefined, true);
-        assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
+    assert('Event ID should be returned', event.id != undefined, true);
+    assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
 
-        // Validate the image was saved (DriveFile or URL expected)
-        assert('Event Item should have an image', !!event.eventItem.image, true);
+    // Validate the image was saved (DriveFile or URL expected)
+    assert('Event Item should have an image', !!event.eventItem.image, true);
 
-        // Validate the calendar event was created
-        const calendarEvent = calendarManager.calendar.getEventById(event.id);
-        assert('Calendar event should exist', calendarEvent != null, true);
-        assert('Calendar event title matches', calendarEvent.getTitle(), eventData.eventItem.title);
-        Logger.log('Calendar event verification passed.');
+    // Validate the calendar event was created
+    const calendarEvent = calendarManager.calendar.getEventById(event.id);
+    assert('Calendar event should exist', calendarEvent != null, true);
+    assert('Calendar event title matches', calendarEvent.getTitle(), eventData.eventItem.title);
+    Logger.log('Calendar event verification passed.');
 
-    } catch (error) {
-        Logger.log(`addEvent failed: ${error.message}`);
-    } finally {
-        if (event) {
-            eventManager.deleteEvent(event);
-        }
+  } catch (error) {
+    Logger.log(`addEvent failed: ${error.message}`);
+  } finally {
+    if (event) {
+      eventManager.deleteEvent(event);
     }
+  }
 }
 
 function test_add_event_item() {
-  
-    const eventManager = modelFactory.eventManager();
-    let eventItemId ; 
-    try {
 
-       const eventItem = eventManager.addEventItemFromData(eventData.eventItem);
-      eventItemId = eventItem.id; 
-      Logger.log(`addEvent response: ${eventItem}`);
-      assert('Event should be added successfully', (eventItem!=undefined), true);
-      const createdEventResponse = eventManager.getEventItemById(eventItemId); 
-      assert ('Event found: ', (createdEventResponse && createdEventResponse.data && createdEventResponse.data.id != undefined),true);
-      const  createdEvent = createdEventResponse.data;
-      assert ('Event Description saved: ', createdEvent.description, eventData.eventItem.description  ); 
-    } catch (e) {
-      Logger.log( `Failed with: ${e.message}`); 
+  const eventManager = modelFactory.eventManager();
+  let eventItemId;
+  try {
+
+    const eventItem = eventManager.addEventItemFromData(eventData.eventItem);
+    eventItemId = eventItem.id;
+    Logger.log(`addEvent response: ${eventItem}`);
+    assert('Event should be added successfully', (eventItem != undefined), true);
+    const createdEventResponse = eventManager.getEventItemById(eventItemId);
+    assert('Event found: ', (createdEventResponse && createdEventResponse.data && createdEventResponse.data.id != undefined), true);
+    const createdEvent = createdEventResponse.data;
+    assert('Event Description saved: ', createdEvent.description, eventData.eventItem.description);
+  } catch (e) {
+    Logger.log(`Failed with: ${e.message}`);
+  }
+  finally {
+    if (eventItemId) {
+      eventManager.deleteEventItem(eventItemId);
     }
-     finally {
-      if (eventItemId) {
-        eventManager.deleteEventItem(eventItemId); 
-      }
-    }
+  }
 }
 
 function test_delete_event_item(eventId) {
-  
 
-    try {
-        const response = eventManager.deleteEventItem(eventId);
-        const event = eventManager.getEventById(eventId); 
-        assert('Event should be deleted successfully', event===undefined, true);
-    } catch (error) {
-        Logger.log(` failed: ${error.message}`);
-    }
+
+  try {
+    const response = eventManager.deleteEventItem(eventId);
+    const event = eventManager.getEventById(eventId);
+    assert('Event should be deleted successfully', event === undefined, true);
+  } catch (error) {
+    Logger.log(` failed: ${error.message}`);
+  }
 }
 
 function delete_testEventItem(eventId) {
-  const eventsResponse = eventManager.getEventItemList({title: 'Test Event'}); 
-  assert('Event Exists',(eventsResponse && eventsResponse.data.length > 0), true); 
+  const eventsResponse = eventManager.getEventItemList({ title: 'Test Event' });
+  assert('Event Exists', (eventsResponse && eventsResponse.data.length > 0), true);
   const eventIdActual = eventsResponse.data[0].id;
-  eventManager.deleteEventItem(eventIdActual); 
+  eventManager.deleteEventItem(eventIdActual);
 }
 
 function test_updateEvent() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const originalResponse = eventManager.getEventList({ name: 'Test Event' });
-        const originalEvent = originalResponse.data[0];
-        const eventId = originalEvent.id;
+  const eventManager = modelFactory.eventManager();
+  try {
+    const originalResponse = eventManager.getEventList({ name: 'Test Event' });
+    const originalEvent = originalResponse.data[0];
+    const eventId = originalEvent.id;
 
-        const updatedData = new ZohoEvent({ name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
-        const response = eventManager.updateEvent(updatedData);
-        Logger.log(` response: ${response.message}`);
-        assert('Event should be updated successfully', response.success, true);
-    } catch (error) {
-        Logger.log(` failed: ${error.message}`);
-    }
+    const updatedData = new ZohoEvent({ name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
+    const response = eventManager.updateEvent(updatedData);
+    Logger.log(` response: ${response.message}`);
+    assert('Event should be updated successfully', response.success, true);
+  } catch (error) {
+    Logger.log(` failed: ${error.message}`);
+  }
 }
 
 function test_deleteEvent() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const addResponse = eventManager.addEvent({
-            name: 'Delete Test Event',
-            date: new Date(),
-            location: 'Test Location',
-            sizeLimit: 100,
-            host: 'Test Host',
-            description: 'This is a test event.',
-            price: 0,
-            cost: 0,
-            type: 'Class',
-            instructorName: 'Test Instructor',
-            instructorEmail: '',
-            costDescription: 'Free event'
-        });
-        const eventId = addResponse.eventId;
+  const eventManager = modelFactory.eventManager();
+  try {
+    const addResponse = eventManager.addEvent({
+      name: 'Delete Test Event',
+      date: new Date(),
+      location: 'Test Location',
+      sizeLimit: 100,
+      host: 'Test Host',
+      description: 'This is a test event.',
+      price: 0,
+      cost: 0,
+      type: 'Class',
+      instructorName: 'Test Instructor',
+      instructorEmail: '',
+      costDescription: 'Free event'
+    });
+    const eventId = addResponse.eventId;
 
-        const response = eventManager.deleteEvent(eventId);
-        Logger.log(`deleteEvent response: ${response.message}`);
-        assert('Event should be deleted successfully', response.success, true);
-    } catch (error) {
-        Logger.log(`deleteEvent failed: ${error.message}`);
-    }
+    const response = eventManager.deleteEvent(eventId);
+    Logger.log(`deleteEvent response: ${response.message}`);
+    assert('Event should be deleted successfully', response.success, true);
+  } catch (error) {
+    Logger.log(`deleteEvent failed: ${error.message}`);
+  }
 }
 
 function test_when_member_signs_up_for_event__then_event_is_updated() {
-    const membershipManager = modelFactory.membershipManager();
-    const member = membershipManager.memberLookup('christopher.smith@keoweekrafters.org');
-    const eventManager = modelFactory.eventManager();
+  let eventId;
+  const eventManager = modelFactory.eventManager();
+
+  const membershipManager = modelFactory.membershipManager();
+  try {
+    const member = membershipManager.memberLookup('testuser@keoweekrafters.org');
     assert('Found member', member != undefined, true);
 
     const testMemberId = member.id;
-    const events = eventManager.getUpcomingEvents();
-    assert('Event found', true, (events && events.length > 0));
+    const eventDataWithId = JSON.parse(JSON.stringify(eventData));
+    const testEventItem = eventManager.getEventItemByTitle(eventDataWithId.eventItem.title); 
+    eventDataWithId.eventItem = testEventItem;
+    const testEvent = eventManager.addEvent(eventDataWithId);
+    assert('Event created', true, (testEvent && testEvent.data && testEvent.data.id != undefined));
 
-    const testEvent = events[0];
-    const testEventId = testEvent.id;
+    eventId = testEvent.data.id;
 
-    const confirmation = eventManager.signup(testEventId, testMemberId);
+    const confirmation = eventManager.signup(eventId, testMemberId);
 
     Logger.log(JSON.stringify(confirmation));
+  } catch (e) {
+    throw(e);
+  } finally {
+    if (eventId) {
+      eventManager.deleteCalendarEvent(eventId);
+    }
+  }
 }
 
 function test_getEventRooms() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const rooms = eventManager.getEventRooms();
-        Logger.log('getEventRooms returned: ' + JSON.stringify(rooms));
-        assert('Event rooms should be an array', Array.isArray(rooms), true);
-        assert('At least one event room returned', rooms.length > 0, true);
-        // Optionally, check that each room has expected properties
-        rooms.forEach((room, idx) => {
-            assert(`Room ${idx} has id`, typeof room.id !== 'undefined', true);
-            assert(`Room ${idx} has name`, typeof room.name !== 'undefined', true);
-            assert(`Room ${idx} has email`, typeof room.email !== 'undefined', true);
-        });
-    } catch (error) {
-        Logger.log(`getEventRooms failed: ${error.message}`);
-    }
+  const eventManager = modelFactory.eventManager();
+  try {
+    const rooms = eventManager.getEventRooms();
+    Logger.log('getEventRooms returned: ' + JSON.stringify(rooms));
+    assert('Event rooms should be an array', Array.isArray(rooms), true);
+    assert('At least one event room returned', rooms.length > 0, true);
+    // Optionally, check that each room has expected properties
+    rooms.forEach((room, idx) => {
+      assert(`Room ${idx} has id`, typeof room.id !== 'undefined', true);
+      assert(`Room ${idx} has name`, typeof room.name !== 'undefined', true);
+      assert(`Room ${idx} has email`, typeof room.email !== 'undefined', true);
+    });
+  } catch (error) {
+    Logger.log(`getEventRooms failed: ${error.message}`);
+  }
 }
 
 function test_get_calendar_resources() {
-    const eventManager = modelFactory.eventManager();
-    try {
-        const resources = eventManager.getEventRooms();
-        Logger.log('getCalendarResources returned: ' + JSON.stringify(resources));
-        assert('Calendar resources should be an array', Array.isArray(resources), true);
-        assert('At least one calendar resource returned', resources.length > 0, true);
-        // Optionally, check that each resource has expected properties
-        resources.forEach((resource, idx) => {
-            assert(`Resource ${idx} has id`, typeof resource.id !== 'undefined', true);
-            assert(`Resource ${idx} has name`, typeof resource.name !== 'undefined', true);
-            assert(`Resource ${idx} has email`, typeof resource.email !== 'undefined', true);
-        });
-    } catch (error) {
-        Logger.log(`getCalendarResources failed: ${error.message}`);
-    }
-    finally {
-            // No cleanup needed for calendar resources
-        }   
-    Logger.log('getCalendarResources test completed.');
+  const eventManager = modelFactory.eventManager();
+  try {
+    const resources = eventManager.getEventRooms();
+    Logger.log('getCalendarResources returned: ' + JSON.stringify(resources));
+    assert('Calendar resources should be an array', Array.isArray(resources), true);
+    assert('At least one calendar resource returned', resources.length > 0, true);
+    // Optionally, check that each resource has expected properties
+    resources.forEach((resource, idx) => {
+      assert(`Resource ${idx} has id`, typeof resource.id !== 'undefined', true);
+      assert(`Resource ${idx} has name`, typeof resource.name !== 'undefined', true);
+      assert(`Resource ${idx} has email`, typeof resource.email !== 'undefined', true);
+    });
+  } catch (error) {
+    Logger.log(`getCalendarResources failed: ${error.message}`);
+  }
+  finally {
+    // No cleanup needed for calendar resources
+  }
+  Logger.log('getCalendarResources test completed.');
 }
 
 function test_failed_event_update() {
@@ -358,64 +370,64 @@ function test_failed_event_update() {
     "email": "c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com"
   }
 }`;
-  const eventData = JSON.parse(eventText); 
-  const eventManager = newModelFactory().eventManager(); 
+  const eventData = JSON.parse(eventText);
+  const eventManager = newModelFactory().eventManager();
   const event = eventManager.createEvent(eventData);
-  const updatedEvent = eventManager.updateEvent(event); 
-  assert("Event updated:", true, updatedEvent!=undefined); 
+  const updatedEvent = eventManager.updateEvent(event);
+  assert("Event updated:", true, updatedEvent != undefined);
 }
 
 function test_unregister_member_from_event() {
-    const eventManager = modelFactory.eventManager();
-    const membershipManager = modelFactory.membershipManager();
-    const calendarManager = modelFactory.calendarManager();
+  const eventManager = modelFactory.eventManager();
+  const membershipManager = modelFactory.membershipManager();
+  const calendarManager = modelFactory.calendarManager();
 
-    let testEventId;
-    let testMemberId;
+  let testEventId;
+  let testMemberId;
 
-    try {
-        // Step 1: Create a test member
-        const testMember = membershipManager.memberLookup(TEST_USER_EMAIL);
-        assert('Test member should exist', testMember != undefined, true);
-        testMemberId = testMember.id;
+  try {
+    // Step 1: Create a test member
+    const testMember = membershipManager.memberLookup(TEST_USER_EMAIL);
+    assert('Test member should exist', testMember != undefined, true);
+    testMemberId = testMember.id;
 
-        // Step 2: Create a test event
-        const testEventData = JSON.parse(JSON.stringify(eventData)); // Clone eventData
-        const addEventResponse = eventManager.addEvent(testEventData);
-        assert('Event should be added successfully', addEventResponse.success, true);
-        const testEvent = addEventResponse.data;
-        testEventId = testEvent.id;
+    // Step 2: Create a test event
+    const testEventData = JSON.parse(JSON.stringify(eventData)); // Clone eventData
+    const addEventResponse = eventManager.addEvent(testEventData);
+    assert('Event should be added successfully', addEventResponse.success, true);
+    const testEvent = addEventResponse.data;
+    testEventId = testEvent.id;
 
-        // Step 3: Sign up the member for the event
-        const signupResponse = eventManager.signup(testEventId, testMemberId);
-        assert('Member should be signed up successfully', signupResponse.success, true);
+    // Step 3: Sign up the member for the event
+    const signupResponse = eventManager.signup(testEventId, testMemberId);
+    assert('Member should be signed up successfully', signupResponse.success, true);
 
-        // Step 4: Verify the member is in the attendee list
-        const updatedEvent = calendarManager.getById(testEventId);
-        assert('Event should have attendees', Array.isArray(updatedEvent.attendees), true);
-        assert('Member should be in the attendee list', updatedEvent.attendees.includes(testMember.emailAddress), true);
+    // Step 4: Verify the member is in the attendee list
+    const updatedEvent = calendarManager.getById(testEventId);
+    assert('Event should have attendees', Array.isArray(updatedEvent.attendees), true);
+    assert('Member should be in the attendee list', updatedEvent.attendees.includes(testMember.emailAddress), true);
 
-        // Step 5: Unregister the member from the event
-        const unregisterResponse = eventManager.unregister(testEventId, testMemberId);
-        assert('Member should be unregistered successfully', unregisterResponse.success, true);
+    // Step 5: Unregister the member from the event
+    const unregisterResponse = eventManager.unregister(testEventId, testMemberId);
+    assert('Member should be unregistered successfully', unregisterResponse.success, true);
 
-        // Step 6: Verify the member is no longer in the attendee list
-        const finalEvent = calendarManager.getById(testEventId);
-        assert('Member should no longer be in the attendee list', !finalEvent.attendees.includes(testMember.emailAddress), true);
+    // Step 6: Verify the member is no longer in the attendee list
+    const finalEvent = calendarManager.getById(testEventId);
+    assert('Member should no longer be in the attendee list', !finalEvent.attendees.includes(testMember.emailAddress), true);
 
-        Logger.log('test_unregister_member_from_event passed successfully.');
-    } catch (error) {
-        Logger.log(`test_unregister_member_from_event failed: ${error.message}`);
-    } finally {
-        // Cleanup: Delete the test event
-        if (testEventId) {
-            eventManager.deleteEvent({ id: testEventId });
-        }
+    Logger.log('test_unregister_member_from_event passed successfully.');
+  } catch (error) {
+    Logger.log(`test_unregister_member_from_event failed: ${error.message}`);
+  } finally {
+    // Cleanup: Delete the test event
+    if (testEventId) {
+      eventManager.deleteEvent({ id: testEventId });
     }
+  }
 }
 
 function test_when_calendar_manager_is_created__then_configuration_is_correct() {
-    const calendarManager = newModelFactory().calendarManager();
-    const calendarId = config[SharedConfig.mode].calendarId; 
-    assert("Calendar is correct", calendarId, calendarManager.calendar.getId())
+  const calendarManager = newModelFactory().calendarManager();
+  const calendarId = config[SharedConfig.mode].calendarId;
+  assert("Calendar is correct", calendarId, calendarManager.calendar.getId())
 }

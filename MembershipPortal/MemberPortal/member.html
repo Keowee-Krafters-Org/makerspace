@@ -159,7 +159,7 @@
                 <label for="email">Email Address:</label>
                 <input type="email" id="email" required />
                 <div id="step1">
-                    <button onclick="requestToken()">Login</button>
+                    <button onclick="requestToken()">Verify Email</button>
                 </div>
                 <p id="error" class="error">${member.error || ''}</p>`;
           break;
@@ -171,7 +171,7 @@
                 <p><label for="token">Enter the code:</label></p>
                 <input type="text" id="token" maxlength="6" />
                 <p>
-                    <button onclick="verifyCode()">Verify</button>
+                    <button onclick="verifyCode()">Verify Code</button>
                     <button onclick="resendToken()">Resend Code</button>
                 </p>
                 <p id="error" class="error">${member.error || ''}</p>`;

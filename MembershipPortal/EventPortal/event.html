@@ -342,6 +342,13 @@
             confirmation.style.marginTop = '20px';
             card.appendChild(confirmation);
 
+            // Add "Back to Event List" button
+            const backButton = document.createElement('button');
+            backButton.className = 'signup-btn';
+            backButton.textContent = 'Back to Event List';
+            backButton.onclick = () => loadEvents();
+            card.appendChild(backButton);
+
             container.appendChild(card);
         }
 

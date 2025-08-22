@@ -47,26 +47,11 @@ class ZohoInvoice extends Invoice {
       dueDate: 'due_date',
       status: 'status',
       totalAmount: 'total',
-      lineItems: 'line_items',
+      lineItems: 'line_items'
     };
   }
 
-  /**
-   * Returns the mapping for converting Zoho API records to ZohoInvoice objects.
-   * @returns {Object} The mapping object.
-   */
-  static getFromRecordMap() {
-    return {
-      invoice_id: 'id',
-      customer_id: 'customerId',
-      date: 'date',
-      due_date: 'dueDate',
-      status: 'status',
-      total: 'totalAmount',
-      line_items: 'lineItems',
-    };
-  }
-
+ 
   /**
    * Converts a Zoho API record to a ZohoInvoice instance.
    * @param {Object} record - The Zoho API record.
@@ -75,6 +60,9 @@ class ZohoInvoice extends Invoice {
   static fromRecord(record) {
     const data = ZohoInvoice.convertRecordToData(record, ZohoInvoice.getFromRecordMap());
 
+    if (record.contact_persons_associated ) {
+      data.contacts = record.contact_persons_associated.map(cp => ZohoContact.fromRecord(cp));
+    }
     // Convert date fields to Date objects
     if (record.date) {
       data.date = new Date(record.date);
@@ -105,6 +93,9 @@ class ZohoInvoice extends Invoice {
 
     record.date = this.date ? this.date.toISOString().split('T')[0] : '';
     record.due_date = this.dueDate ? this.dueDate.toISOString().split('T')[0] : '';
+    if (this.contacts) {
+      record.contact_persons_associated = this.contacts.map(c => c.toRecord()); 
+    }
     return record;
   }
 
@@ -119,6 +110,7 @@ class ZohoInvoice extends Invoice {
     invoice.lineItems = Array.isArray(data.lineItems)
       ? data.lineItems.map(item => ZohoLineItem.createNew(item))
       : [];
+    invoice.contacts = Array.isArray(data.contacts)? data.contacts.map(c => ZohoContact.createNew(c)): []; 
     return invoice;
   }
 }

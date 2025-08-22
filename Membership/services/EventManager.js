@@ -190,7 +190,8 @@ class EventManager {
    */
 
   addEventItem(eventItem) {
-    return this.storageManager.add(eventItem);
+    
+    return this.storageManager.add(eventItem); 
   }
 
   /**
@@ -244,8 +245,8 @@ class EventManager {
     this.deleteCalendarEvent(event);
   }
 
-  deleteCalendarEvent(event) {
-    this.calendarManager.delete(event.id);
+  deleteCalendarEvent(eventId) {
+    this.calendarManager.delete(eventId);
   }
 
   createEvent(data = {}) {
@@ -273,17 +274,28 @@ class EventManager {
    * @returns Response(EventConfirmation) 
    */
   signup(eventId, memberId) {
+    let invoice;
     const event = this.calendarManager.getById(eventId);
     if (!event) {
       throw new Error('Event not found.');
     }
+
+    // Lookup the eventItem
+    const eventItemId = event.eventItem.id; 
+    const eventItemResponse = this.getEventItemById(eventItemId);
+    if (!eventItemResponse || !eventItemResponse.success) {
+      return (new Response(false, "Failed to sign you up for the event - please contact system administrator")); 
+    }
+    const eventItem = eventItemResponse.data
+    event.eventItem = eventItem; 
+
     // Prevent duplicate signups
     if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
       return { success: false, error: 'Member already signed up for this event.' };
     }
 
     // Check if event is full (if sizeLimit is set)
-    if (event.sizeLimit && event.attendees && event.attendees.length >= event.sizeLimit) {
+    if (event.sizeLimit && event.attendees && event.attendees.length >= eventItem.sizeLimit) {
       return { success: false, error: 'Event is full.' };
     }
 
@@ -294,9 +306,48 @@ class EventManager {
     const member = memberResponse.data;
     this.calendarManager.addAttendee(eventId, member.emailAddress);
 
-    return {
-      success: true, data: { message: `You are successfully signed up successfully for: ${event.name}`, eventId: eventId }
+    // Invoice member for event if cost is set
+    if (eventItem && eventItem.price && eventItem.price > 0) {
+      invoice = this.createInvoiceForEvent(member, event);
     }
+
+
+    return {
+      success: true, data: { message: `You are successfully signed up for: ${event.eventItem.title}`, eventId: eventId }
+    }
+  }
+
+  /**
+   * Creates an invoice for a specific event and member.
+   * @param {Member} member - The member for whom the invoice is created.
+   * @param {Event} event - The event for which the invoice is created.
+   * @returns {Object} The created invoice.
+   */
+  createInvoiceForEvent(member, event) {
+
+    const eventItem = event.eventItem;
+    if (!eventItem || !eventItem.id) {
+      throw new Error('Event item not found for invoicing.');
+    }
+     const invoiceData = {
+      customerId: member.id,
+      date: new Date(),
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
+      status: 'UNPAID',
+      totalAmount: eventItem.price,
+      lineItems: [
+        {
+          itemId: eventItem.id,
+          description: eventItem.description,
+          quantity: 1,
+          rate: eventItem.price,
+        },
+      ],
+      contacts: [
+        {id: member.primaryContactId}
+      ]
+    };
+    return invoiceManager.createAndSendInvoice(invoiceData);
   }
 
   /**

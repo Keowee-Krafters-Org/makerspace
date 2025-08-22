@@ -37,10 +37,10 @@ class InvoiceManager {
    * @param {Object} invoiceData - The data for the new invoice.
    * @returns {Object} The created invoice.
    */
-  createInvoice(invoiceData) {
+  createInvoice(invoiceData, send = false) {
     try {
       const invoice = this.storageManager.createNew(invoiceData);
-      const result = this.storageManager.add(invoice);
+      const result = this.storageManager.add(invoice, {send:send});
       if (!result || !result.id) {
         throw new Error('Failed to create invoice.');
       }
@@ -51,7 +51,21 @@ class InvoiceManager {
     }
   }
 
+
+  /** Create and send an invlice  
+   * @param {Object} invoiceData - The data for the new invoice.
+   * @returns {Object} The created invoice.
+   */
+  createAndSendInvoice(invoiceData) {
+    const createResponse = this.createInvoice(invoiceData, true);
+    if (!createResponse.success) {
+      return createResponse;
+    }
+    const createdInvoice = createResponse.data;
+    return { success: true, data: createdInvoice };
+  } 
   /**
+   * 
    * Updates an existing invoice.
    * @param {Object} invoiceData - The updated data for the invoice.
    * @returns {Object} The updated invoice.
@@ -125,9 +139,8 @@ class InvoiceManager {
    * @param {string} email - The email address of the recipient.
    * @returns {Object} Response indicating success or failure.
    */
-  sendInvoice(invoiceId, email) {
+  sendInvoice(invoice) {
     try {
-      const invoice = this.getInvoiceById(invoiceId);
       // Logic to send the invoice via email (e.g., using Zoho API)
       console.log(`Sending invoice ${invoiceId} to ${email}`);
       return { success: true, message: `Invoice sent to ${email}` };
