@@ -68,6 +68,14 @@ class CalendarManager extends StorageManager {
       event.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => event.removeGuest(g.getEmail())),
       event.addGuest(calendarEventRecord.location.email); // Add the room as a guest
     }
+    // Compare the guests lists and add/remove new guests
+
+    const currentGuests = event.getGuestList().map(g => g.getEmail());
+    const updatedGuests = calendarEventRecord.attendees || [];
+    const guestsToAdd = updatedGuests.filter(g => !currentGuests.includes(g));
+    const guestsToRemove = currentGuests.filter(g => !updatedGuests.includes(g));
+    guestsToAdd.forEach(g => event.addGuest(g));
+    guestsToRemove.forEach(g => event.removeGuest(g)); 
     return this.fromRecord(event);
   }
 

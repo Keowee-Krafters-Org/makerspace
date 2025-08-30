@@ -43,6 +43,22 @@ function updateMember(updatedMemberJson) {
   return JSON.stringify({success:true, data:savedMember.toObjectNoAuthentication()});
 }
 
+/**
+ * Creates a new event by calling the eventService createEvent function.
+ * @param {string} eventData - The event data in JSON format.
+ */
+function adminCreateEvent(eventData) {
+  return createEvent(eventData); // Reuse the createEvent function from eventService.js
+}
+
+/**
+ * Updates an existing event by calling the eventService updateEvent function.
+ * @param {string} eventData - The updated event data in JSON format.
+ */
+function adminUpdateEvent(eventData) {
+  return updateEvent(eventData); // Reuse the updateEvent function from eventService.js
+}
+
 
 
 

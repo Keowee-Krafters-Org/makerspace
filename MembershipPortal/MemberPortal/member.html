@@ -26,12 +26,18 @@
       margin-top: 20px;
     }
 
-    input[type="email"] {
+    input[type="email"],
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="datetime-local"],
+    textarea {
       width: 100%;
-      padding: 8px;
+      padding: 12px;
       margin: 6px 0 12px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
+      box-sizing: border-box;
     }
 
     button {
@@ -82,6 +88,39 @@
     /* Add spacing between list items */
     ul li {
       margin-bottom: 10px;
+    }
+
+    /* Responsive styles for mobile devices */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      .dashboard {
+        padding: 15px;
+      }
+
+      input[type="email"],
+      input[type="text"],
+      input[type="password"],
+      input[type="number"],
+      input[type="datetime-local"],
+      textarea {
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      button {
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      .spinner {
+        width: 30px;
+        height: 30px;
+        border-width: 4px;
+      }
     }
   </style>
 </head>
