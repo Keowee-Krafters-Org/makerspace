@@ -78,6 +78,7 @@ class CalendarEvent extends Event {
     }
 
     static fromRecord(googleEvent) {
+        // Map Google Event getter/setter methods to object
         const record = {
             id: googleEvent.getId(),
             title: googleEvent.getTitle(),
@@ -100,6 +101,7 @@ class CalendarEvent extends Event {
             data.duration = (new Date(record._end) - data.start) / (1000 * 60 * 60); // duration in hours
         }
          
+        
   
         // Extract the eventItemId from the description if it exists
         if (data._description) {
@@ -119,8 +121,7 @@ class CalendarEvent extends Event {
 
 
     toRecord() {
-        this._attendees = this.attendees.join(', '); // Convert attendees array to a comma-separated string
-        this._eventItemId = this.eventItem.id; // Store eventItemId directly
+       this._eventItemId = this.eventItem.id; // Store eventItemId directly
         const start = this.date;
         const durationHours = Number(this.eventItem.duration) || 2;
         this._end = start ? new Date(start.getTime() + durationHours * 60 * 60 * 1000) : undefined;

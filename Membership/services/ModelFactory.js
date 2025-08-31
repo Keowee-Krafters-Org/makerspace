@@ -1,4 +1,3 @@
-
 /**
  * Factory class for creating and managing various models and services within the Membership application.
  * 
@@ -55,6 +54,9 @@ class ModelFactory {
     return new WaiverManager(new FormStorageManager(FormWaiver), this.membershipManager());
   }
 
+  invoiceManager() {
+    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice));
+  }
   googleDriveService() {
     return new GoogleDriveService(this._config); 
   }

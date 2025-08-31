@@ -29,6 +29,7 @@ const testMemberMinimum = {
   phoneNumber: '123-456-7890',
   address: '123 Mock St, Faketown',
   interests: ['Woodworking, Quilting'],
+  emailAddress: 'testUser@keoweekrafters.org'
 };
 
 const testMember = {

@@ -189,6 +189,21 @@
         </h5>
     </div>
 
+    <div id="eventTableContainer">
+    <table class="member-list" id="eventList">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Date</th>
+                <th>Price</th>
+                <th>Attendees</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="eventRows"></tbody>
+    </table>
+    <div id="paginationControls"></div>
+</div>
 
     <script type="application/json" id="member-data">
     <?!= JSON.stringify(member) ?>
@@ -223,6 +238,9 @@
     </script>
 
     <script>
+
+
+
 
         // Admin-only: New Class button
         if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
@@ -342,6 +360,13 @@
             confirmation.style.marginTop = '20px';
             card.appendChild(confirmation);
 
+            // Add "Back to Event List" button
+            const backButton = document.createElement('button');
+            backButton.className = 'signup-btn';
+            backButton.textContent = 'Back to Event List';
+            backButton.onclick = () => loadEvents();
+            card.appendChild(backButton);
+
             container.appendChild(card);
         }
 
@@ -450,6 +475,8 @@
                 hideSpinner();
             }
         }
+
+
 
         function addLabeledField(form, labelText, inputElement) {
             const label = document.createElement('label');
@@ -663,8 +690,15 @@
             addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
             addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
-            // --- Image Upload Field and Preview ---
-            // Add the image upload field
+            // --- Attendee Dropdown ---
+            const attendeeDropdown = createDropdown(
+                'edit-attendees',
+                cls.attendees.map(attendee => ({ id: attendee, name: attendee })),
+                '' // No default selection
+            );
+            addLabeledField(form, 'Attendees:', attendeeDropdown);
+
+            // --- Image Upload Field ---
             const imageFieldContainer = createImageUploadField(cls, form);
             form.appendChild(imageFieldContainer);
 
@@ -902,5 +936,98 @@
             }
         });
     </script>
+
+
+<!-- Event table -->
+ <script>
+    const pageSize = 10;
+    let currentPage = 1;
+
+    /**
+     * Loads events with optional pagination.
+     * @param {Object} page - Pagination object with currentPage and pageSize.
+     */
+    function loadEventsTable(page = { currentPage: 1, pageSize: pageSize }) {
+        showSpinner();
+        google.script.run.withSuccessHandler(res => {
+            const response = JSON.parse(res);
+            if (response.success !== true) {
+                document.getElementById('classes').innerHTML = `<p>Error loading events: ${response.error || 'Unknown error.'}</p>`;
+                hideSpinner();
+                return;
+            }
+            renderEventPage(response);
+            hideSpinner();
+        }).getAllEvents({ ...page });
+    }
+
+    /**
+     * Renders the current page of events in the table.
+     * @param {Object} response - Response object containing event data and pagination info.
+     */
+    function renderEventPage(response) {
+        const tbody = document.getElementById('eventRows');
+        tbody.innerHTML = '';
+
+        const pageEvents = response.data || [];
+        const page = response.page || { currentPage: 1, hasMore: false };
+        pageEvents.forEach(event => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${event.title || ''}</td>
+                <td>${new Date(event.date).toLocaleString()}</td>
+                <td>$${event.price.toFixed(2)}</td>
+                <td>${event.attendees?.length || 0}</td>
+                <td>
+                    <button onclick="viewEvent('${event.id}')">View</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        renderPaginationControls(page);
+    }
+
+    /**
+     * Renders pagination controls based on the current page and whether there are more pages.
+     * @param {Object} page - Pagination object with currentPage and hasMore properties.
+     */
+    function renderPaginationControls(page) {
+        const controls = document.getElementById('paginationControls');
+        controls.innerHTML = `
+            <button onclick="goToPage(${page.currentPage - 1})" ${page.currentPage === 1 ? 'disabled' : ''}>Previous</button>
+            Page ${page.currentPage}
+            <button onclick="goToPage(${page.currentPage + 1})" ${!page.hasMore ? 'disabled' : ''}>Next</button>
+        `;
+    }
+
+    /**
+     * Navigates to a specific page of events.
+     * @param {number} page - The page number to navigate to.
+     */
+    function goToPage(page) {
+        loadEventsTable({ currentPage: page, pageSize: pageSize });
+    }
+
+    /**
+     * Opens the details of a specific event.
+     * @param {string} eventId - The ID of the event to view.
+     */
+    function viewEvent(eventId) {
+        showSpinner();
+        google.script.run.withSuccessHandler(res => {
+            const response = JSON.parse(res);
+            if (response.success) {
+                renderClass(response.data); // Render the specific event
+            } else {
+                alert(`Failed to load event: ${response.error || 'Unknown error.'}`);
+            }
+            hideSpinner();
+        }).getEventById(eventId);
+    }
+
+
+</script>
+
 </body>
 </html>

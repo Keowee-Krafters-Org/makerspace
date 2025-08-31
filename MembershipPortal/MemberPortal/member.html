@@ -26,12 +26,18 @@
       margin-top: 20px;
     }
 
-    input[type="email"] {
+    input[type="email"],
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="datetime-local"],
+    textarea {
       width: 100%;
-      padding: 8px;
+      padding: 12px;
       margin: 6px 0 12px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
+      box-sizing: border-box;
     }
 
     button {
@@ -82,6 +88,39 @@
     /* Add spacing between list items */
     ul li {
       margin-bottom: 10px;
+    }
+
+    /* Responsive styles for mobile devices */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      .dashboard {
+        padding: 15px;
+      }
+
+      input[type="email"],
+      input[type="text"],
+      input[type="password"],
+      input[type="number"],
+      input[type="datetime-local"],
+      textarea {
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      button {
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      .spinner {
+        width: 30px;
+        height: 30px;
+        border-width: 4px;
+      }
     }
   </style>
 </head>
@@ -159,7 +198,7 @@
                 <label for="email">Email Address:</label>
                 <input type="email" id="email" required />
                 <div id="step1">
-                    <button onclick="requestToken()">Login</button>
+                    <button onclick="requestToken()">Verify Email</button>
                 </div>
                 <p id="error" class="error">${member.error || ''}</p>`;
           break;
@@ -171,7 +210,7 @@
                 <p><label for="token">Enter the code:</label></p>
                 <input type="text" id="token" maxlength="6" />
                 <p>
-                    <button onclick="verifyCode()">Verify</button>
+                    <button onclick="verifyCode()">Verify Code</button>
                     <button onclick="resendToken()">Resend Code</button>
                 </p>
                 <p id="error" class="error">${member.error || ''}</p>`;
@@ -195,19 +234,19 @@
                     content += `<ul>
                         <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
 
-                    if (levelNumber >= 2) {
+                    if (levelNumber >= sharedConfig.levels['Active']) {
                         if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
                             const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
                             content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
                         }
                     }
 
-                    if (levelNumber >= 10) {
-                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&memberId=${member.id}', '_blank')">Member Admin</button></li>`;
+                    if (levelNumber >= sharedConfig.levels['Board']) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&mode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
                     }
 
-                    if (levelNumber >= 20) {
-                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=adminDashboard&memberId=${member.id}', '_blank')">Admin Dashboard</button></li>`;
+                    if (levelNumber >= sharedConfig.levels['Administrator']) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&adminMode=members&memberId=${member.id}', '_blank')">Manage Members</button></li>`;
                     }
 
                     content += '</ul>';

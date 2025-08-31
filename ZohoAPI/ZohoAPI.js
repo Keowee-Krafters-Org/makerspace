@@ -192,8 +192,8 @@ class ZohoAPI {
         const url = this.generateUrl(entityType, id, params);
         return this.fetch(url, { method: 'get' });
     }
-    post(entityType, payload) {
-        const url = this.generateUrl(entityType);
+    post(entityType, payload, params = {}) {
+        const url = this.generateUrl(entityType, '', params);
 
         return  this.fetch(url, {
             method: 'post',
@@ -282,10 +282,10 @@ class ZohoAPI {
          return this.processCustomFields(entityType,response);
     }
 
-    createEntity(entityType, data) {
+    createEntity(entityType, data, params = {}) {
         const payload = this.packageCustomFields(data);
-        const response =  this.post(entityType, payload);
-   
+        const response =  this.post(entityType, payload, params);
+
         return this.processCustomFields(entityType,response);
 
     }

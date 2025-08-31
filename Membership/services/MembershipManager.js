@@ -9,7 +9,7 @@ class MembershipManager {
     this.storageManager = storageManager;
   }
 
-  getAllMembers(params={}) {
+  getAllMembers(params = {}) {
     return this.storageManager.getAll(params);
   }
 
@@ -23,7 +23,7 @@ class MembershipManager {
   updateMemberFromObject(memberObject) {
     const member = this.storageManager.createNew(memberObject);
     return this.updateMember(member);
-  } 
+  }
   /**
    * Updates a member in the storage.
    * This method updates the member's data in the storage and returns a response.
@@ -54,29 +54,33 @@ class MembershipManager {
       member = this.addMember({ emailAddress });
     }
 
-    if (member.login) {
-      // Has a login 
-      expired = member.login.isExpired();;
-    }
+    // Check for existing login and not in verifying state
+    // This prevents verification bypass for existing members
+    if (member.login && member.login.status != 'VERIFYING') {
+      if (member.login) {
+        // Has a login 
+        expired = member.login.isExpired();;
+      }
 
-    if (expired) {
-      member.login.authentication = this.generateAuthentication();
-      member.login.status = "VERIFYING";
-      member= this.storageManager.update(member.id, member).data;
-    }
+      if (expired) {
+        member.login.authentication = this.generateAuthentication();
+        member.login.status = "VERIFYING";
+        member = this.storageManager.update(member.id, member).data;
+      }
 
-    if (!expired && member.registration && member.registration.status === 'REGISTERED') {
-      member.login.status = 'VERIFIED';
-      member = this.storageManager.update(member.id, member).data;
-    }
+      if (!expired && member.registration && member.registration.status === 'REGISTERED') {
+        member.login.status = 'VERIFIED';
+        member = this.storageManager.update(member.id, member).data;
+      }
 
-    if (member.login && member.login.status === 'VERIFYING') {
-      this.sendEmail({
-        emailAddress:emailAddress, 
-        title: 'Your MakeKeowee Login Code',
-        message:`Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`});
+      if (member.login && member.login.status === 'VERIFYING') {
+        this.sendEmail({
+          emailAddress: emailAddress,
+          title: 'Your MakeKeowee Login Code',
+          message: `Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`
+        });
+      }
     }
-
     return new Response(true, member);
   }
 
@@ -91,8 +95,8 @@ class MembershipManager {
     let member = this.memberLookup(emailAddress);
 
     // Default response - no access
-    let response = new Response(false, 
-      this.storageManager.createNew(getConfig().defaultMember), 
+    let response = new Response(false,
+      this.storageManager.createNew(getConfig().defaultMember),
       'Member not found');
     if (!member) {
       return response;
@@ -161,10 +165,10 @@ class MembershipManager {
   }
 
   getMember(memberId) {
-    return (this.storageManager.getById(memberId)); 
+    return (this.storageManager.getById(memberId));
   }
   addMemberRegistration(memberData) {
-    let registeredMember = this.storageManager.createNew(memberData); 
+    let registeredMember = this.storageManager.createNew(memberData);
     let member = this.memberLookup(memberData.emailAddress);
     if (!member) {
       member = addMember(memberData);
@@ -201,7 +205,7 @@ class MembershipManager {
     GmailApp.sendEmail(emailPacket.emailAddress, emailPacket.title, emailPacket.message, {
       from: 'noreply@keoweekrafters.org',
       name: 'KeoweeKrafters',
-      attachments: emailPacket.attachments || [], 
+      attachments: emailPacket.attachments || [],
       noReply: true
     });
   }
@@ -210,9 +214,9 @@ class MembershipManager {
     const member = this.memberLookup(emailAddress);
     if (!member) return { success: false, message: 'Member not found' };
 
-    member.login = ZohoLogin.createNew({status:'UNVERIFIED'});
+    member.login = ZohoLogin.createNew({ status: 'UNVERIFIED' });
     this.storageManager.update(member.id, member);
-    return { success: true, data: member};
+    return { success: true, data: member };
   }
 
   getAuthentication(emailAddress) {
@@ -222,11 +226,11 @@ class MembershipManager {
   }
 
   deleteMember(member) {
-    this.storageManager.delete(member.id); 
+    this.storageManager.delete(member.id);
   }
 
   getHosts() {
-    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.host); 
+    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.host);
   }
 
   getInstructors() {
@@ -234,17 +238,17 @@ class MembershipManager {
     const instructorLevel = SharedConfig.levels.Instructor;
     const response = this.storageManager.getFiltered(
       member => {
-        const memberLevel = SharedConfig.levels[member.registration.level]; 
+        const memberLevel = SharedConfig.levels[member.registration.level];
         // Ensure level is a number for comparison
         return memberLevel >= instructorLevel;
-      }, {contactType:'vendor', per_page:200}
+      }, { contactType: 'vendor', per_page: 200 }
     );
     // Return only the data array (list of instructors)
     return response.data;
   }
 
   createNew(data = {}) {
-    return this.storageManager.createNew(data); 
+    return this.storageManager.createNew(data);
   }
-  
+
 }

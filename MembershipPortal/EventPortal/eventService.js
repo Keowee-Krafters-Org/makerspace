@@ -6,12 +6,17 @@ function getEventList() {
   return JSON.stringify({ success: true, data: events });
 }
 
+
 function signup(classId, memberId) {
 
-  const modelFactory = Membership.newModelFactory();
-  const eventManager = modelFactory.eventManager();
+  const eventManager = Membership.newModelFactory().eventManager();
   const response = eventManager.signup(classId, memberId);
   return JSON.stringify(response);
+}
+
+function getAllEvents(page) {
+  const eventManager = Membership.newModelFactory().eventManager();
+  return JSON.stringify(eventManager.getAllEvents(page));
 }
 
 function getSharedConfig() {
@@ -26,20 +31,17 @@ function getMember(memberId) {
 }
 
 function createEvent(eventData) {
-
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
   const event = JSON.parse(eventData);
 
-  const response = eventManager.addEvent(event); // assumes addEvent creates a new record and calendar event
+  const response = eventManager.addEvent(event); // Assumes addEvent creates a new record and calendar event
   return JSON.stringify(response);
 }
 
 function updateEvent(eventData) {
-
   try {
-    
-  const eventManager = Membership.newModelFactory().eventManager();
+    const eventManager = Membership.newModelFactory().eventManager();
     const event = JSON.parse(eventData);
     const eventInstance = eventManager.createEvent(event);
 
@@ -48,7 +50,6 @@ function updateEvent(eventData) {
   } catch (e) {
     throw new Error('Failed to parse event JSON: ' + e.message);
   }
-
 }
 
 function getInstructors() {

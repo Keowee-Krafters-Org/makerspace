@@ -63,7 +63,7 @@ class ZohoEvent extends Event {
     this._imageUrl = this.image?this.image.url:''; 
 
     const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())
-    record.prodcut_type = 'service'; 
+    record.product_type = 'service'; 
     return record; 
   }
 
