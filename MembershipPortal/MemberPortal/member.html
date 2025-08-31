@@ -234,19 +234,19 @@
                     content += `<ul>
                         <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
 
-                    if (levelNumber >= 2) {
+                    if (levelNumber >= sharedConfig.levels['Active']) {
                         if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
                             const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
                             content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
                         }
                     }
 
-                    if (levelNumber >= 10) {
-                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&memberId=${member.id}', '_blank')">Member Admin</button></li>`;
+                    if (levelNumber >= sharedConfig.levels['Board']) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&mode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
                     }
 
-                    if (levelNumber >= 20) {
-                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=adminDashboard&memberId=${member.id}', '_blank')">Admin Dashboard</button></li>`;
+                    if (levelNumber >= sharedConfig.levels['Administrator']) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&adminMode=members&memberId=${member.id}', '_blank')">Manage Members</button></li>`;
                     }
 
                     content += '</ul>';

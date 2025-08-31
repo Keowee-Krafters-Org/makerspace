@@ -6,12 +6,17 @@ function getEventList() {
   return JSON.stringify({ success: true, data: events });
 }
 
+
 function signup(classId, memberId) {
 
-  const modelFactory = Membership.newModelFactory();
-  const eventManager = modelFactory.eventManager();
+  const eventManager = Membership.newModelFactory().eventManager();
   const response = eventManager.signup(classId, memberId);
   return JSON.stringify(response);
+}
+
+function getAllEvents(page) {
+  const eventManager = Membership.newModelFactory().eventManager();
+  return JSON.stringify(eventManager.getAllEvents(page));
 }
 
 function getSharedConfig() {

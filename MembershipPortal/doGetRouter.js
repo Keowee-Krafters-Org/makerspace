@@ -1,6 +1,7 @@
 function doGet(e) {
     const view = e.parameter.view || 'member';
     const eventId = e.parameter.eventId || 'null';
+    const adminMode= e.parameter.adminMode || 'members';
     let html;
     const modelFactory = Membership.newModelFactory();
     let canSignup = false; // ✅ properly declare this
@@ -22,8 +23,8 @@ function doGet(e) {
         }
     }
 
-    // Determine adminMode based on the member's level
-    const adminMode = config.levels[member.level] >= config.levels.Administrator;
+    // Determine adminAccess based on the member's level
+    const adminAccess = config.levels[member.registration.level] >= config.levels.Administrator;
 
     if (view === 'event') {
         html = HtmlService.createTemplateFromFile('EventPortal/event');
@@ -49,7 +50,7 @@ function doGet(e) {
         }
         html.canSignup = canSignup;
     } else if (view === 'admin') {
-        if (!adminMode) {
+        if (!adminAccess) {
             return HtmlService.createHtmlOutput('Access denied. Not an admin.');
         }
         html = HtmlService.createTemplateFromFile('AdminPortal/admin');
@@ -65,5 +66,6 @@ function doGet(e) {
 
     return html.evaluate()
         .setTitle('Membership Portal')
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

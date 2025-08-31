@@ -189,6 +189,21 @@
         </h5>
     </div>
 
+    <div id="eventTableContainer">
+    <table class="member-list" id="eventList">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Date</th>
+                <th>Price</th>
+                <th>Attendees</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="eventRows"></tbody>
+    </table>
+    <div id="paginationControls"></div>
+</div>
 
     <script type="application/json" id="member-data">
     <?!= JSON.stringify(member) ?>
@@ -223,6 +238,9 @@
     </script>
 
     <script>
+
+
+
 
         // Admin-only: New Class button
         if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
@@ -458,6 +476,8 @@
             }
         }
 
+
+
         function addLabeledField(form, labelText, inputElement) {
             const label = document.createElement('label');
             label.textContent = labelText;
@@ -577,9 +597,21 @@
             eventItemFieldContainer.id = 'event-item-field-container';
             form.appendChild(eventItemFieldContainer);
 
+            let eventItemsCache = []; // Store event items for lookup
+
             // Fetch event items from backend and populate the Event Item dropdown
             google.script.run.withSuccessHandler(function (response) {
+                // Handle response data
+                if (typeof response === 'string') {
+                    try {
+                        response = JSON.parse(response);
+                    } catch (e) {
+                        response = { data: [] }; // Fallback to empty array if parsing fails
+                    }
+                }
                 let itemList = response.data || [];
+                eventItemsCache = itemList; // Cache for later use
+
                 const dropdown = createDropdown(
                     'edit-event-item',
                     [{ id: 'null', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
@@ -587,12 +619,73 @@
                 );
                 eventItemFieldContainer.innerHTML = '';
                 addLabeledField(eventItemFieldContainer, 'Event Item:', dropdown);
+
+                // Add change event to autofill fields
+                dropdown.addEventListener('change', function () {
+                    const selectedId = this.value;
+                    const selectedItem = eventItemsCache.find(i => i.id === selectedId);
+                    if (selectedItem) {
+                        if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
+                        if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
+                        if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
+                        if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit;
+                        if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
+                        // Add more fields as needed
+                    }
+                });
+
+                // Optionally, trigger autofill if editing an existing event with an eventItemId
+                if (cls.eventItem.id) {
+                    const selectedItem = eventItemsCache.find(i => i.id === cls.eventItem.id);
+                    if (selectedItem) {
+                        if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
+                        if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
+                        if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
+                        if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit; // <-- Add this line
+                        if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
+                    }
+                }
             }).getEventItemList();
 
             // --- Rest of the fields ---
             addLabeledField(form, 'Title:', createInput('edit-title', cls.eventItem.title));
             addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.eventItem.description));
             addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
+
+            // Add Duration field (in hours)
+            addLabeledField(form, 'Duration (hours):', createInput('edit-duration', cls.eventItem.duration || '', 'number'));
+
+
+            // Placeholder for Location dropdown (replace the existing location input)
+            const locationFieldContainer = document.createElement('div');
+            locationFieldContainer.id = 'location-field-container';
+            form.appendChild(locationFieldContainer);
+
+            // Fetch calendar resources from backend and populate the Location dropdown
+            google.script.run.withSuccessHandler(function (resources) {
+                let resourceList = resources;
+                if (typeof resources === 'string') {
+                    try {
+                        resourceList = JSON.parse(resources);
+                    } catch (e) {
+                        resourceList = [];
+                    }
+                }
+                // Use resource name for display, resource email as value
+                const dropdown = createDropdown(
+                    'edit-location',
+                    resourceList.map(r => ({ id: r.email, name: r.description || r.name })),
+                    cls.location.email || ''
+                );
+                locationFieldContainer.innerHTML = '';
+                addLabeledField(locationFieldContainer, 'Location:', dropdown);
+            }).getEventRooms();
+
+            // Placeholder for Host dropdown
+            const hostFieldContainer = document.createElement('div');
+            hostFieldContainer.id = 'host-field-container';
+            form.appendChild(hostFieldContainer);
+
             addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.eventItem.price || 0));
             addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
             addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
@@ -609,10 +702,25 @@
             const imageFieldContainer = createImageUploadField(cls, form);
             form.appendChild(imageFieldContainer);
 
+
             form.appendChild(saveBtn);
             container.appendChild(form);
 
-            hideSpinner();
+            // Fetch instructors from backend and populate the Host dropdown
+            google.script.run.withSuccessHandler(function (instructors) {
+                let instructorList = instructors;
+                if (typeof instructors === 'string') {
+                    try {
+                        instructorList = JSON.parse(instructors);
+                    } catch (e) {
+                        instructorList = [];
+                    }
+                }
+                const dropdown = createDropdown('edit-host', instructorList, cls.eventItem.host || '');
+                hostFieldContainer.innerHTML = '';
+                addLabeledField(hostFieldContainer, 'Host:', dropdown);
+                hideSpinner();
+            }).getInstructors();
         }
 
         function saveEvent(eventId) {
@@ -828,5 +936,98 @@
             }
         });
     </script>
+
+
+<!-- Event table -->
+ <script>
+    const pageSize = 10;
+    let currentPage = 1;
+
+    /**
+     * Loads events with optional pagination.
+     * @param {Object} page - Pagination object with currentPage and pageSize.
+     */
+    function loadEventsTable(page = { currentPage: 1, pageSize: pageSize }) {
+        showSpinner();
+        google.script.run.withSuccessHandler(res => {
+            const response = JSON.parse(res);
+            if (response.success !== true) {
+                document.getElementById('classes').innerHTML = `<p>Error loading events: ${response.error || 'Unknown error.'}</p>`;
+                hideSpinner();
+                return;
+            }
+            renderEventPage(response);
+            hideSpinner();
+        }).getAllEvents({ ...page });
+    }
+
+    /**
+     * Renders the current page of events in the table.
+     * @param {Object} response - Response object containing event data and pagination info.
+     */
+    function renderEventPage(response) {
+        const tbody = document.getElementById('eventRows');
+        tbody.innerHTML = '';
+
+        const pageEvents = response.data || [];
+        const page = response.page || { currentPage: 1, hasMore: false };
+        pageEvents.forEach(event => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${event.title || ''}</td>
+                <td>${new Date(event.date).toLocaleString()}</td>
+                <td>$${event.price.toFixed(2)}</td>
+                <td>${event.attendees?.length || 0}</td>
+                <td>
+                    <button onclick="viewEvent('${event.id}')">View</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        renderPaginationControls(page);
+    }
+
+    /**
+     * Renders pagination controls based on the current page and whether there are more pages.
+     * @param {Object} page - Pagination object with currentPage and hasMore properties.
+     */
+    function renderPaginationControls(page) {
+        const controls = document.getElementById('paginationControls');
+        controls.innerHTML = `
+            <button onclick="goToPage(${page.currentPage - 1})" ${page.currentPage === 1 ? 'disabled' : ''}>Previous</button>
+            Page ${page.currentPage}
+            <button onclick="goToPage(${page.currentPage + 1})" ${!page.hasMore ? 'disabled' : ''}>Next</button>
+        `;
+    }
+
+    /**
+     * Navigates to a specific page of events.
+     * @param {number} page - The page number to navigate to.
+     */
+    function goToPage(page) {
+        loadEventsTable({ currentPage: page, pageSize: pageSize });
+    }
+
+    /**
+     * Opens the details of a specific event.
+     * @param {string} eventId - The ID of the event to view.
+     */
+    function viewEvent(eventId) {
+        showSpinner();
+        google.script.run.withSuccessHandler(res => {
+            const response = JSON.parse(res);
+            if (response.success) {
+                renderClass(response.data); // Render the specific event
+            } else {
+                alert(`Failed to load event: ${response.error || 'Unknown error.'}`);
+            }
+            hideSpinner();
+        }).getEventById(eventId);
+    }
+
+
+</script>
+
 </body>
 </html>

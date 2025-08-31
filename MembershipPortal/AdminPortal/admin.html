@@ -166,39 +166,9 @@
     <button onclick="cancelEdit()">Cancel</button>
   </div>
 
-  <div id="eventListContainer">
-    <h3>Classes and Events</h3>
-    <div>
-      <button onclick="createEventForAdmin()">Create New Event</button>
-    </div>
-    <table class="member-list" id="eventList">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Date</th>
-          <th>Attendees</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="eventRows"></tbody>
-    </table>
-    <div id="eventPaginationControls"></div>
-  </div>
-
-  <div id="eventEditor" class="member-editor hidden">
-    <h3>Edit Event</h3>
-    <label>Title: <input type="text" id="editEventTitle" /></label>
-    <label>Date: <input type="datetime-local" id="editEventDate" /></label>
-    <label>Max Attendees: <input type="number" id="editEventMaxAttendees" /></label>
-    <button onclick="saveEvent()">Save Changes</button>
-    <button onclick="cancelEventEdit()">Cancel</button>
-  </div>
-
   <script>
     let selectedMember = null;
-    let selectedEvent = null;
     let sharedConfig = {};
-    let adminMode = false; // Default value, will be set by the backend
 
     function showSpinner() {
       document.getElementById('spinner').style.display = 'block';
@@ -220,19 +190,20 @@
     }
 
     const pageSize = 10;
+    let filteredMembers = [];
 
     /**
      * Loads members with optional pagination and filtering.
      * @param {Object} page - Pagination object with currentPage and pageSize.
      */
     function loadMembers(page = { currentPage: 1, pageSize: pageSize }) {
-      if (!adminMode) return; // Skip loading members if adminMode is false
       const search = document.getElementById('search').value.toLowerCase();
       const filter = document.getElementById('filter').value;
       showSpinner();
       google.script.run.withSuccessHandler(res => {
-        document.getElementById('memberEditor').classList.add('hidden');
-        document.getElementById('memberListContainer').classList.remove('hidden');
+        
+      document.getElementById('memberEditor').classList.add('hidden');
+      document.getElementById('memberListContainer').classList.remove('hidden');
         const response = JSON.parse(res);
 
         renderCurrentPage(response);
@@ -359,170 +330,14 @@
         })
         .updateMember(JSON.stringify(updateMemberRequest));
     }
+    google.script.run.withSuccessHandler(config => {
+      sharedConfig = config;
+      document.getElementById('version').textContent = `Version: ${config.version}\nService Version: ${config.membershipVersion}`;
+      populateLevelDropdown();
+      hideSpinner();
+    }).getConfig();
 
-    /**
-     * Creates a new event with default values.
-     */
-    function createEvent() {
-      const now = new Date();
-      const defaultEvent = {
-        title: '',
-        date: now.toISOString().slice(0, 16),
-        maxAttendees: 0
-      };
-      selectedEvent = defaultEvent;
-      document.getElementById('editEventTitle').value = defaultEvent.title;
-      document.getElementById('editEventDate').value = defaultEvent.date;
-      document.getElementById('editEventMaxAttendees').value = defaultEvent.maxAttendees;
-      document.getElementById('eventEditor').classList.remove('hidden');
-      document.getElementById('eventListContainer').classList.add('hidden');
-    }
-
-    /**
-     * Saves the event details.
-     */
-    function saveEvent() {
-      const title = document.getElementById('editEventTitle').value.trim();
-      const date = document.getElementById('editEventDate').value;
-      const maxAttendees = parseInt(document.getElementById('editEventMaxAttendees').value, 10) || 0;
-
-      const updateEventRequest = {
-        id: selectedEvent.id,
-        title: title,
-        date: date,
-        maxAttendees: maxAttendees
-      };
-
-      showSpinner();
-      google.script.run
-        .withSuccessHandler(() => {
-          document.getElementById('eventEditor').classList.add('hidden');
-          loadEvents();
-        })
-        .updateEvent(JSON.stringify(updateEventRequest));
-    }
-
-    /**
-     * Cancels the event edit and returns to the event list.
-     */
-    function cancelEventEdit() {
-      loadEvents();
-    }
-
-    /**
-     * Loads events with optional pagination.
-     * @param {Object} page - Pagination object with currentPage and pageSize.
-     */
-    function loadEvents(page = { currentPage: 1, pageSize: pageSize }) {
-      if (!adminMode) return; // Skip loading events if adminMode is false
-      showSpinner();
-      google.script.run.withSuccessHandler(res => {
-        const response = JSON.parse(res);
-        renderEventPage(response);
-        hideSpinner();
-      }).getAllEvents({ ...page });
-    }
-
-    /**
-     * Renders the current page of events in the table.
-     * @param {Object} response - Response object containing event data and pagination info.
-     */
-    function renderEventPage(response) {
-      const tbody = document.getElementById('eventRows');
-      tbody.innerHTML = '';
-
-      const pageEvents = response.data || [];
-      const page = response.page || { currentPage: 1, hasMore: false };
-      pageEvents.forEach(event => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-      <td>${event.title || ''}</td>
-      <td>${new Date(event.date).toLocaleString() || ''}</td>
-      <td>${event.attendees?.length || 0}</td>
-      <td><button onclick="editEvent('${event.id}')">Edit</button></td>
-    `;
-        tbody.appendChild(row);
-      });
-
-      renderEventPaginationControls(page);
-    }
-
-    /**
-     * Renders pagination controls for events.
-     * @param {Object} page - Pagination object with currentPage and hasMore properties.
-     */
-    function renderEventPaginationControls(page) {
-      let controls = document.getElementById('eventPaginationControls');
-
-      const hasMore = page.hasMore || false;
-      controls.innerHTML = `
-    <button onclick="goToEventPage({page:${page.currentPage - 1}})" ${page.currentPage === 1 ? 'disabled' : ''}>Previous</button>
-    Page ${page.currentPage}
-    <button onclick="goToEventPage({page:${page.currentPage + 1}})" ${page.hasMore ? 'disabled' : ''}>Next</button>
-  `;
-    }
-
-    /**
-     * Navigates to a specific page of events.
-     * @param {Object} page - Page object with the desired page number.
-     */
-    function goToEventPage(page) {
-      loadEvents(page);
-    }
-
-    /**
-     * Opens the event editor for a specific event.
-     * @param {string} eventId - The ID of the event to edit.
-     */
-    function editEvent(eventId) {
-      showSpinner();
-      google.script.run.withSuccessHandler(res => {
-        const response = JSON.parse(res);
-        const event = response.data;
-        selectedEvent = event;
-        document.getElementById('editEventTitle').value = event.title;
-        document.getElementById('editEventDate').value = new Date(event.date).toISOString().slice(0, 16);
-        document.getElementById('editEventMaxAttendees').value = event.maxAttendees;
-
-        document.getElementById('eventEditor').classList.remove('hidden');
-        document.getElementById('eventListContainer').classList.add('hidden');
-        hideSpinner();
-      }).getEventById(eventId);
-    }
-
-    /**
-     * Initializes the admin page based on the adminMode variable.
-     */
-    function initializeAdminPage() {
-      google.script.run.withSuccessHandler(config => {
-        sharedConfig = config;
-        document.getElementById('version').textContent = `Version: ${config.version}\nService Version: ${config.membershipVersion}`;
-        populateLevelDropdown();
-        hideSpinner();
-
-        // Load members and events only if adminMode is true
-        if (adminMode) {
-          loadMembers();
-          loadEvents();
-        }
-      }).getConfig();
-    }
-
-    // Set adminMode based on the value passed from the backend
-    google.script.run.withSuccessHandler(mode => {
-      adminMode = mode; // Set adminMode to true or false
-      initializeAdminPage();
-    }).getAdminMode();
-
-    // Reuse the createEvent function from event.html
-    function createEventForAdmin() {
-      createEvent(); // Call the existing createEvent function
-    }
-
-    // Reuse the updateEvent function from event.html
-    function saveEventForAdmin() {
-      saveEvent(); // Call the existing saveEvent function
-    }
+    loadMembers();
   </script>
 
   <h5>

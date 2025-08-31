@@ -51,3 +51,10 @@ function test_whenMemberIsUpdated_thenMemberData_is_changed () {
   assert("Registration level", memberChanges.registration.level, updatedMember.registration.level); 
 
 }
+
+function when_admin_signs_in__then_admin_gets_access() {
+  const memberEmail = testMember.emailAddress;
+  const member=JSON.parse(getMemberByEmail(memberEmail));
+  doGet({parameter:{view:'admin', adminMode: 'events', memberId:member.data.id}}); 
+
+}
