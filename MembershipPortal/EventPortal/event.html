@@ -72,13 +72,24 @@
         }
 
         .spinner {
-            margin: 20px auto;
+            position: fixed;
+            /* Make the spinner fixed to the viewport */
+            top: 50%;
+            /* Center vertically */
+            left: 50%;
+            /* Center horizontally */
+            transform: translate(-50%, -50%);
+            /* Adjust for the spinner's size */
             border: 6px solid #f3f3f3;
             border-top: 6px solid #3367d6;
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
+            z-index: 1000;
+            /* Ensure it appears above other elements */
+            display: none;
+            /* Initially hidden */
         }
 
         .hidden {
@@ -174,6 +185,63 @@
             -webkit-line-clamp: unset;
             white-space: normal;
         }
+
+        /* Event table styles (copied from member.html) */
+        .event-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .event-list th,
+        .event-list td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .event-list th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        .event-list tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .event-list tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .event-list button {
+            padding: 6px 12px;
+            border: none;
+            background-color: #3367d6;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .event-list button:hover {
+            background-color: #254a9e;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 8px 12px;
+            border: none;
+            background-color: #3367d6;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
@@ -181,7 +249,24 @@
     <div class="container">
         <h1>Classes and Events</h1>
         <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
-        <div id="classes" class="classes-grid"></div>
+        <div id="classes" class="classes-grid"></div> <!-- Card layout -->
+
+        <div id="eventTableContainer" style="display: none;"> <!-- Table layout -->
+            <table class="event-list" id="eventList">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Price</th>
+                        <th>Attendees</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="eventRows"></tbody>
+            </table>
+            <div id="paginationControls"></div>
+        </div>
+
         <div id="confirmation-message" style="text-align: center; color: green; margin-top: 20px;"></div>
         <div id="spinner" class="spinner"></div>
         <h5>
@@ -189,21 +274,6 @@
         </h5>
     </div>
 
-    <div id="eventTableContainer">
-    <table class="member-list" id="eventList">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Date</th>
-                <th>Price</th>
-                <th>Attendees</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="eventRows"></tbody>
-    </table>
-    <div id="paginationControls"></div>
-</div>
 
     <script type="application/json" id="member-data">
     <?!= JSON.stringify(member) ?>
@@ -216,6 +286,9 @@
   </script>
     <script type="application/json" id="event-data">
     <?!= JSON.stringify(event) ?>
+  </script>
+     <script type="application/json" id="view-mode">
+    <?!= JSON.stringify(viewMode) ?>
   </script>
     <script>
         const currentMember = JSON.parse(document.getElementById('member-data').textContent);
@@ -235,6 +308,8 @@
             }
         }
         window.activeEvent = activeEvent;
+
+        const viewMode = JSON.parse(document.getElementById('view-mode').textContent) || 'list';
     </script>
 
     <script>
@@ -469,14 +544,12 @@
                     }
                     renderClasses(response.data);
                     hideSpinner();
-                }).getEventList();
+                }).getEventList({pageSize: 100});
             } else {
                 document.getElementById('classes').innerHTML = '<p>Unable to load classes. Please try again later.</p>';
                 hideSpinner();
             }
         }
-
-
 
         function addLabeledField(form, labelText, inputElement) {
             const label = document.createElement('label');
@@ -645,7 +718,7 @@
                         if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
                     }
                 }
-            }).getEventItemList();
+            }).getEventItemList({pageSize: 100});
 
             // --- Rest of the fields ---
             addLabeledField(form, 'Title:', createInput('edit-title', cls.eventItem.title));
@@ -691,9 +764,11 @@
             addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
             // --- Attendee Dropdown ---
+            
             const attendeeDropdown = createDropdown(
                 'edit-attendees',
-                cls.attendees.map(attendee => ({ id: attendee, name: attendee })),
+                cls.attendees ? cls.attendees.map(attendee => ({ id: attendee, name: attendee })) 
+                : [],
                 '' // No default selection
             );
             addLabeledField(form, 'Attendees:', attendeeDropdown);
@@ -913,27 +988,27 @@
 
         // Load events when the page is ready
         document.addEventListener('DOMContentLoaded', () => {
-            // Display member name
             showSpinner();
-            document.getElementById('memberName').textContent =
-                `${currentMember.firstName} ${currentMember.lastName}`;
+            document.getElementById('memberName').textContent = `${currentMember.firstName} ${currentMember.lastName}`;
 
             // Show version if available
             if (sharedConfig.version?.eventPortal) {
                 document.getElementById('version').textContent = `Version: ${sharedConfig.version.eventPortal}`;
             }
-            if (activeEvent && activeEvent.id && activeEvent.id !== 'null') {
-                console.log("Rendering existing event:", activeEvent);
-                document.getElementById('classes').innerHTML = '<p>Loading event...</p>';
-                renderClass(activeEvent)
-                hideSpinner();
+
+            // Render based on viewMode
+            if (viewMode === 'table') {
+                document.getElementById('classes').style.display = 'none'; // Hide card layout
+                document.getElementById('eventTableContainer').style.display = 'block'; // Show table layout
+                
+                loadEventsTable();
             } else {
-                console.log("Loading events from server...");
-                showSpinner();
-                document.getElementById('classes').innerHTML = '<p>Loading events...</p>';
+                document.getElementById('eventTableContainer').style.display = 'none'; // Hide table layout
+                document.getElementById('classes').style.display = 'grid'; // Show card layout
                 loadEvents();
-                hideSpinner();
             }
+
+            hideSpinner();
         });
     </script>
 
@@ -949,6 +1024,7 @@
      */
     function loadEventsTable(page = { currentPage: 1, pageSize: pageSize }) {
         showSpinner();
+        console.log("Loading events table...");
         google.script.run.withSuccessHandler(res => {
             const response = JSON.parse(res);
             if (response.success !== true) {
@@ -956,6 +1032,7 @@
                 hideSpinner();
                 return;
             }
+            console.log("Event page response:", response);
             renderEventPage(response);
             hideSpinner();
         }).getAllEvents({ ...page });
@@ -976,7 +1053,7 @@
             row.innerHTML = `
                 <td>${event.title || ''}</td>
                 <td>${new Date(event.date).toLocaleString()}</td>
-                <td>$${event.price.toFixed(2)}</td>
+                <td>$${Number(event.eventItem.price).toFixed(2)}</td>
                 <td>${event.attendees?.length || 0}</td>
                 <td>
                     <button onclick="viewEvent('${event.id}')">View</button>

@@ -14,7 +14,7 @@ class Page extends Entity{
         return {
         currentPage: this.currentPage,
         totalPages: this.totalPages,
-        itemsPerPage: this.itemsPerPage,
+        pageSize  : this.pageSize,
         totalItems: this.totalItems
         };
     }

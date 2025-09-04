@@ -53,7 +53,12 @@ var SharedConfig = {
         firstName: 'entry.2005620554',
         lastName: 'entry.2134207864',
         emailAddress: 'entry.1045781291'
-      }
+      }, 
+    classRequest: {
+      sheetId: '1revNbHEK6W4C5KkxvNIQiOk-_VmkOCZabR5OyKwwc6I',
+      formId: '1j1Nyv7zZyMVfe9sDe0K12e6u_A7EqKEDUV33zn4yFO4', 
+      templateId: '1d8S21Ee1BMeFMo5yA8_bO-hvauvdIkSZXV-aMm5u0EA'
+    }
     }
   },
 

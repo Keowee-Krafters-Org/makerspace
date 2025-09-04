@@ -2,6 +2,7 @@ function doGet(e) {
     const view = e.parameter.view || 'member';
     const eventId = e.parameter.eventId || 'null';
     const adminMode= e.parameter.adminMode || 'members';
+    const viewMode = e.parameter.viewMode || 'list';
     let html;
     const modelFactory = Membership.newModelFactory();
     let canSignup = false; // ✅ properly declare this
@@ -49,6 +50,7 @@ function doGet(e) {
             }
         }
         html.canSignup = canSignup;
+        html.viewMode = viewMode;
     } else if (view === 'admin') {
         if (!adminAccess) {
             return HtmlService.createHtmlOutput('Access denied. Not an admin.');

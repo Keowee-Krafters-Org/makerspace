@@ -12,7 +12,7 @@ class ZohoPage extends Page{
     static getToRecordMap() {
         return {
             currentPage: 'page',
-            itemsPerPage: 'per_page',
+            pageSize: 'per_page',
             hasMore: 'has_more',
         };
     }
