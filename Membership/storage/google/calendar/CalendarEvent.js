@@ -18,7 +18,7 @@ class CalendarEvent extends Event {
         this.eventItem.description = value;
     }
     get title() {
-        return this.eventItem.title || '';
+        return this.eventItem.title || this.title ||'';
     }
     set title(value) {
         this.eventItem.title = value;
@@ -86,7 +86,8 @@ class CalendarEvent extends Event {
             start: googleEvent.getStartTime(),
             end: googleEvent.getEndTime(),
             location: googleEvent.getGuestList().filter(g => CalendarEvent.resourceFilter(g)).map(g => g.getEmail())[0] || '', 
-            guests: googleEvent.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => g.getEmail()),
+            guests: googleEvent.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => 
+                CalendarContact.fromRecord({email: g.getEmail()})),
             creator: googleEvent.getCreators()?.[0] || '',
             visibility: googleEvent.getVisibility(),
         };

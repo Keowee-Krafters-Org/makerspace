@@ -39,7 +39,9 @@ class ModelFactory {
     return new EventManager(new ZohoStorageManager(ZohoEvent), 
     this.calendarManager(),
     this.membershipManager(), 
-    this.googleDriveService());
+    this.googleDriveService(),
+    this.invoiceManager()
+    );
   }
 
   membershipManager() {

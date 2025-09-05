@@ -47,7 +47,8 @@ class ZohoInvoice extends Invoice {
       dueDate: 'due_date',
       status: 'status',
       totalAmount: 'total',
-      lineItems: 'line_items'
+      lineItems: 'line_items',
+      eventId: 'cf_event_id',
     };
   }
 

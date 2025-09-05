@@ -85,6 +85,26 @@ class InvoiceManager {
   }
 
   /**
+   * Delete an invoice for a member and event
+   * @param {Object} member - The member object.
+   * @param {string} eventId - The ID of the event.
+   * @returns {Object} Response indicating success or failure.  
+   */
+  deleteInvoiceFor(member, eventId) {
+    try {
+      const invoices = this.getInvoicesByMember(member.id);
+      const invoice = invoices.find(inv => inv.eventId === eventId);
+      if (!invoice) {
+        return { success: false, message: 'Invoice not found for the specified event.' };
+      }
+      return this.deleteInvoice(invoice.id);
+    } catch (err) {
+      console.error('Failed to delete invoice for event:', err);
+      return { success: false, message: 'Failed to delete invoice for event.', error: err.toString() };
+    }
+  }
+
+  /**
    * Deletes an invoice by its ID.
    * @param {string} invoiceId - The ID of the invoice to delete.
    * @returns {Object} Response indicating success or failure.

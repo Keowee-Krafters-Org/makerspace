@@ -242,7 +242,7 @@
                     }
 
                     if (levelNumber >= sharedConfig.levels['Board']) {
-                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&mode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&viewMode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
                     }
 
                     if (levelNumber >= sharedConfig.levels['Administrator']) {

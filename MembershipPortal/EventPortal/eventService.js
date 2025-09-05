@@ -108,3 +108,11 @@ function getEventById(eventId) {
     const event = eventManager.getEventById(eventId);
     return JSON.stringify({ success: true, data: event });
 }
+
+function getMembersFromContacts(contacts) {
+  const modelFactory = Membership.newModelFactory();
+  const membershipManager = modelFactory.membershipManager();
+  const members = membershipManager.getMembersFromContacts(contacts);
+  return JSON.stringify({success:true, data:members});
+}
+

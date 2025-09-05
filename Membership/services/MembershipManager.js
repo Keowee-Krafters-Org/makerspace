@@ -250,5 +250,42 @@ class MembershipManager {
   createNew(data = {}) {
     return this.storageManager.createNew(data);
   }
+/**
+   * Retrieves members from a list of contacts.
+   * @param {Array<Object>} contactList - An array of contact objects, each containing at least an emailAddress property.
+   * @returns {Array<Object>} An array of member objects corresponding to the contacts.
+   */
+  getMembersFromContacts(contactList = []) {
+    if (!Array.isArray(contactList) || contactList.length === 0) {
+      throw new Error('Invalid contact list. Please provide a non-empty array of contacts.');
+    }
+
+    return this.getMembersFromEmails(contactList.map(contact => 
+      contact.emailAddress)); 
+  }
+
+ 
+  /**
+   * Retrieves members from a list of contacts with email-only data.
+   * @param {Array<string>} emailList - An array of email addresses.
+   * @returns {Array<Object>} An array of member objects corresponding to the email addresses.
+   */
+  getMembersFromEmails(emailList = []) {
+    if (!Array.isArray(emailList) || emailList.length === 0) {
+      throw new Error('Invalid email list. Please provide a non-empty array of email addresses.');
+    }
+
+    const members = emailList.map(email => {
+      const member = this.memberLookup(email);
+      if (!member) {
+        console.warn(`No member found for email: ${email}`);
+        return null; // Return null for emails without a corresponding member
+      }
+      return member;
+    });
+
+    // Filter out null values (emails without corresponding members)
+    return members.filter(member => member !== null);
+  }
 
 }
