@@ -1,8 +1,8 @@
-function getEventList() {
+function getEventList(params={}) {
 
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const events = eventManager.getUpcomingClasses();
+  const events = eventManager.getUpcomingClasses(params);
   return JSON.stringify({ success: true, data: events });
 }
 
@@ -16,7 +16,8 @@ function signup(classId, memberId) {
 
 function getAllEvents(page) {
   const eventManager = Membership.newModelFactory().eventManager();
-  return JSON.stringify(eventManager.getAllEvents(page));
+    const events = eventManager.getUpcomingClasses(page);
+  return JSON.stringify({ success: true, data: events });
 }
 
 function getSharedConfig() {
@@ -77,10 +78,10 @@ function getEventLocations() {
   return JSON.stringify(locations);
 }
 
-function getEventItemList() {
+function getEventItemList(params={}) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const items = eventManager.getEventItemList();
+  const items = eventManager.getEventItemList(params);
   return JSON.stringify(items);
 }
 
@@ -107,3 +108,11 @@ function getEventById(eventId) {
     const event = eventManager.getEventById(eventId);
     return JSON.stringify({ success: true, data: event });
 }
+
+function getMembersFromContacts(contacts) {
+  const modelFactory = Membership.newModelFactory();
+  const membershipManager = modelFactory.membershipManager();
+  const members = membershipManager.getMembersFromContacts(contacts);
+  return JSON.stringify({success:true, data:members});
+}
+

@@ -211,7 +211,10 @@ class CalendarManager extends StorageManager {
     }
 
     // Check if the attendee is registered
-    if (!Array.isArray(event.attendees) || !event.attendees.includes(email)) {
+    if (
+      !Array.isArray(event.attendees) ||
+      !event.attendees.some(attendee => attendee instanceof CalendarContact && attendee.emailAddress === email)
+    ) {
       return { success: false, error: 'Attendee is not registered for this event.' };
     }
 

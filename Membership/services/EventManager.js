@@ -5,10 +5,11 @@
  */
 class EventManager {
 
-  constructor(storageManager, calendarManager, membershipManager, fileManager) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
+    this.invoiceManager = invoiceManager;
     this.fileManager = fileManager;
     this.config = getConfig();
   }
@@ -142,44 +143,44 @@ class EventManager {
 
   addEvent(eventData) {
     try {
-        const event = this.createEvent(eventData);
-        let eventItem = event.eventItem;
+      const event = this.createEvent(eventData);
+      let eventItem = event.eventItem;
 
-        // Handle image upload if image is a base64 string
-       this.saveEventImage(eventItem);
-        // If eventItem already exists, update it; otherwise, create a new one
+      // Handle image upload if image is a base64 string
+      this.saveEventImage(eventItem);
+      // If eventItem already exists, update it; otherwise, create a new one
 
-        if (eventItem && eventItem.id && eventItem.id !== 'null') {
-            const eventItemResponse = this.updateEventItem(eventItem);
-            eventItem = eventItemResponse.data;
-        } else {
-            eventItem = this.addEventItem(eventItem);
-        }
-        if (!eventItem) {
-            throw new Error('Failed to create event item.');
-        }
-        // Add the event to the calendar
-        const newCalendarEvent = this.addCalendarEvent(event, eventItem);
-        newCalendarEvent.eventItem = eventItem;
-        return { success: true, data: newCalendarEvent };
+      if (eventItem && eventItem.id && eventItem.id !== 'null') {
+        const eventItemResponse = this.updateEventItem(eventItem);
+        eventItem = eventItemResponse.data;
+      } else {
+        eventItem = this.addEventItem(eventItem);
+      }
+      if (!eventItem) {
+        throw new Error('Failed to create event item.');
+      }
+      // Add the event to the calendar
+      const newCalendarEvent = this.addCalendarEvent(event, eventItem);
+      newCalendarEvent.eventItem = eventItem;
+      return { success: true, data: newCalendarEvent };
     } catch (err) {
-        console.error('Failed to create event:', err);
-        return { success: false, message: 'Failed to create event.', error: err.toString() };
+      console.error('Failed to create event:', err);
+      return { success: false, message: 'Failed to create event.', error: err.toString() };
     }
   }
 
   saveEventImage(eventItem) {
     if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
-        // Upload the image and get the DriveFile object
-        const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
-        
-        // Modify the URL to use the thumbnail format
-        if (file && file.id) {
-            file.url = `https://drive.google.com/thumbnail?id=${file.id}`;
-        }
+      // Upload the image and get the DriveFile object
+      const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
 
-        // Store the updated DriveFile object in the eventItem
-        eventItem.image = file;
+      // Modify the URL to use the thumbnail format
+      if (file && file.id) {
+        file.url = `https://drive.google.com/thumbnail?id=${file.id}`;
+      }
+
+      // Store the updated DriveFile object in the eventItem
+      eventItem.image = file;
     }
     return eventItem;
   }
@@ -190,8 +191,8 @@ class EventManager {
    */
 
   addEventItem(eventItem) {
-    
-    return this.storageManager.add(eventItem); 
+
+    return this.storageManager.add(eventItem);
   }
 
   /**
@@ -281,13 +282,13 @@ class EventManager {
     }
 
     // Lookup the eventItem
-    const eventItemId = event.eventItem.id; 
+    const eventItemId = event.eventItem.id;
     const eventItemResponse = this.getEventItemById(eventItemId);
     if (!eventItemResponse || !eventItemResponse.success) {
-      return (new Response(false, "Failed to sign you up for the event - please contact system administrator")); 
+      return (new Response(false, "Failed to sign you up for the event - please contact system administrator"));
     }
     const eventItem = eventItemResponse.data
-    event.eventItem = eventItem; 
+    event.eventItem = eventItem;
 
     // Prevent duplicate signups
     if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
@@ -329,8 +330,9 @@ class EventManager {
     if (!eventItem || !eventItem.id) {
       throw new Error('Event item not found for invoicing.');
     }
-     const invoiceData = {
+    const invoiceData = {
       customerId: member.id,
+      eventId: event.id,
       date: new Date(),
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
       status: 'UNPAID',
@@ -344,10 +346,10 @@ class EventManager {
         },
       ],
       contacts: [
-        {id: member.primaryContactId}
+        { id: member.primaryContactId }
       ]
     };
-    return invoiceManager.createAndSendInvoice(invoiceData);
+    return this.invoiceManager.createAndSendInvoice(invoiceData);
   }
 
   /**
@@ -357,15 +359,25 @@ class EventManager {
    * @returns {Object} Response indicating success or failure
    */
   unregister(eventId, memberId) {
-    const memberResponse = this.membershipManager.getMember(memberId);
-    if (!(memberResponse && memberResponse.success)) {
-      return { success: false, error: 'Member not found.' };
+    try {
+      const event = this.calendarManager.getById(eventId);
+      const memberResponse = this.membershipManager.getMember(memberId);
+      if (!(memberResponse && memberResponse.success)) {
+        return { success: false, error: 'Member not found.' };
+      }
+
+      const member = memberResponse.data;
+
+      // Delegate the unregistration to the CalendarManager
+      this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
+
+      this.invoiceManager.deleteInvoiceFor(member, eventId);
+
+    } catch (err) {
+      console.error('Failed to unregister from event:', err);
+      return { success: false, message: 'Failed to unregister from event.', error: err.toString() };
     }
-
-    const member = memberResponse.data;
-
-    // Delegate the unregistration to the CalendarManager
-    return this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
+    return { success: true, data: { message: `You have been unregistered from event: ${eventId}`, eventId: eventId } };
   }
 
   enrichWithCalendarData(event) {
@@ -394,9 +406,9 @@ class EventManager {
   }
 
   getEventItemByTitle(title) {
-    const eventItemListResponse = this.storageManager.getAll({title:title}); 
+    const eventItemListResponse = this.storageManager.getAll({ title: title });
     if (eventItemListResponse && eventItemListResponse.success && eventItemListResponse.data.length > 0) {
-      return eventItemListResponse.data[0]; 
+      return eventItemListResponse.data[0];
     }
   }
 }

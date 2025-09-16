@@ -51,6 +51,23 @@ function test_getAllMembers() {
     }
 }   
 
+function test_when_entities_are_retrieved_by_page__then_a_pageSize_list_is_returned() {
+    const storageManager = new ZohoStorageManager(ZohoMember);
+    try {
+        const response = storageManager.getAll({pageSize: 4});
+        Logger.log(`getAllMembers response: ${response.message}`);
+        const members = response.data;
+        Logger.log(`Retrieved ${members.length} members.`);
+        // Assert that members are retrieved
+        assert('Members should not be null or undefined', members != undefined, true);
+        assert(`${members.length} Members are retrieved`, members.length > 0, true);
+        
+        assert(`${members.length} Members are retrieved`, members.length === 4, true);
+    } catch (error) {
+        Logger.log(`getAllMembers failed: ${error.message}`);
+    }
+}
+
 /**
  * Test for retrieving a member by ID from ZohoStorageManager.
  * @returns {void}

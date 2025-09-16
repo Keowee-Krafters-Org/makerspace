@@ -28,7 +28,9 @@ class ZohoStorageManager extends StorageManager {
    */
   getAll(params = {}) {
 
-    const zohoParams = this.convertParams({...this.filter , ...params }); 
+    let zohoParams = this.convertParams(this.clazz, {...this.filter , ...params }); 
+    // Convert the pagination parameters
+    zohoParams = this.convertParams(ZohoPage, zohoParams); 
     const response = this.zohoAPI.getEntities(this.resourceName, zohoParams);
     if (!response || !response[this.resourceName]) {
       throw new Error(`No data found for resource: ${this.resourceName}`);
@@ -38,8 +40,8 @@ class ZohoStorageManager extends StorageManager {
     return ZohoResponse.fromRecord(response, entities);
   }
 
-  convertParams(params) {
-    const toRecordMap = this.clazz.getToRecordMap();
+  convertParams(clazz, params) {
+    const toRecordMap = clazz.getToRecordMap();
     const zohoParams = {};
     Object.entries(params).forEach(([key, value]) => {
       const zohoKey = toRecordMap[key]

@@ -59,7 +59,7 @@ class ZohoMember extends Member {
       firstName: 'first_name',
       lastName: 'last_name',
       emailAddress: 'email',
-      phoneNumber: 'phone', 
+      phoneNumber: 'mobile', 
       contacts: 'contact_persons',
       contactType: 'contact_type',
       isMember: 'cf_is_member'
