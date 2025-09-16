@@ -29,8 +29,8 @@ class ZohoContact extends Contact {
       firstName: 'first_name',
       lastName: 'last_name',
       emailAddress: 'email',
-      phoneNumber: 'phone',
-      address: 'address',
+      phoneNumber: 'mobile',
+//      address: 'billing_address'
     };
   }
 

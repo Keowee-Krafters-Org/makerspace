@@ -252,10 +252,10 @@
 <body>
     <div class="container">
         <div id="spinner" class="spinner"></div>
-                
+
         <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
         <h1>Classes and Events</h1>
-                <div id="eventTableContainer" style="display: block;"> <!-- Table layout -->
+        <div id="eventTableContainer" style="display: block;"> <!-- Table layout -->
             <table class="event-list" id="eventList">
                 <thead>
                     <tr>
@@ -263,7 +263,11 @@
                         <th>Date</th>
                         <th>Price</th>
                         <th>Attendees</th>
-                        <th>Actions</th>
+                        <th>
+                            Actions
+                            <!-- Add the "New Class" button here -->
+                            <button id="newClassBtn" onClick="newEvent({})" class="signup-btn" style="margin-left: 10px;">New Class</button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="eventRows"></tbody>
@@ -286,6 +290,7 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Phone</th>
+                        <th>Balance</th>
                     </tr>
                 </thead>
                 <tbody id="attendeesRows"></tbody>
@@ -317,11 +322,11 @@
     <script>
         // Logger class for logging errors and debug messages
         class Logger {
-            static log(message,data='') {
+            static log(message, data = '') {
                 console.log("Log:", message, data);
             }
 
-            static error(message, data='') {
+            static error(message, data = '') {
                 console.error("Error:", message, data);
             }
         }
@@ -366,56 +371,47 @@
     </script>
 
     <script>
-
-        // Admin-only: New Class button
-        if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
-            const newBtn = document.createElement('button');
-            newBtn.className = 'signup-btn';
-            newBtn.textContent = 'New Class';
-            newBtn.onclick = () => newEvent({});
-            document.querySelector('.container').prepend(newBtn);
+        function isAdministrator(user) {
+            return user && user.registration && sharedConfig.levels[user.registration.level].value >= sharedConfig.levels.Administrator.value;
         }
 
 
 
 
+
         /**
-         * Renders a list of classes in the UI.
+         * Renders a list of classes in the UI by reusing the renderClass method.
          * @param {Array} classes - The list of class objects to render.
          */
         function renderClasses(classes) {
             const container = document.getElementById('classes');
-            container.innerHTML = '';
+            container.innerHTML = ''; // Clear any existing content
+
             if (!classes || !classes.length) {
                 container.innerHTML = '<p>No classes available at this time.</p>';
                 return;
             }
 
+            // Render each class using the renderClass method
             classes.forEach(cls => {
+                const classContainer = document.createElement('div');
+                classContainer.className = 'class-card-wrapper'; // Optional wrapper for styling
+                container.appendChild(classContainer); // Append the wrapper to the main container
 
-                const card = document.createElement('div');
-                card.className = 'class-card';
-
-                const infoDiv = document.createElement('div');
-                infoDiv.innerHTML = generateClassDiv(cls);
-                card.appendChild(infoDiv);
-
-                const btn = document.createElement('button');
-                btn.className = 'signup-btn';
-                btn.textContent = 'More...';
-                btn.onclick = () => renderClass(cls);
-                card.appendChild(btn);
-
-                container.appendChild(card);
+                // Pass the wrapper to renderClass to render the class inside it
+                renderClass(cls, classContainer);
             });
         }
 
         /**
-         * Renders the details of a specific class below the table.
+         * Renders the details of a specific class into the provided container.
          * @param {Object} cls - The class object to render.
+         * @param {HTMLElement} container - The container to render the class into.
          */
-        function renderClass(cls) {
-            const container = document.getElementById('classDetailsContainer');
+        function renderClass(cls, container) {
+            if (!container) {
+                container = document.getElementById('classDetailsContainer');
+            }
             container.innerHTML = ''; // Clear any existing content
             container.style.display = 'block'; // Ensure the container is visible
 
@@ -444,7 +440,7 @@
                 if (isRegistered) {
                     const unregisterBtn = document.createElement('button');
                     unregisterBtn.className = 'signup-btn';
-                    unregisterBtn.textContent = 'Unregister';
+                    unregisterBtn.textContent = 'Cancel my Class Signup';
                     unregisterBtn.onclick = () => unregister(cls.id, currentMember.id);
                     card.appendChild(unregisterBtn);
                 } else {
@@ -464,7 +460,7 @@
                 card.appendChild(msg);
             }
 
-            if (sharedConfig.levels[currentMember.registration?.level] >= sharedConfig.levels.Administrator) {
+            if (sharedConfig.levels[currentMember.registration?.level].value >= sharedConfig.levels.Administrator.value) {
                 const editBtn = document.createElement('button');
                 editBtn.className = 'signup-btn';
                 editBtn.textContent = 'Edit Event';
@@ -479,14 +475,16 @@
             confirmation.style.marginTop = '20px';
             card.appendChild(confirmation);
 
-            // Add "Back to Event List" button
-            const backButton = document.createElement('button');
-            backButton.className = 'signup-btn';
-            backButton.textContent = 'Back to Event List';
-            backButton.onclick = () => {
-                container.style.display = 'none'; // Hide the class details container
-            };
-            card.appendChild(backButton);
+            // Add "Back to Event List" button only if viewMode is 'table'
+            if (viewMode === 'table') {
+                const backButton = document.createElement('button');
+                backButton.className = 'signup-btn';
+                backButton.textContent = 'Back to Event List';
+                backButton.onclick = () => {
+                    container.style.display = 'none'; // Hide the class details container
+                };
+                card.appendChild(backButton);
+            }
 
             container.appendChild(card);
         }
@@ -540,9 +538,9 @@
                     confirmation.textContent = msg;
                     confirmation.style.color = isSuccess ? 'green' : 'red';
 
-                    // Reload the specific event
+                    // Reload the events
                     if (isSuccess) {
-                        reloadEvent(classId);
+                        loadEvents();
                     }
                 })
                 .withFailureHandler(err => {
@@ -722,15 +720,8 @@
 
             // Fetch event items from backend and populate the Event Item dropdown
             google.script.run.withSuccessHandler(function (response) {
-                // Handle response data
-                if (typeof response === 'string') {
-                    try {
-                        response = JSON.parse(response);
-                    } catch (e) {
-                        response = { data: [] }; // Fallback to empty array if parsing fails
-                    }
-                }
-                let itemList = response.data || [];
+                const res = JSON.parse(response);
+                const itemList = res.data || [];
                 eventItemsCache = itemList; // Cache for later use
 
                 const dropdown = createDropdown(
@@ -772,10 +763,33 @@
             addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.eventItem.description));
             addLabeledField(form, 'Date:', createInput('edit-date', formatDateForInput(cls.date), 'datetime-local'));
             addLabeledField(form, 'Duration (hours):', createInput('edit-duration', cls.eventItem.duration || '', 'number'));
+
+            const roomFieldContainer = document.createElement('div');
+            roomFieldContainer.id = 'room-field-container';
+            form.appendChild(roomFieldContainer);
+            // Fetch available rooms and populate the dropdown
+            google.script.run.withSuccessHandler(function (response) {
+                const res = JSON.parse(response);
+                if (res.success) {
+                    const rooms = res.data || [];
+                    const roomDropdown = createDropdown('edit-room', rooms, cls.location?.id || '');
+                    roomFieldContainer.innerHTML = ''; // Clear existing options
+                    addLabeledField(roomFieldContainer, 'Location:', roomDropdown);
+                } else {
+                    Logger.error('Failed to load locations:', res.error);
+                }
+            }).getEventRooms();
+            // Placeholder for Host dropdown
+            const hostFieldContainer = document.createElement('div');
+            hostFieldContainer.id = 'host-field-container';
+            form.appendChild(hostFieldContainer);
             addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.eventItem.price || 0));
             addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
             addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
+            // --- Image Upload Field ---
+            const imageFieldContainer = createImageUploadField(cls, form);
+            form.appendChild(imageFieldContainer);
             // --- Add the Cancel Button ---
             const cancelBtn = createButton('Cancel', () => {
                 form.remove(); // Remove the form
@@ -788,11 +802,27 @@
             form.appendChild(cancelBtn);
 
             container.appendChild(form);
-            hideSpinner();
+
+            // Fetch instructors from backend and populate the Host dropdown
+            google.script.run.withSuccessHandler(function (instructors) {
+                let instructorList = instructors;
+                if (typeof instructors === 'string') {
+                    try {
+                        instructorList = JSON.parse(instructors);
+                    } catch (e) {
+                        instructorList = [];
+                    }
+                }
+                const dropdown = createDropdown('edit-host', instructorList, cls.eventItem.host?.id || '');
+                hostFieldContainer.innerHTML = '';
+                addLabeledField(hostFieldContainer, 'Host:', dropdown);
+                hideSpinner();
+            }).getInstructors();
+
         }
 
         function saveEvent(eventId) {
-            const requiredFields = ['edit-title', 'edit-date', 'edit-location'];
+            const requiredFields = ['edit-title', 'edit-date', 'edit-room'];
             for (const id of requiredFields) {
                 const field = document.getElementById(id);
                 if (!field.value.trim()) {
@@ -810,7 +840,11 @@
                     const confirmation = document.getElementById('confirmation-message');
                     confirmation.textContent = "Event updated successfully.";
                     confirmation.style.color = 'green';
-                    reloadEvent(eventId); // Reload the specific event
+
+                    // Return to the event table display
+                    document.getElementById('classes').style.display = 'none'; // Hide the card layout
+                    document.getElementById('eventTableContainer').style.display = 'block'; // Show the table layout
+                    loadEventsTable(); // Refresh the table
                     hideSpinner();
                 })
                 .withFailureHandler(err => {
@@ -823,7 +857,7 @@
         }
 
         function addEvent() {
-            const requiredFields = ['edit-date', 'edit-location', 'edit-event-item', 'edit-host', 'edit-title', 'edit-desc', 'edit-price', 'edit-size', 'edit-duration'];
+            const requiredFields = ['edit-date', 'edit-room', 'edit-event-item', 'edit-host', 'edit-title', 'edit-desc', 'edit-price', 'edit-size', 'edit-duration'];
             for (const id of requiredFields) {
                 const field = document.getElementById(id);
                 if (!field.value.trim()) {
@@ -844,7 +878,11 @@
                     if (response.success) {
                         confirmation.textContent = "Event created successfully.";
                         confirmation.style.color = 'green';
-                        reloadEvent(response.data.id); // Reload the newly created event
+
+                        // Return to the event table display
+                        document.getElementById('classes').style.display = 'none'; // Hide the card layout
+                        document.getElementById('eventTableContainer').style.display = 'block'; // Show the table layout
+                        loadEventsTable(); // Refresh the table
                     } else {
                         confirmation.textContent = `Failed to create event: ${response.error || 'Unknown error.'}`;
                         confirmation.style.color = 'red';
@@ -866,13 +904,14 @@
             const title = document.getElementById('edit-title').value;
             const description = document.getElementById('edit-desc').value;
             const date = document.getElementById('edit-date').value;
-            const location = { email: document.getElementById('edit-location').value };
+            const location = { id: document.getElementById('edit-room').value };
             const price = parseFloat(document.getElementById('edit-price').value) || 0;
             const sizeLimit = parseInt(document.getElementById('edit-size').value) || 0;
             const enabled = document.getElementById('edit-enabled').checked;
             const host = { id: document.getElementById('edit-host').value };
             const duration = parseInt(document.getElementById('edit-duration').value) || 0; // <-- Add this line
             const imageInput = document.getElementById('edit-image');
+
             let imageBase64 = '';
             // Try to get the base64 from the form property (set by the FileReader)
             const form = imageInput.closest('form');
@@ -944,7 +983,7 @@
 
                     // Reload the specific event
                     if (isSuccess) {
-                        reloadEvent(classId);
+                        loadEvents();
                     }
                 })
                 .withFailureHandler(err => {
@@ -1047,7 +1086,7 @@
             <td>${event.eventItem.title || ''}</td>
             <td>${new Date(event.date).toLocaleString()}</td>
             <td>$${Number(event.eventItem.price).toFixed(2)}</td>
-            <td>${event.attendees?.length || 0}</td>
+            <td>${event.attendees?.length || 0}/${event.eventItem.sizeLimit || 0}</td>
             <td></td> <!-- Placeholder for buttons -->
         `;
 
@@ -1141,7 +1180,7 @@
             } else {
                 renderAttendees(event);
             }
-        }       
+        }
         function renderAttendees(event) {
             const container = document.getElementById('attendeesContainer');
             const tbody = document.getElementById('attendeesRows');
@@ -1158,6 +1197,7 @@
                         <td>${attendee.firstName || ''} ${attendee.lastName || ''}</td>
                         <td>${attendee.emailAddress || 'N/A'}</td>
                         <td>${attendee.phoneNumber || 'N/A'}</td>
+                        <td>${attendee.outstandingBalance ? `$${Number(attendee.outstandingBalance).toFixed(2)}` : '$0.00'}</td>
                     `;
                     tbody.appendChild(row);
                 });

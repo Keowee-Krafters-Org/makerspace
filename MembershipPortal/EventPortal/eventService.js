@@ -63,11 +63,10 @@ function getInstructors() {
 function getEventRooms() {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  // If getCalendarResources is a static method, call as CalendarManager.getCalendarResources()
-  // If it's an instance method, call as calendarManager.getCalendarResources()
-  // Here, assuming it's a static method as in your previous implementation:
-  const resources = eventManager.getEventRooms();
-  return JSON.stringify(resources);
+
+  // Fetch all event rooms
+  const resources = eventManager.getEventRooms(); 
+  return JSON.stringify({ success: true, data: resources });
 }
 
 function getEventLocations() {

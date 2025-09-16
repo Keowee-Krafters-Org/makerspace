@@ -53,6 +53,6 @@ class Registration extends Entity {
   }
 
   static getLevel(levelString) {
-    return SharedConfig.levels[levelString];
+    return SharedConfig.levels[levelString].value;
   }
 }

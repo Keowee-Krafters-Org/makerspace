@@ -229,23 +229,23 @@
                     content += `<p><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}&eventId=${event.id}', '_blank')">Sign Up For Event</button></p>`;
                 } else {
                     content += '<p>Thanks for verifying your email!</p>';
-                    const levelNumber = sharedConfig.levels[member.registration.level];
+                    const levelNumber = sharedConfig.levels[member.registration.level].value;
                     console.log(`Member level: ${member.registration.level} (${levelNumber})`);
                     content += `<ul>
                         <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
 
-                    if (levelNumber >= sharedConfig.levels['Active']) {
+                    if (levelNumber >= sharedConfig.levels.Active.value) {
                         if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
                             const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
                             content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
                         }
                     }
 
-                    if (levelNumber >= sharedConfig.levels['Board']) {
+                    if (levelNumber >= sharedConfig.levels.Board.value) {
                         content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&viewMode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
                     }
 
-                    if (levelNumber >= sharedConfig.levels['Administrator']) {
+                    if (levelNumber >= sharedConfig.levels.Administrator.value) {
                         content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&adminMode=members&memberId=${member.id}', '_blank')">Manage Members</button></li>`;
                     }
 

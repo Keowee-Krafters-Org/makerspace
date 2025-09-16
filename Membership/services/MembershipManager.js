@@ -56,7 +56,7 @@ class MembershipManager {
 
     // Check for existing login and not in verifying state
     // This prevents verification bypass for existing members
-    if (member.login && member.login.status != 'VERIFYING') {
+    
       if (member.login) {
         // Has a login 
         expired = member.login.isExpired();;
@@ -80,7 +80,7 @@ class MembershipManager {
           message: `Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`
         });
       }
-    }
+    
     return new Response(true, member);
   }
 
@@ -230,15 +230,15 @@ class MembershipManager {
   }
 
   getHosts() {
-    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.host);
+    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.Host.value);
   }
 
   getInstructors() {
     // Use ZohoStorageManager's getFiltered to find members with level > Instructor
-    const instructorLevel = SharedConfig.levels.Instructor;
+    const instructorLevel = SharedConfig.levels.Instructor.value;
     const response = this.storageManager.getFiltered(
       member => {
-        const memberLevel = SharedConfig.levels[member.registration.level];
+        const memberLevel = SharedConfig.levels[member.registration.level].value;
         // Ensure level is a number for comparison
         return memberLevel >= instructorLevel;
       }, { contactType: 'vendor', per_page: 200 }
@@ -248,9 +248,18 @@ class MembershipManager {
   }
 
   createNew(data = {}) {
-    return this.storageManager.createNew(data);
+    const member = this.storageManager.createNew(data);
+    member.discount = MembershipManager.calculateDiscount(member);
+    return member;
   }
-/**
+  
+  static calculateDiscount(member) {
+    if (!member || !member.registration) return 0;
+    const level = member.registration.level;
+    return SharedConfig.levels[level]?.discount || 0;
+  }
+
+  /**
    * Retrieves members from a list of contacts.
    * @param {Array<Object>} contactList - An array of contact objects, each containing at least an emailAddress property.
    * @returns {Array<Object>} An array of member objects corresponding to the contacts.
