@@ -62,7 +62,10 @@ class ZohoMember extends Member {
       phoneNumber: 'mobile', 
       contacts: 'contact_persons',
       contactType: 'contact_type',
-      isMember: 'cf_is_member'
+      isMember: 'cf_is_member',
+      interests: 'cf_interests',
+      outstandingBalance: 'outstanding_receivable_amount'
+//      address: 'billing_address'
     };
   }
 
@@ -76,6 +79,7 @@ class ZohoMember extends Member {
     data.login = ZohoLogin.fromRecord(record);
     data.registration = ZohoRegistration.fromRecord(record);
     data.id = record.id || record.contact_id || '';
+    data.discount = MembershipManager.calculateDiscount(data);
     // If interests is a string, split it into an array
     if (typeof record.cf_interests === 'string') {
       data.interests = record.cf_interests.split(',').map(s => s.trim());
@@ -93,7 +97,8 @@ class ZohoMember extends Member {
       firstName: this.firstName, 
       lastName: this.lastName, 
       emailAddress: this.emailAddress,
-      phoneNumber: this.phoneNumber
+      phoneNumber: this.phoneNumber,
+//      address: this.address
     }); 
     // Append contacts items past index 1 to the contacts array
     if (Array.isArray(this.contacts) && this.contacts.length > 1) {
@@ -107,6 +112,7 @@ class ZohoMember extends Member {
     record.customer_name = this.name;
     record.contact_type = 'customer';
     record.customer_sub_type = 'individual';
+
     // Use the root data to create the contacts list
     // Append contacts items past index 1 to the contacts array
     if (Array.isArray(this.contacts) && this.contacts.length > 1) {

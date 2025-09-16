@@ -57,6 +57,13 @@ class CalendarEvent extends Event {
         };
     }
 
+    static createNew(data={}) {
+      const event = super.createNew(data) ;
+      if (data && data.eventItem) {
+        event.eventItem = ZohoEvent.createNew(data.eventItem); 
+      }
+      return event;
+    }
     static getToRecordMap() {
         return {
             id: 'id',

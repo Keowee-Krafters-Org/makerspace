@@ -20,7 +20,7 @@ class CalendarManager extends StorageManager {
    */
   add(calendarEvent, eventItem) {
 
-    const calendarRecord = calendarEvent.toRecord(); 
+    const calendarRecord = this.toRecord(calendarEvent); 
     const event = this.calendar.createEvent( 
       calendarRecord.title || 'Untitled Class',
       calendarRecord.start,
@@ -33,15 +33,51 @@ class CalendarManager extends StorageManager {
     return this.fromRecord(event);
   }
 
+  /**
+   * Converts a Google Calendar event to a CalendarEvent instance
+   * @param {GoogleAppsScript.Calendar.CalendarEvent} googleEvent 
+   * @returns {CalendarEvent}
+   */
   fromRecord(googleEvent) {
     const newCalendarEvent =  CalendarEvent.fromRecord(googleEvent);
     const locationEmail = newCalendarEvent.location || '';
     if (locationEmail) {
-      const calendarLocation = this.getCalendarResources().find(r => r.email === locationEmail);
+      const calendarLocation = this.getLocationByEmail(locationEmail);
       newCalendarEvent.location = calendarLocation; // Store the room email for later use
     }
     return newCalendarEvent;
   }
+
+  /**
+   * Converts a CalendarEvent instance to a Google Calendar event record
+   * @param {CalendarEvent} calendarEvent 
+   * @returns {Object} Google Calendar event record
+   */ 
+  toRecord(calendarEvent) {
+    if (calendarEvent.location && !calendarEvent.location.email) {
+      const eventLocation = this.getLocationById(calendarEvent.location.id);
+      calendarEvent.location = eventLocation;
+    }
+    return calendarEvent.toRecord();
+  }
+
+  
+/**
+ * Finds a calendar resource by its email address 
+ * @param {string} email - The email address of the calendar resource
+ */
+getLocationByEmail(email) {
+  return this.getCalendarResources().find(r => r.email === email);
+}
+
+  /**
+   * Finds a calendar resource by its ID
+   * @param {string} id - The ID of the calendar resource
+   */
+  getLocationById(id) {
+    return this.getCalendarResources().find(r => r.id === id);
+  }
+
   /**
    * Updates an existing calendar event using a CalendarEvent object
    * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
@@ -55,27 +91,32 @@ class CalendarManager extends StorageManager {
    * @param {CalendarEvent} calendarEvent - The event to update (must contain a valid `id`)
    * @returns {CalendarEvent}
    */
-  update(id,calendarEvent) {
+  update(id, calendarEvent) {
     const event = this.calendar.getEventById(id);
     if (!event) {
-      throw new Error(`No calendar event found for ID: ${calendarEvent.id}`);
+        throw new Error(`No calendar event found for ID: ${calendarEvent.id}`);
     }
+
     const calendarEventRecord = calendarEvent.toRecord();
     event.setTitle(calendarEvent.title || event.getTitle());
-    event.setTime(calendarEventRecord.start || event.getStartTime(), calendarEventRecord.end || event.getEndTime()) ;
+    event.setTime(calendarEventRecord.start || event.getStartTime(), calendarEventRecord.end || event.getEndTime());
     event.setDescription(CalendarManager.updateDescription(calendarEventRecord.id, calendarEvent.eventItem.id));
-    if(calendarEventRecord.location) {
-      event.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g => event.removeGuest(g.getEmail())),
-      event.addGuest(calendarEventRecord.location.email); // Add the room as a guest
-    }
-    // Compare the guests lists and add/remove new guests
 
-    const currentGuests = event.getGuestList().map(g => g.getEmail());
-    const updatedGuests = calendarEventRecord.attendees || [];
-    const guestsToAdd = updatedGuests.filter(g => !currentGuests.includes(g));
-    const guestsToRemove = currentGuests.filter(g => !updatedGuests.includes(g));
-    guestsToAdd.forEach(g => event.addGuest(g));
-    guestsToRemove.forEach(g => event.removeGuest(g)); 
+    // Check if the location (room) has changed
+    const currentEvent = this.fromRecord(event); 
+    const currentLocation = currentEvent.location; 
+    
+    const newLocation = this.getLocationById(calendarEvent.location.id); 
+    if (newLocation && currentLocation.id !== newLocation.id) {
+        // Remove the original location if it exists
+        if (currentLocation) {
+            event.removeGuest(currentLocation.email);
+        }
+
+        // Add the new location
+        event.addGuest(newLocation.email);
+    }
+
     return this.fromRecord(event);
   }
 
@@ -205,28 +246,22 @@ class CalendarManager extends StorageManager {
    * @returns {Object} Response indicating success or failure
    */
   unregisterAttendee(eventId, email) {
-    const event = this.getById(eventId);
+    const event = this.calendar.getEventById(eventId);
     if (!event) {
       return { success: false, error: 'Event not found.' };
     }
 
-    // Check if the attendee is registered
-    if (
-      !Array.isArray(event.attendees) ||
-      !event.attendees.some(attendee => attendee instanceof CalendarContact && attendee.emailAddress === email)
-    ) {
-      return { success: false, error: 'Attendee is not registered for this event.' };
+    try {
+        // Remove the attendee from the guest list
+        event.removeGuest(email);
+
+        return {
+            success: true,
+             message: `Attendee with email ${email} has been successfully unregistered from: ${event.getTitle()}`, eventId: eventId, 
+             data: this.fromRecord(event)
+        };
+    } catch (error) {
+        return { success: false, error: `Failed to unregister attendee: ${error.message}` };
     }
-
-    // Remove the attendee
-    event.attendees = event.attendees.filter(attendee => attendee !== email);
-
-    // Save the updated event (if applicable)
-    this.update(eventId, event);
-
-    return {
-      success: true,
-      data: { message: `Attendee with email ${email} has been successfully unregistered from: ${event.name}`, eventId: eventId }
-    };
   }
 }

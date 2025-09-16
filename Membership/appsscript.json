@@ -13,9 +13,9 @@
     "libraries": [
       {
         "userSymbol": "ZohoAPI",
-        "version": "30",
+        "version": "32",
         "libraryId": "15s7wHQQVgKV1mQP7PjZHfv9_nFH59NzDuVrzbsmgibukQIn7brL0BHTr",
-        "developmentMode": true
+        "developmentMode": false
       }
     ]
   }

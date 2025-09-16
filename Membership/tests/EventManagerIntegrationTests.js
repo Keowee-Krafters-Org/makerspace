@@ -9,7 +9,7 @@ const TEST_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAA
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
 const eventData = {
-  date: new Date(),
+  date: new Date()+(7*24*60*60*1000), // One week from now
   attendees: [],
   location: { email: 'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com' },
   eventItem: {
@@ -28,6 +28,7 @@ const eventData = {
   }
 };
 
+const testVendor = {id: '5636475000000295003', name: 'Test Vendor'}; 
 const eventManager = modelFactory.eventManager();
 
 function eventManagerIntegrationTests() {
@@ -43,6 +44,12 @@ function eventManagerIntegrationTests() {
   Logger.log('EventManager integration tests completed.');
 }
 
+function test_get_event_by_title() {
+      const events = eventManager.getEventList({ title: 'Test Event' });
+    const event = events[0];
+    assert('Event found', true, event!=undefined); 
+
+}
 function test_getEventList() {
   const eventManager = modelFactory.eventManager();
   try {
@@ -239,12 +246,15 @@ function delete_testEventItem(eventId) {
 function test_updateEvent() {
   const eventManager = modelFactory.eventManager();
   try {
-    const originalResponse = eventManager.getEventList({ name: 'Test Event' });
-    const originalEvent = originalResponse.data[0];
+    const events = eventManager.getEventList({ title: 'Test Event' });
+    const originalEvent = events[0];
     const eventId = originalEvent.id;
-
-    const updatedData = new ZohoEvent({ name: originalEvent.name, id: eventId, rate: originalEvent.rate, description: 'Updated Test Description' });
-    const response = eventManager.updateEvent(updatedData);
+    const originalEventItem = originalEvent.eventItem; 
+    const eventObject = {id:originalEvent.id, location: {id: '53731675360'}, eventItem: {
+      id:originalEventItem.id,price: originalEventItem.price, host: {id:testVendor.id}, title:originalEventItem.title
+    }};
+    
+    const response = eventManager.updateEvent(CalendarEvent.createNew(eventObject));
     Logger.log(` response: ${response.message}`);
     assert('Event should be updated successfully', response.success, true);
   } catch (error) {
@@ -281,14 +291,14 @@ function test_deleteEvent() {
 
 function test_when_member_signs_up_for_event__then_event_is_updated() {
   let eventId;
+  let testMemberId;
   const eventManager = modelFactory.eventManager();
 
   const membershipManager = modelFactory.membershipManager();
   try {
     const member = membershipManager.memberLookup('testuser@keoweekrafters.org');
     assert('Found member', member != undefined, true);
-
-    const testMemberId = member.id;
+    testMemberId = member.id;
     const eventDataWithId = JSON.parse(JSON.stringify(eventData));
     const testEventItem = eventManager.getEventItemByTitle(eventDataWithId.eventItem.title); 
     eventDataWithId.eventItem = testEventItem;
@@ -304,6 +314,7 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
     throw(e);
   } finally {
     if (eventId) {
+      eventManager.unregister(eventId, testMemberId); 
       eventManager.deleteCalendarEvent(eventId);
     }
   }
@@ -430,4 +441,10 @@ function test_when_calendar_manager_is_created__then_configuration_is_correct() 
   const calendarManager = newModelFactory().calendarManager();
   const calendarId = config[SharedConfig.mode].calendarId;
   assert("Calendar is correct", calendarId, calendarManager.calendar.getId())
+}
+
+function test_when_rooms_are_retrieved__then_at_least_one_room_is_returned() {
+  const eventManager = newModelFactory().eventManager();
+  const rooms = eventManager.getEventRooms();
+  assert("At least one room is returned", true, (rooms && rooms.length > 0));
 }

@@ -47,6 +47,7 @@ class ZohoInvoice extends Invoice {
       dueDate: 'due_date',
       status: 'status',
       totalAmount: 'total',
+      discount: 'discount',
       lineItems: 'line_items',
       eventId: 'cf_event_id',
     };
@@ -97,6 +98,7 @@ class ZohoInvoice extends Invoice {
     if (this.contacts) {
       record.contact_persons_associated = this.contacts.map(c => c.toRecord()); 
     }
+    record.discount_type = 'entity_level';
     return record;
   }
 

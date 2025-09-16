@@ -46,7 +46,7 @@ function test_when_invoice_is_requested_by_id_then_invoice_exists() {
 function test_when_invoice_is_created_then_invoice_exists() {
   let invoiceId;
   try {
-    const createResponse = create_test_invoice();
+    const createResponse = create_test_invoice(true);
 
     assert('Invoice creation should be successful', true, createResponse.success);
     const createdInvoice = createResponse.data;
@@ -57,7 +57,49 @@ function test_when_invoice_is_created_then_invoice_exists() {
     console.error("Create Invoice Failed");
   } finally {
     if (createResponse && createResponse.success) {
-      const invoiceId = createResponse.data.id; 
+      const invoiceId = createResponse.data.id;
+      invoiceManager.deleteInvoice(invoiceId);
+    }
+  }
+}
+
+/**
+ * Test that a new invoice can be created using TestyUser and Test Item. Testy User is a constant in MembershipIntegrationTests.js and Test Item is a constant in EventManagementIntegrationTests.js
+ * This test checks if the invoice is created successfully and contains the expected data.
+ */
+function test_when_invoice_is_created_then_invoice_exists_for_customer() {
+  let invoiceId;
+  let createResponse;
+  try {
+
+    
+    const testMemberData = testMember;
+    const member = membershipManager.memberLookup(testMemberData.emailAddress);
+    assert('Member exists', true, (member != undefined && member.id != undefined));
+
+    createResponse = create_test_invoice(true);
+
+    assert('Invoice creation should be successful', true, createResponse.success);
+    const createdInvoice = createResponse.data;
+    invoiceId = createdInvoice.id;
+    assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
+    console.log('Created Invoice:', createdInvoice);
+
+    const invoicesResponse = invoiceManager.getInvoicesByMember(member.id);
+    assert('Invoices found', true, invoicesResponse.success); 
+    const invoices = invoicesResponse.data; 
+    assert('Invoices for member should be an array', true, Array.isArray(invoices));
+    assert('Invoices for member should not be empty', true, invoices.length > 0);
+    console.log(`Invoices for member ${member.id}:`, invoices);
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    assert('Invoice should be found for member', true, invoice != undefined);
+
+  } catch (e) {
+    console.error("Create Invoice Failed");
+  } finally {
+    if (createResponse && createResponse.success) {
+      Logger.log('Deleting invoice'); 
+      const invoiceId = createResponse.data.id;
       invoiceManager.deleteInvoice(invoiceId);
     }
   }
@@ -74,7 +116,7 @@ function create_test_invoice(send = false) {
   assert('Test User should have an ID', true, member.id != undefined);
   let testItem = eventManager.getEventItemByTitle(testItemData.title);
   if (!testItem) {
-    testItem = eventManager.addEventItem(testItemData); 
+    testItem = eventManager.addEventItem(testItemData);
   }
   assert('Test Item should be found', true, testItem != undefined);
   assert('Test Item should have a price', true, testItem.price > 0);
@@ -92,7 +134,7 @@ function create_test_invoice(send = false) {
         rate: testItem.price,
       },
     ],
-    contacts: [{id: member.primaryContactId}]
+    contacts: [{ id: member.primaryContactId }]
   };
 
   const createResponse = invoiceManager.createInvoice(invoiceData, send);
@@ -101,7 +143,7 @@ function create_test_invoice(send = false) {
 }
 
 function test_when_invoice_is_created_and_sent__then_invoice_is_received() {
-  let createResponse; 
+  let createResponse;
   try {
     createResponse = create_test_invoice(true);
     assert('Invoice creation should be successful', true, createResponse.success);
@@ -113,7 +155,7 @@ function test_when_invoice_is_created_and_sent__then_invoice_is_received() {
     console.error("Create Invoice Failed");
   } finally {
     if (createResponse && createResponse.success) {
-      const invoiceId = createResponse.data.id; 
+      const invoiceId = createResponse.data.id;
       invoiceManager.deleteInvoice(invoiceId);
     }
   }

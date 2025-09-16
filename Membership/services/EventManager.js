@@ -309,12 +309,15 @@ class EventManager {
 
     // Invoice member for event if cost is set
     if (eventItem && eventItem.price && eventItem.price > 0) {
-      invoice = this.createInvoiceForEvent(member, event);
+      const invoiceResponse = this.createInvoiceForEvent(member, event);
+      if (!invoiceResponse.sucess) {
+        return {...invoiceResponse}; 
+      }
     }
 
 
     return {
-      success: true, data: { message: `You are successfully signed up for: ${event.eventItem.title}`, eventId: eventId }
+      success: true, data: { message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`, eventId: eventId }
     }
   }
 
@@ -325,30 +328,49 @@ class EventManager {
    * @returns {Object} The created invoice.
    */
   createInvoiceForEvent(member, event) {
-
     const eventItem = event.eventItem;
     if (!eventItem || !eventItem.id) {
-      throw new Error('Event item not found for invoicing.');
+        throw new Error('Event item not found for invoicing.');
     }
+
+    // Get the event start date
+    const eventStartDate = new Date(event.date);
+    if (isNaN(eventStartDate)) {
+        throw new Error('Invalid event start date.');
+    }
+
+    // Calculate the due date based on config.eventInvoiceLeadTime
+    const leadTime = this.config.eventInvoiceLeadTime || 7; // Default to 7 days if not configured
+    const dueDate = new Date(eventStartDate);
+    // limit due date to no earlier than today
+    if (dueDate < new Date()) {
+        dueDate.setTime(new Date().getTime());
+    } else {
+        dueDate.setDate(dueDate.getDate() - leadTime); // Subtract lead time from the event start date
+    }
+
+    const discountPercent = member.discount || 0;
     const invoiceData = {
-      customerId: member.id,
-      eventId: event.id,
-      date: new Date(),
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
-      status: 'UNPAID',
-      totalAmount: eventItem.price,
-      lineItems: [
-        {
-          itemId: eventItem.id,
-          description: eventItem.description,
-          quantity: 1,
-          rate: eventItem.price,
-        },
-      ],
-      contacts: [
-        { id: member.primaryContactId }
-      ]
+        customerId: member.id,
+        eventId: event.id,
+        date: new Date(), // Invoice creation date
+        dueDate: dueDate, // Calculated due date
+        status: 'UNPAID',
+        discount: `${discountPercent}%`,
+        totalAmount: eventItem.price,
+        lineItems: [
+            {
+                itemId: eventItem.id,
+                description: eventItem.description,
+                quantity: 1,
+                rate: eventItem.price,
+            },
+        ],
+        contacts: [
+            { id: member.primaryContactId }
+        ]
     };
+
     return this.invoiceManager.createAndSendInvoice(invoiceData);
   }
 
@@ -360,7 +382,7 @@ class EventManager {
    */
   unregister(eventId, memberId) {
     try {
-      const event = this.calendarManager.getById(eventId);
+
       const memberResponse = this.membershipManager.getMember(memberId);
       if (!(memberResponse && memberResponse.success)) {
         return { success: false, error: 'Member not found.' };
@@ -371,7 +393,7 @@ class EventManager {
       // Delegate the unregistration to the CalendarManager
       this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
 
-      this.invoiceManager.deleteInvoiceFor(member, eventId);
+      this.invoiceManager.deleteInvoiceFor(member.id, eventId);
 
     } catch (err) {
       console.error('Failed to unregister from event:', err);
@@ -411,4 +433,21 @@ class EventManager {
       return eventItemListResponse.data[0];
     }
   }
+
+getEventRooms() {
+  try {
+    const optionalArgs = {
+      
+    };
+    const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
+    return resources.items.map(resource => ({
+      id: resource.resourceId,
+      name: resource.resourceName,
+      email: resource.resourceEmail,
+    }));
+  } catch (error) {
+    Logger.log(`getEventRooms failed: ${error.message}`);
+    throw error;
+  }
+}
 }

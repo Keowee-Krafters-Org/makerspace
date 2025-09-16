@@ -90,9 +90,13 @@ class InvoiceManager {
    * @param {string} eventId - The ID of the event.
    * @returns {Object} Response indicating success or failure.  
    */
-  deleteInvoiceFor(member, eventId) {
+  deleteInvoiceFor(memberId, eventId) {
     try {
-      const invoices = this.getInvoicesByMember(member.id);
+      const invoicesResponse = this.getInvoicesByMember(memberId);
+      if (!invoicesResponse || !invoicesResponse.success) {
+        return {sucess:false, error: invoicesResponse.err} ; 
+      }
+      const invoices = invoicesResponse.data; 
       const invoice = invoices.find(inv => inv.eventId === eventId);
       if (!invoice) {
         return { success: false, message: 'Invoice not found for the specified event.' };
@@ -129,12 +133,7 @@ class InvoiceManager {
    * @returns {Array} An array of invoices for the member.
    */
   getInvoicesByMember(memberId) {
-    const memberResponse = this.membershipManager.getMember(memberId);
-    if (!(memberResponse && memberResponse.success)) {
-      throw new Error('Member not found.');
-    }
-    const member = memberResponse.data;
-    return this.storageManager.getFiltered(invoice => invoice.customerId === member.id);
+    return this.storageManager.getAll({customerId:memberId, pageSize:20});
   }
 
   /**

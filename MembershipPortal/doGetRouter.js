@@ -25,7 +25,7 @@ function doGet(e) {
     }
 
     // Determine adminAccess based on the member's level
-    const adminAccess = config.levels[member.registration.level] >= config.levels.Administrator;
+    const adminAccess = config.levels[member.registration.level].value >= config.levels.Administrator.value;
 
     if (view === 'event') {
         html = HtmlService.createTemplateFromFile('EventPortal/event');
