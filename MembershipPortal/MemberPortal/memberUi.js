@@ -1,0 +1,226 @@
+   // Main application logic for the member portal dashboard
+    const isEmbedded = window.self !== window.top;
+    if (isEmbedded) {
+      console.log("Running inside Google Sites iframe");
+      // You could hide logout button or shrink UI
+    }
+
+ 
+    function buildPrefilledFormUrl(section, member) {
+      const url = new URL(section.url);
+      const entryMap = section.entryMap;
+      if (entryMap.emailAddress) url.searchParams.set(entryMap.emailAddress, member.emailAddress);
+      if (entryMap.firstName) url.searchParams.set(entryMap.firstName, member.firstName);
+      if (entryMap.lastName) url.searchParams.set(entryMap.lastName, member.lastName);
+      if (entryMap.name) url.searchParams.set(entryMap.name, `${member.firstName} ${member.lastName}`);
+      return url.toString();
+    }
+
+    let currentEmail = '';
+
+    /**
+     * Generate the document 
+     */
+    function getDashboardContent(member) {
+      console.log(`Generating content with ${JSON.stringify(member)} + ${JSON.stringify(sharedConfig)}`);
+      let content = '<div class="dashboard">';
+
+      if (member.firstName && member.lastName) {
+        content += `<h2>Welcome, ${member.firstName} ${member.lastName}</h2>`;
+      }
+
+      switch (member.login.status) {
+        case 'UNVERIFIED':
+          content += `<h2>Member Login</h2>
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" required />
+                <div id="step1">
+                    <button onclick="requestToken()">Verify Email</button>
+                </div>
+                <p id="error" class="error">${member.error || ''}</p>`;
+          break;
+
+        case 'TOKEN_EXPIRED':
+        case 'VERIFYING':
+          content += `<p>A verification code has been sent to:</p>
+                <input type="email" id="email" value="${member.emailAddress}" />
+                <p><label for="token">Enter the code:</label></p>
+                <input type="text" id="token" maxlength="6" />
+                <p>
+                    <button onclick="verifyCode()">Verify Code</button>
+                    <button onclick="resendToken()">Resend Code</button>
+                </p>
+                <p id="error" class="error">${member.error || ''}</p>`;
+          break;
+
+        case 'VERIFIED':
+            if (member.registration.status === 'NEW') {
+                const registrationUrl = buildPrefilledFormUrl(sharedConfig.forms.registration, member);
+                content += `<p>You're almost done! Please complete your registration below.</p>
+                    <p><button onclick="window.open('${registrationUrl}', '_blank')">Complete Registration Form</button></p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else if (member.registration.status === 'REGISTERED') {
+                if (event && event.id !== 'null') {
+                    console.log(`Event ID provided: ${event.id}`);
+                    content += `<p>Thank you for logging in! You can now sign up for your event.</p>`;
+                    content += `<p><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}&eventId=${event.id}', '_blank')">Sign Up For Event</button></p>`;
+                } else {
+                    content += '<p>Thanks for verifying your email!</p>';
+                    const levelNumber = sharedConfig.levels[member.registration.level].value;
+                    console.log(`Member level: ${member.registration.level} (${levelNumber})`);
+                    content += `<ul>
+                        <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
+
+                    if (levelNumber >= sharedConfig.levels.Active.value) {
+                        if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
+                            const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
+                            content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
+                        }
+                    }
+
+                    if (levelNumber >= sharedConfig.levels.Board.value) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&viewMode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
+                    }
+
+                    if (levelNumber >= sharedConfig.levels.Administrator.value) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&adminMode=members&memberId=${member.id}', '_blank')">Manage Members</button></li>`;
+                    }
+
+                    content += '</ul>';
+                }
+            } else if (member.registration.status === 'APPLIED') {
+                const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
+                content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
+                    <p><button onclick="window.open('${waiverUrl}', '_blank')">Sign Waiver Form</button></p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else if (member.registration.status === 'PENDING') {
+                content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>
+                    <p>Once verified, you will receive an email with further instructions.</p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else {
+                content += `<p>Your membership status is ${member.registration.status.toLowerCase()}.</p>`;
+            }
+          break;
+
+        default:
+          content += `<p>Unknown status.</p>`;
+      }
+
+      content += '</div>';
+      return content;
+    }
+
+    function renderDashboard(user) {
+
+      document.getElementById('app').innerHTML = getDashboardContent(user, sharedConfig);
+      document.getElementById('version').textContent = `Version: ${sharedConfig.version}`;
+
+    }
+
+    function requestToken(emailAddress) {
+      let email = emailAddress;
+      if (!email) {
+        // If emailAddress is not provided, get it from the input field
+        const emailInput = document.getElementById('email');
+        email = emailInput.value.trim();
+        emailInput.blur();
+      }
+      currentEmail = email;
+
+      if (!email) {
+        renderDashboard({ login: { status: 'VERIFYING', error: 'Please enter a valid email address.' } });
+        return;
+      }
+
+      if (!email.includes('@') || !email.includes('.')) {
+        renderDashboard({ login: { status: 'VERIFYING', error: 'Please enter a valid email address.' } });
+        return;
+      }
+
+      showSpinner();
+      google.script.run
+        .withFailureHandler(e => {
+          renderDashboard({ login: { status: 'VERIFYING', error: e.message } });
+          hideSpinner();
+        })
+        .withSuccessHandler(res => {
+          const response = JSON.parse(res);
+          if (response && response.success) {
+            const member = response.data;
+            renderDashboard(member);
+          } else {
+            renderDashboard({ login: { status: 'VERIFYING', error: 'Email not found in member registry.' } });
+          }
+          hideSpinner();
+        })
+        .login(email);
+    }
+
+    function verifyCode() {
+      const token = document.getElementById('token').value.trim();
+      showSpinner();
+      google.script.run.withSuccessHandler(res => {
+
+        const response = JSON.parse(res);
+        if (!response.success) {
+
+          document.getElementById('error').textContent = response.message;
+          return;
+        }
+
+        if (response.redirectToForm) {
+          const map = response.entryMap;
+          const url = response.formUrl + `?${map.email}=${encodeURIComponent(currentEmail)}`;
+          window.open(url, '_blank');
+        } else {
+          const member = response.data;
+          renderDashboard(member);
+        }
+        hideSpinner();
+
+      }).verifyToken(currentEmail, token);
+    }
+
+    function resendToken() {
+      const emailInput = document.getElementById('email');
+      const email = emailInput?.value?.trim();
+      if (!email) return;
+
+      currentEmail = email;
+
+      const resendBtn = Array.from(document.querySelectorAll("button"))
+        .find(btn => btn.textContent.includes("Resend"));
+      if (resendBtn) {
+        resendBtn.disabled = true;
+        setTimeout(() => resendBtn.disabled = false, 30000);
+      }
+      showSpinner();
+      google.script.run
+        .withFailureHandler(e => {
+          renderDashboard({ login: { status: 'VERIFYING', error: e.message } });
+        })
+        .withSuccessHandler(res => {
+          hideSpinner();
+          const response = JSON.parse(res);
+          if (response && response.success) {
+            const member = response.data;
+            document.getElementById('error').textContent = `Verification code resent to ${member.emailAddress}`;
+            renderDashboard(member);
+          } else {
+            renderDashboard({ login: { status: 'VERIFYING', error: 'Unable to resend code.' } });
+          }
+          hideSpinner();
+        })
+        .login(email);
+    }
+
+    function logout() {
+      showSpinner();
+      google.script.run.withSuccessHandler(() => {
+        renderDashboard({ login: { status: 'UNVERIFIED' } });
+        hideSpinner();
+      }).logout(email);
+    }
+
+
+    renderDashboard(currentMember);

@@ -10,7 +10,8 @@ function doGet(e) {
     const config = getConfig();
     // Default member object
     let member = config.defaultMember;
-
+    html = HtmlService.createTemplateFromFile('index');
+    
     if (e.parameter.memberId) {
         const response = getMember(e.parameter.memberId);
         if (response.success) {
@@ -28,7 +29,6 @@ function doGet(e) {
     const adminAccess = config.levels[member.registration.level].value >= config.levels.Administrator.value;
 
     if (view === 'event') {
-        html = HtmlService.createTemplateFromFile('EventPortal/event');
         if (e.parameter.eventId) {
             event = modelFactory.eventManager().getEventById(e.parameter.eventId);
             if (event) {
@@ -49,19 +49,21 @@ function doGet(e) {
                 };
             }
         }
-        html.canSignup = canSignup;
-        html.viewMode = viewMode;
+        html.view = 'event';
     } else if (view === 'admin') {
         if (!adminAccess) {
             return HtmlService.createHtmlOutput('Access denied. Not an admin.');
         }
-        html = HtmlService.createTemplateFromFile('AdminPortal/admin');
+        html.view = 'admin';
     } else {
         // Default to member view
-        html = HtmlService.createTemplateFromFile('MemberPortal/member');
+        html.view = 'member';   
     }
 
+    html.canSignup = canSignup;
+    html.adminAccess = adminAccess;
     html.event = event;
+    html.viewMode = viewMode;
     html.sharedConfig = config;
     html.member = member;
     html.adminMode = adminMode; // Pass adminMode to the frontend

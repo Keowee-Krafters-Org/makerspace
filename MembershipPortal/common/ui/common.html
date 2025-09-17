@@ -1,0 +1,82 @@
+<html>
+
+<head>
+    <base target="_top">
+    <title>Membership Portal</title>
+</head>
+
+<body>
+    <!-- JSON data for member and shared configuration -->
+    <script type="application/json" id="member-data">
+        <?!= JSON.stringify(member) ?>
+    </script>
+    <script type="application/json" id="shared-config">
+        <?!= JSON.stringify(sharedConfig) ?>
+    </script>
+    <script>
+        // Parse and expose member and shared configuration data
+        const currentMember = JSON.parse(document.getElementById('member-data').textContent);
+        window.currentMember = currentMember;
+        const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
+        window.sharedConfig = sharedConfig;
+    </script>
+
+    <!-- Spinner -->
+    <div id="spinner" class="spinner"></div>
+
+    <!-- Navigation Panel -->
+    <nav>
+        <button id="adminTab">Admin</button>
+        <button id="eventTab">Events</button>
+        <button id="memberTab">Members</button>
+    </nav>
+
+    <!-- Placeholder for dynamically injected portal sections -->
+    <div id="content">
+        <!-- PORTAL_SECTIONS -->
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Developed by Makerspace</p>
+        <h5>
+            <p id="version"></p>
+        </h5>
+    </div>
+
+    <!-- Navigation Logic -->
+    <script>
+        // Navigation logic to toggle sections
+        document.getElementById('adminTab').addEventListener('click', () => {
+            document.getElementById('adminSection').style.display = 'block';
+            document.getElementById('eventSection').style.display = 'none';
+            document.getElementById('memberSection').style.display = 'none';
+        });
+
+        document.getElementById('eventTab').addEventListener('click', () => {
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('eventSection').style.display = 'block';
+            document.getElementById('memberSection').style.display = 'none';
+        });
+
+        document.getElementById('memberTab').addEventListener('click', () => {
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('eventSection').style.display = 'none';
+            document.getElementById('memberSection').style.display = 'block';
+        });
+
+        // Default view logic based on the `view` parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const view = urlParams.get('view') || 'member'; // Default to 'member'
+
+        if (view === 'admin') {
+            document.getElementById('adminTab').click();
+        } else if (view === 'event') {
+            document.getElementById('eventTab').click();
+        } else {
+            document.getElementById('memberTab').click();
+        }
+    </script>
+</body>
+
+</html>

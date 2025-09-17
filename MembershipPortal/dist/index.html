@@ -1,0 +1,1013 @@
+<html>
+
+<head>
+    <base target="_top">
+    <title>Membership Portal</title>
+<style>body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 500px;
+    margin: auto;
+}
+
+.hidden {
+    display: none;
+}
+
+.error {
+    color: red;
+}
+
+/* Admin styles */
+
+    .member-list {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .member-list th,
+    .member-list td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .member-list th {
+      background-color: #f2f2f2;
+    }
+
+    .member-editor {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      width: 400px;
+    }
+
+    .member-editor h3 {
+      margin-top: 0;
+    }
+
+    .member-editor label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+
+    .member-editor input[type="text"],
+    .member-editor select {
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    .member-editor button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .member-editor button:hover {
+      background-color: #45a049;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    a.readonly-link {
+      display: inline-block;
+      margin-top: 5px;
+      color: #0645ad;
+      text-decoration: underline;
+    }
+
+    .spinner {
+      display: none;
+      margin: 20px auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3367d6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+/* Event styles */
+       body {
+           font-family: Arial, sans-serif;
+           background: #f4f4f4;
+           margin: 0;
+       }
+
+       .container {
+           max-width: 900px;
+           margin: 40px auto;
+           padding: 20px;
+       }
+
+       h1 {
+           text-align: center;
+           color: #333;
+       }
+
+       .classes-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+           gap: 24px;
+           margin-top: 32px;
+       }
+
+       .class-card {
+           background: #fff;
+           border-radius: 8px;
+           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+           padding: 24px;
+           display: flex;
+           flex-direction: column;
+           justify-content: space-between;
+       }
+
+       .class-title {
+           font-size: 1.3em;
+           margin-bottom: 8px;
+           color: #1a4d2e;
+       }
+
+       .class-desc {
+           margin-bottom: 12px;
+           color: #444;
+       }
+
+       .class-info {
+           margin-bottom: 16px;
+           color: #555;
+       }
+
+       .signup-btn {
+           background: #1a4d2e;
+           color: #fff;
+           border: none;
+           border-radius: 4px;
+           padding: 10px 18px;
+           font-size: 1em;
+           cursor: pointer;
+           transition: background 0.2s;
+       }
+
+       .signup-btn:hover {
+           background: #26734d;
+       }
+
+       .spinner {
+           position: fixed;
+           /* Make the spinner fixed to the viewport */
+           top: 50%;
+           /* Center vertically */
+           left: 50%;
+           /* Center horizontally */
+           transform: translate(-50%, -50%);
+           /* Adjust for the spinner's size */
+           border: 6px solid #f3f3f3;
+           border-top: 6px solid #3367d6;
+           border-radius: 50%;
+           width: 40px;
+           height: 40px;
+           animation: spin 1s linear infinite;
+           z-index: 1000;
+           /* Ensure it appears above other elements */
+           display: none;
+           /* Initially hidden */
+       }
+
+       .hidden {
+           display: none !important;
+       }
+
+       .show {
+           display: block !important;
+       }
+
+       @keyframes spin {
+           0% {
+               transform: rotate(0deg);
+           }
+
+           100% {
+               transform: rotate(360deg);
+           }
+       }
+
+       .class-card form {
+           display: grid;
+           grid-template-columns: 150px 1fr;
+           gap: 12px 16px;
+           align-items: center;
+           padding: 16px 0;
+       }
+
+       .class-card label {
+           font-weight: bold;
+           color: #333;
+           margin-bottom: 4px;
+           display: block;
+       }
+
+       .class-card select,
+       .class-card input,
+       .class-card textarea {
+           margin-bottom: 16px;
+       }
+
+       .class-card input[type="text"],
+       .class-card input[type="number"],
+       .class-card input[type="datetime-local"],
+       .class-card textarea {
+           padding: 8px;
+           border: 1px solid #ccc;
+           border-radius: 6px;
+           font-size: 1em;
+           width: 100%;
+       }
+
+       .class-card select {
+           padding: 8px;
+           border: 1px solid #ccc;
+           border-radius: 6px;
+           font-size: 1em;
+           width: 100%;
+           box-sizing: border-box;
+           margin-bottom: 0;
+           /* Remove extra spacing if needed */
+       }
+
+       .class-card textarea {
+           resize: vertical;
+           min-height: 80px;
+       }
+
+       .class-card .signup-btn {
+           grid-column: span 2;
+           margin-top: 12px;
+       }
+
+       .class-image {
+           max-width: 400px;
+           max-height: 400px;
+           overflow: scroll;
+           border-radius: 4px;
+           margin-bottom: 12px;
+       }
+
+       .class-image img {
+           width: 100%;
+           height: auto;
+           object-fit: contain;
+       }
+
+       .class-desc.truncate {
+           display: -webkit-box;
+           -webkit-line-clamp: 3;
+           -webkit-box-orient: vertical;
+           overflow: hidden;
+           cursor: pointer;
+       }
+
+       .class-desc.truncate.expanded {
+           -webkit-line-clamp: unset;
+           white-space: normal;
+       }
+
+       /* Event table styles (copied from member.html) */
+       .event-list {
+           width: 100%;
+           border-collapse: collapse;
+           margin-top: 20px;
+       }
+
+       .event-list th,
+       .event-list td {
+           border: 1px solid #ddd;
+           padding: 8px;
+           text-align: left;
+       }
+
+       .event-list th {
+           background-color: #f4f4f4;
+           font-weight: bold;
+       }
+
+       .event-list tr:nth-child(even) {
+           background-color: #f9f9f9;
+       }
+
+       .event-list tr:hover {
+           background-color: #f1f1f1;
+       }
+
+       .event-list button {
+           padding: 6px 12px;
+           border: none;
+           background-color: #3367d6;
+           color: white;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 14px;
+       }
+
+       .event-list button:hover {
+           background-color: #254a9e;
+       }
+
+       .pagination button {
+           margin: 0 5px;
+           padding: 8px 12px;
+           border: none;
+           background-color: #3367d6;
+           color: white;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 14px;
+       }
+
+       .pagination button:disabled {
+           background-color: #ccc;
+           cursor: not-allowed;
+       }
+/* Member styles */
+
+.dashboard {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+input[type="email"],
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="datetime-local"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: #3367d6;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+button:hover {
+    background: #254a9e;
+}
+
+.spinner {
+    display: none;
+    margin: 20px auto;
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #3367d6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Remove ul dot styling */
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Add spacing between list items */
+ul li {
+    margin-bottom: 10px;
+}
+
+/* Responsive styles for mobile devices */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .dashboard {
+        padding: 15px;
+    }
+
+    input[type="email"],
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="datetime-local"],
+    textarea {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    button {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border-width: 4px;
+    }
+}</style>
+</head>
+
+<body>
+    <!-- JSON data for member and shared configuration -->
+    <script type="application/json" id="member-data">
+        <?!= JSON.stringify(member) ?>
+    </script>
+    <script type="application/json" id="shared-config">
+        <?!= JSON.stringify(sharedConfig) ?>
+    </script>
+    <script>
+        // Parse and expose member and shared configuration data
+        const currentMember = JSON.parse(document.getElementById('member-data').textContent);
+        window.currentMember = currentMember;
+        const sharedConfig = JSON.parse(document.getElementById('shared-config').textContent);
+        window.sharedConfig = sharedConfig;
+    </script>
+
+    <!-- Spinner -->
+    <div id="spinner" class="spinner"></div>
+
+    <!-- Navigation Panel -->
+    <nav>
+        <button id="adminTab">Admin</button>
+        <button id="eventTab">Events</button>
+        <button id="memberTab">Members</button>
+    </nav>
+
+    <!-- Placeholder for dynamically injected portal sections -->
+    <div id="content">
+        
+        <div id="adminSection" style="display: none;">
+            <!DOCTYPE html>
+  <div id="app"></div>
+  <h2>Member Admin Portal</h2>
+
+  <div id="memberListContainer">
+    <div>
+      <input type="text" id="search" placeholder="Search by name or email" />
+      <select id="filter">
+        <option value="">All Statuses</option>
+        <option value="NEW">New</option>
+        <option value="REGISTERED">Registered</option>
+        <option value="VERIFIED">Verified</option>
+        <option value="APPLIED">Applied</option>
+        <option value="PENDING">Pending</option>
+      </select>
+      <button onclick="loadMembers()">Search</button>
+    </div>
+    <table class="member-list" id="memberList">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Level</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="memberRows"></tbody>
+    </table>
+    <div id="paginationControls"></div>
+  </div>
+
+  <div id="memberEditor" class="member-editor hidden">
+    <h3>Edit Member</h3>
+    <label>Email: <input type="text" id="editEmail" disabled /></label>
+    <label>First Name: <input type="text" id="editFirstName" /></label>
+    <label>Last Name: <input type="text" id="editLastName" /></label>
+
+    <label>Level:
+      <select id="editLevel"></select>
+    </label>
+
+    <label>Status:
+      <select id="editStatus">
+        <option value="NEW">New</option>
+        <option value="REGISTERED">Registered</option>
+        <option value="VERIFIED">Verified</option>
+        <option value="APPLIED">Applied</option>
+        <option value="PENDING">Pending</option>
+      </select>
+    </label>
+
+    <label>Waiver Signed:
+      <select id="editWaiverSigned">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    </label>
+
+    <label>Waiver PDF Link:</label>
+    <a id="editWaiverLink" class="readonly-link" href="#" target="_blank" hidden="true">View Waiver</a>
+
+    <button onclick="saveMember()">Save Changes</button>
+    <button onclick="cancelEdit()">Cancel</button>
+  </div>
+
+  <h5>
+    <p id="version"></p>
+  </h5>
+
+        </div>
+    
+        <div id="eventSection" style="display: none;">
+            <!DOCTYPE html>
+<html lang="en">
+
+<body>
+    <div class="container">
+        <div id="spinner" class="spinner"></div>
+
+        <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
+        <h1>Classes and Events</h1>
+        <div id="eventTableContainer" style="display: block;"> <!-- Table layout -->
+            <table class="event-list" id="eventList">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Price</th>
+                        <th>Attendees</th>
+                        <th>
+                            Actions
+                            <!-- Add the "New Class" button here -->
+                            <button id="newClassBtn" onClick="newEvent({})" class="signup-btn" style="margin-left: 10px;">New Class</button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="eventRows"></tbody>
+            </table>
+            <div id="paginationControls"></div>
+        </div>
+        <div id="classes" class="classes-grid"></div> <!-- Card layout -->
+
+        <!-- New container for class details -->
+        <div id="classDetailsContainer" style="display: none; margin-top: 20px;"></div>
+
+        <div id="confirmation-message" style="text-align: center; color: green; margin-top: 20px;"></div>
+
+        <!-- New container for attendees list -->
+        <div id="attendeesContainer" style="display: none; margin-top: 20px;">
+            <h3>Attendees</h3>
+            <table class="event-list" id="attendeesTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody id="attendeesRows"></tbody>
+            </table>
+            <button class="signup-btn" onclick="hideAttendees()">Hide Attendees</button>
+        </div>
+
+        <h5>
+            <p id="version"></p>
+        </h5>
+    </div>
+
+ 
+    <script type="application/json" id="can-signup">
+    <?!= JSON.stringify(canSignup) ?>
+  </script>
+
+    <script type="application/json" id="view-mode">
+    <?!= JSON.stringify(viewMode) ?>
+  </script>
+    <script>
+  
+        const canSignup = JSON.parse(document.getElementById('can-signup').textContent);
+        window.canSignup = canSignup;
+        const eventData = document.getElementById('event-data').textContent;
+        let activeEvent;
+
+        if (eventData && eventData.trim() !== '') {
+            try {
+                activeEvent = JSON.parse(eventData);
+            } catch (e) {
+                console.error("Failed to parse event data:", e);
+            }
+        }
+        window.activeEvent = activeEvent;
+
+        const viewMode = JSON.parse(document.getElementById('view-mode').textContent) || 'list';
+    </script>
+
+
+</html>
+        </div>
+    
+        <div id="memberSection" style="display: none;">
+            
+
+
+  <script type="application/json" id="event-data">
+    <?!= JSON.stringify(event) ?>
+  </script>
+
+  <script>
+
+    const event = JSON.parse(document.getElementById('event-data').textContent);
+    console.log(`Event ID: ${event.id}`);
+    window.event = event; 
+  </script>
+
+  <script>
+ 
+  </script>
+
+<script>   // Main application logic for the member portal dashboard
+    const isEmbedded = window.self !== window.top;
+    if (isEmbedded) {
+      console.log("Running inside Google Sites iframe");
+      // You could hide logout button or shrink UI
+    }
+
+ 
+    function buildPrefilledFormUrl(section, member) {
+      const url = new URL(section.url);
+      const entryMap = section.entryMap;
+      if (entryMap.emailAddress) url.searchParams.set(entryMap.emailAddress, member.emailAddress);
+      if (entryMap.firstName) url.searchParams.set(entryMap.firstName, member.firstName);
+      if (entryMap.lastName) url.searchParams.set(entryMap.lastName, member.lastName);
+      if (entryMap.name) url.searchParams.set(entryMap.name, `${member.firstName} ${member.lastName}`);
+      return url.toString();
+    }
+
+    let currentEmail = '';
+
+    /**
+     * Generate the document 
+     */
+    function getDashboardContent(member) {
+      console.log(`Generating content with ${JSON.stringify(member)} + ${JSON.stringify(sharedConfig)}`);
+      let content = '<div class="dashboard">';
+
+      if (member.firstName && member.lastName) {
+        content += `<h2>Welcome, ${member.firstName} ${member.lastName}</h2>`;
+      }
+
+      switch (member.login.status) {
+        case 'UNVERIFIED':
+          content += `<h2>Member Login</h2>
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" required />
+                <div id="step1">
+                    <button onclick="requestToken()">Verify Email</button>
+                </div>
+                <p id="error" class="error">${member.error || ''}</p>`;
+          break;
+
+        case 'TOKEN_EXPIRED':
+        case 'VERIFYING':
+          content += `<p>A verification code has been sent to:</p>
+                <input type="email" id="email" value="${member.emailAddress}" />
+                <p><label for="token">Enter the code:</label></p>
+                <input type="text" id="token" maxlength="6" />
+                <p>
+                    <button onclick="verifyCode()">Verify Code</button>
+                    <button onclick="resendToken()">Resend Code</button>
+                </p>
+                <p id="error" class="error">${member.error || ''}</p>`;
+          break;
+
+        case 'VERIFIED':
+            if (member.registration.status === 'NEW') {
+                const registrationUrl = buildPrefilledFormUrl(sharedConfig.forms.registration, member);
+                content += `<p>You're almost done! Please complete your registration below.</p>
+                    <p><button onclick="window.open('${registrationUrl}', '_blank')">Complete Registration Form</button></p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else if (member.registration.status === 'REGISTERED') {
+                if (event && event.id !== 'null') {
+                    console.log(`Event ID provided: ${event.id}`);
+                    content += `<p>Thank you for logging in! You can now sign up for your event.</p>`;
+                    content += `<p><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}&eventId=${event.id}', '_blank')">Sign Up For Event</button></p>`;
+                } else {
+                    content += '<p>Thanks for verifying your email!</p>';
+                    const levelNumber = sharedConfig.levels[member.registration.level].value;
+                    console.log(`Member level: ${member.registration.level} (${levelNumber})`);
+                    content += `<ul>
+                        <li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
+
+                    if (levelNumber >= sharedConfig.levels.Active.value) {
+                        if (sharedConfig?.forms?.volunteer?.url && sharedConfig?.forms?.volunteer?.entryMap) {
+                            const volunteerUrl = buildPrefilledFormUrl(sharedConfig.forms.volunteer, member);
+                            content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
+                        }
+                    }
+
+                    if (levelNumber >= sharedConfig.levels.Board.value) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=event&viewMode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
+                    }
+
+                    if (levelNumber >= sharedConfig.levels.Administrator.value) {
+                        content += `<li><button onclick="window.open('${sharedConfig.baseUrl}?view=admin&adminMode=members&memberId=${member.id}', '_blank')">Manage Members</button></li>`;
+                    }
+
+                    content += '</ul>';
+                }
+            } else if (member.registration.status === 'APPLIED') {
+                const waiverUrl = buildPrefilledFormUrl(sharedConfig.forms.waiver, member);
+                content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
+                    <p><button onclick="window.open('${waiverUrl}', '_blank')">Sign Waiver Form</button></p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else if (member.registration.status === 'PENDING') {
+                content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>
+                    <p>Once verified, you will receive an email with further instructions.</p>
+                    <p><button onclick="requestToken('${member.emailAddress}')">Continue</button></p>`;
+            } else {
+                content += `<p>Your membership status is ${member.registration.status.toLowerCase()}.</p>`;
+            }
+          break;
+
+        default:
+          content += `<p>Unknown status.</p>`;
+      }
+
+      content += '</div>';
+      return content;
+    }
+
+    function renderDashboard(user) {
+
+      document.getElementById('app').innerHTML = getDashboardContent(user, sharedConfig);
+      document.getElementById('version').textContent = `Version: ${sharedConfig.version}`;
+
+    }
+
+    function requestToken(emailAddress) {
+      let email = emailAddress;
+      if (!email) {
+        // If emailAddress is not provided, get it from the input field
+        const emailInput = document.getElementById('email');
+        email = emailInput.value.trim();
+        emailInput.blur();
+      }
+      currentEmail = email;
+
+      if (!email) {
+        renderDashboard({ login: { status: 'VERIFYING', error: 'Please enter a valid email address.' } });
+        return;
+      }
+
+      if (!email.includes('@') || !email.includes('.')) {
+        renderDashboard({ login: { status: 'VERIFYING', error: 'Please enter a valid email address.' } });
+        return;
+      }
+
+      showSpinner();
+      google.script.run
+        .withFailureHandler(e => {
+          renderDashboard({ login: { status: 'VERIFYING', error: e.message } });
+          hideSpinner();
+        })
+        .withSuccessHandler(res => {
+          const response = JSON.parse(res);
+          if (response && response.success) {
+            const member = response.data;
+            renderDashboard(member);
+          } else {
+            renderDashboard({ login: { status: 'VERIFYING', error: 'Email not found in member registry.' } });
+          }
+          hideSpinner();
+        })
+        .login(email);
+    }
+
+    function verifyCode() {
+      const token = document.getElementById('token').value.trim();
+      showSpinner();
+      google.script.run.withSuccessHandler(res => {
+
+        const response = JSON.parse(res);
+        if (!response.success) {
+
+          document.getElementById('error').textContent = response.message;
+          return;
+        }
+
+        if (response.redirectToForm) {
+          const map = response.entryMap;
+          const url = response.formUrl + `?${map.email}=${encodeURIComponent(currentEmail)}`;
+          window.open(url, '_blank');
+        } else {
+          const member = response.data;
+          renderDashboard(member);
+        }
+        hideSpinner();
+
+      }).verifyToken(currentEmail, token);
+    }
+
+    function resendToken() {
+      const emailInput = document.getElementById('email');
+      const email = emailInput?.value?.trim();
+      if (!email) return;
+
+      currentEmail = email;
+
+      const resendBtn = Array.from(document.querySelectorAll("button"))
+        .find(btn => btn.textContent.includes("Resend"));
+      if (resendBtn) {
+        resendBtn.disabled = true;
+        setTimeout(() => resendBtn.disabled = false, 30000);
+      }
+      showSpinner();
+      google.script.run
+        .withFailureHandler(e => {
+          renderDashboard({ login: { status: 'VERIFYING', error: e.message } });
+        })
+        .withSuccessHandler(res => {
+          hideSpinner();
+          const response = JSON.parse(res);
+          if (response && response.success) {
+            const member = response.data;
+            document.getElementById('error').textContent = `Verification code resent to ${member.emailAddress}`;
+            renderDashboard(member);
+          } else {
+            renderDashboard({ login: { status: 'VERIFYING', error: 'Unable to resend code.' } });
+          }
+          hideSpinner();
+        })
+        .login(email);
+    }
+
+    function logout() {
+      showSpinner();
+      google.script.run.withSuccessHandler(() => {
+        renderDashboard({ login: { status: 'UNVERIFIED' } });
+        hideSpinner();
+      }).logout(email);
+    }
+
+
+    renderDashboard(currentMember);
+/**
+ * Sends a verification token to the user's email via Membership module.
+ */
+function login(email) {
+
+  const modelFactory = Membership.newModelFactory();
+  const membershipManager = modelFactory.membershipManager();
+  if (Array.isArray(email)) {
+    email = email[0];
+  }
+  email = String(email || '').trim();
+  if (!email) throw new Error('No email provided.');
+  const response = membershipManager.loginMember(email);
+  delete response.data.login.authentication.token;
+  return JSON.stringify(response);
+}
+
+/**
+ * Verifies a submitted token against the stored value via Membership module.
+ */
+function verifyToken(email, userToken) {
+  const modelFactory = Membership.newModelFactory();
+  const membershipManager = modelFactory.membershipManager();
+  const response = membershipManager.verifyMemberToken(email, userToken);
+  delete response.data.login.authentication.token;
+  return JSON.stringify(response);
+}
+
+function logout(emailAddress) {
+  const modelFactory = Membership.newModelFactory();
+  const membershipManager = modelFactory.membershipManager();
+  return JSON.stringify(membershipManager.memberLogout(emailAddress));
+}
+
+
+</script>
+<script>
+/* Logger.js */
+// Logger class for logging errors and debug messages
+class Logger {
+    static log(message, data = '') {
+        console.log("Log:", message, data);
+    }
+
+    static error(message, data = '') {
+        console.error("Error:", message, data);
+    }
+}
+/* common.js */
+
+
+function showSpinner() {
+    Logger.log("Showing spinner");
+    document.getElementById('spinner').classList.remove('hidden');
+    document.getElementById('spinner').classList.add('show');
+}
+
+function hideSpinner() {
+    Logger.log("Hiding spinner");
+    document.getElementById('spinner').classList.remove('show');
+    document.getElementById('spinner').classList.add('hidden');
+}
+
+
+
+function isAdministrator(user) {
+    return user && user.registration && sharedConfig.levels[user.registration.level].value >= sharedConfig.levels.Administrator.value;
+}
+</script>
+</body>
+
+</html>
+        </div>
+    
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Developed by Makerspace</p>
+        <h5>
+            <p id="version"></p>
+        </h5>
+    </div>
+
+    <!-- Navigation Logic -->
+    <script>
+        // Navigation logic to toggle sections
+        document.getElementById('adminTab').addEventListener('click', () => {
+            document.getElementById('adminSection').style.display = 'block';
+            document.getElementById('eventSection').style.display = 'none';
+            document.getElementById('memberSection').style.display = 'none';
+        });
+
+        document.getElementById('eventTab').addEventListener('click', () => {
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('eventSection').style.display = 'block';
+            document.getElementById('memberSection').style.display = 'none';
+        });
+
+        document.getElementById('memberTab').addEventListener('click', () => {
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('eventSection').style.display = 'none';
+            document.getElementById('memberSection').style.display = 'block';
+        });
+
+        // Default view logic based on the `view` parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const view = urlParams.get('view') || 'member'; // Default to 'member'
+
+        if (view === 'admin') {
+            document.getElementById('adminTab').click();
+        } else if (view === 'event') {
+            document.getElementById('eventTab').click();
+        } else {
+            document.getElementById('memberTab').click();
+        }
+    </script>
+</body>
+
+</html>
