@@ -1,5 +1,5 @@
 // Logger class for logging errors and debug messages
-class Logger {
+export class Logger {
     static log(message, data = '') {
         console.log("Log:", message, data);
     }

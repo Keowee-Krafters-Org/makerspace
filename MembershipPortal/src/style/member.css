@@ -1,4 +1,4 @@
-
+/* Member Portal CSS */
 .dashboard {
     background: #f9f9f9;
     padding: 20px;
@@ -70,35 +70,3 @@ ul li {
     margin-bottom: 10px;
 }
 
-/* Responsive styles for mobile devices */
-@media (max-width: 600px) {
-    body {
-        padding: 10px;
-        font-size: 14px;
-    }
-
-    .dashboard {
-        padding: 15px;
-    }
-
-    input[type="email"],
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    input[type="datetime-local"],
-    textarea {
-        padding: 10px;
-        font-size: 14px;
-    }
-
-    button {
-        padding: 10px 14px;
-        font-size: 14px;
-    }
-
-    .spinner {
-        width: 30px;
-        height: 30px;
-        border-width: 4px;
-    }
-}

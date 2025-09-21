@@ -5,7 +5,6 @@
 
 */
 
-
 config = {
   dev: {
     version: 'SNAPSHOT-0.2.11',
