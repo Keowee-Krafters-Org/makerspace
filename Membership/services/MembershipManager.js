@@ -59,7 +59,7 @@ class MembershipManager {
     
       if (member.login) {
         // Has a login 
-        expired = member.login.isExpired();;
+        expired = member.login.isExpired();
       }
 
       if (expired) {
@@ -68,10 +68,6 @@ class MembershipManager {
         member = this.storageManager.update(member.id, member).data;
       }
 
-      if (!expired && member.registration && member.registration.status === 'REGISTERED') {
-        member.login.status = 'VERIFIED';
-        member = this.storageManager.update(member.id, member).data;
-      }
 
       if (member.login && member.login.status === 'VERIFYING') {
         this.sendEmail({

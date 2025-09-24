@@ -24,6 +24,42 @@ h1 {
     color: red;
 }
 
+/* General styles for text inputs */
+.text-input-container {
+    margin-bottom: 20px;
+}
+
+.text-input-field {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+/* Type-specific styles */
+.text-input-text {
+    background-color: #f9f9f9;
+}
+
+.text-input-password {
+    background-color: #fff;
+    font-style: italic;
+}
+
+.text-input-email {
+    background-color: #f3f3ff;
+}
+
+/* Add focus styles */
+.text-input-field:focus {
+    border-color: #3367d6;
+    outline: none;
+    box-shadow: 0 0 5px rgba(51, 103, 214, 0.5);
+}
+
 /* Responsive styles for mobile devices */
 @media (max-width: 600px) {
     body {
@@ -98,14 +134,32 @@ button:hover {
 }
 
 .spinner {
-    display: none;
-    margin: 20px auto;
+    position: fixed;
+    /* Make the spinner fixed to the viewport */
+    top: 50%;
+    /* Center vertically */
+    left: 50%;
+    /* Center horizontally */
+    transform: translate(-50%, -50%);
+    /* Adjust for the spinner's size */
     border: 6px solid #f3f3f3;
     border-top: 6px solid #3367d6;
     border-radius: 50%;
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
+    z-index: 1000;
+    /* Ensure it appears above other elements */
+    display: none;
+    /* Initially hidden */
+}
+
+.hidden {
+    display: none !important;
+}
+
+.show {
+    display: block !important;
 }
 
 @keyframes spin {
@@ -128,4 +182,17 @@ ul {
 /* Add spacing between list items */
 ul li {
     margin-bottom: 10px;
+}
+
+/* Title styling */
+.title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+}
+/* Message styling */
+.message {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #333;
 }

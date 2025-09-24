@@ -1,11 +1,11 @@
 /**
  * Interface for a Portal.
  */
-import { Component } from './Component.js';
+import { Container } from './Container.js';
 /**
  * Base class for different portals eg: member, admin, event, etc.
  */
-export class Portal extends Component{
+export class Portal extends Container{
     
     constructor(session, divId = 'defaultDiv', name = 'Portal') {
         super(divId);

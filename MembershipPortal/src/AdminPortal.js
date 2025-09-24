@@ -6,8 +6,7 @@ import { showSpinner, hideSpinner } from './common.js';
 import { Portal } from './Portal.js';
 export class AdminPortal extends Portal {
   constructor(config = {}) {
-    super(config, 'adminSection', 'Admin');
-    this.div = document.getElementById(this.divId);
+    super(config, 'adminPortal', 'Admin');
     this.selectedMember = null;
     this.pageSize = 10;
     this.currentPage = 1;

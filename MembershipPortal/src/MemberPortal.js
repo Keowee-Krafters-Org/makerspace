@@ -4,12 +4,33 @@ import { Portal } from './Portal.js';
 import { PortalSession } from './PortalSession.js';
 import { Logger } from './Logger.js';
 import { Member} from './model/Member.js';
+import { Button } from './component/Button.js';
+import { TextInput } from './component/TextInput.js';
+import { List } from './component/List.js';
+import { Card } from './component/Card.js';
+import { Message } from './component/Message.js';
+import { Container } from './Container.js';
+import { PortalManager } from './PortalManager.js';
+/**
+ * MemberPortal class for managing member-specific functionality.
+ */
 export class MemberPortal extends Portal {
   constructor(session = {}) {
-    super(session, 'memberSection', 'Member');
+    super(session, 'memberPortal', 'Member');
     this.currentMember = { login: { status: 'UNVERIFIED' } };
     this.event = { id: null };
   }
+
+
+    initialize() {
+    if (this.initialized) return this;
+    super.initialize();
+
+    this.renderDashboard(this.currentMember);
+    this.initialized = true;
+    return this;
+  }
+
 
   buildPrefilledFormUrl(section, member) {
     const url = new URL(section.url);
@@ -25,96 +46,101 @@ export class MemberPortal extends Portal {
    * Generate the document 
    */
   getDashboardContent(member) {
-    console.log(`Generating content with ${JSON.stringify(member)} + ${JSON.stringify(this.config)}`);
-    let content = '<div class="dashboard">';
+    logger.debug(`Generating content with ${JSON.stringify(member)} + ${JSON.stringify(this.config)}`);
+    let content = new Container();
+    content.appendChild(new Message('dashboard', member.message || '', 'dashboard'));
 
     if (member.firstName && member.lastName) {
-      content += `<h2>Welcome, ${member.firstName} ${member.lastName}</h2>`;
+      content.appendChild(new Message('welcome-message', `Welcome, ${member.firstName} ${member.lastName}`, 'welcome-message'));
     }
 
+    const card = new Card('login-card');
+            
     switch (member.login.status) {
       case 'UNVERIFIED':
-        content += `<h2>Member Login</h2>
-                <label for="email">Email Address:</label>
-                <input type="email" id="email" required />
-                <div id="step1">
-                    <button onclick="memberPortal.requestToken()">Verify Email</button>
-                </div>
-                <p id="error" class="error">${member.error || ''}</p>`;
+        card.appendChild(new Message('login-title', `Member Login`, 'title'));
+        card.appendChild(new TextInput("email",'Email Address:', "email", '',true));
+        card.appendChild(new Button('verify-email-btn', 'Verify Email', () => this.requestToken()));
+ 
         break;
 
       case 'TOKEN_EXPIRED':
       case 'VERIFYING':
-        content += `<p>A verification code has been sent to:</p>
-                <input type="email" id="email" value="${member.emailAddress}" />
-                <p><label for="token">Enter the code:</label></p>
-                <input type="text" id="token" maxlength="6" />
-                <p>
-                    <button onclick="memberPortal.verifyCode()">Verify Code</button>
-                    <button onclick="this.resendToken()">Resend Code</button>
-                </p>
-                <p id="error" class="error">${member.error || ''}</p>`;
+        card.appendChild(new Message('verification-message', 'A verification code has been sent to:', 'verification-message', ));
+        card.appendChild(new TextInput('email', 'Email Address', 'email', member.emailAddress, true));
+        card.appendChild(new Message('token-label', 'Enter the code:', 'token-label'));
+        card.appendChild(new TextInput('token', 'Verification Code', 'text', '', false, 6));
+        card.appendChild(new Button('verify-code-btn', 'Verify Code', () => this.verifyCode()));
+        card.appendChild(new Button('resend-code-btn', 'Resend Code', () => this.resendToken()));
+        card.appendChild(new Message('error', member.error || '', 'error'));
         break;
 
       case 'VERIFIED':
         if (member.registration.status === 'NEW') {
           const registrationUrl = this.buildPrefilledFormUrl(this.config.forms.registration, member);
-          content += `<p>You're almost done! Please complete your registration below.</p>
-                    <p><button onclick="window.open('${registrationUrl}', '_blank')">Complete Registration Form</button></p>
-                    <p><button onclick="memberPortal.requestToken('${member.emailAddress}')">Continue</button></p>`;
-        } else if (member.registration.status === 'REGISTERED') {
-          if (this.event && this.event.id !== 'null') {
-            console.log(`Event ID provided: ${this.event.id}`);
-            content += `<p>Thank you for logging in! You can now sign up for your event.</p>`;
-            content += `<p><button onclick="window.open('${this.config.baseUrl}?view=event&memberId=${member.id}&eventId=${this.event.id}', '_blank')">Sign Up For Event</button></p>`;
-          } else {
-            content += '<p>Thanks for verifying your email!</p>';
-            const levelNumber = this.config.levels[member.registration.level].value;
-            console.log(`Member level: ${member.registration.level} (${levelNumber})`);
-            content += `<ul>
-                        <li><button onclick="window.open('${this.config.baseUrl}?view=event&memberId=${member.id}', '_blank')">View Upcoming Classes</button></li>`;
 
+          card.appendChild(new Message('registration-message', "You're almost done! Please complete your registration below.", 'registration-message'));
+          card.appendChild(new Button('complete-registration-btn', 'Complete Registration Form', () => window.open(registrationUrl, '_blank')));
+          card.appendChild(new Button('continue-btn', 'Continue', () => memberPortal.requestToken(member.emailAddress)));
+        } else if (member.registration.status === 'REGISTERED') {
+          const eventId = this.context?.params?.eventId || null;
+          if (eventId) {
+            Logger.info(`Event ID provided: ${eventId}`);
+            card.appendChild(new Message('thank-you-message', 'Thank you for logging in! You can now sign up for your event.', 'thank-you-message'));
+            card.appendChild(new Button('sign-up-event-btn', 
+              'Sign Up For Event', 
+              () => PortalManager.instance.routeTo('event', { eventId: eventId, memberId: member.id })));
+          } else {
+            card.appendChild(new Message('verification-message', 'Thanks for verifying your email!', 'verification-message'));
+            const levelNumber = this.config.levels[member.registration.level].value;
+            Logger.info(`Member level: ${member.registration.level} (${levelNumber})`);
+            const memberMenu = new List('member-menu');
+            memberMenu.addItem(new Button('event-list-btn', 
+              'View Upcoming Classes', 
+              () => PortalManager.instance.routeTo('event', { viewMode: 'list', memberId: member.id })));
             if (levelNumber >= this.config.levels.Active.value) {
               if (this.config?.forms?.volunteer?.url && this.config?.forms?.volunteer?.entryMap) {
                 const volunteerUrl = this.buildPrefilledFormUrl(this.config.forms.volunteer, member);
-                content += `<li><button onclick="window.open('${volunteerUrl}', '_blank')">Volunteer Hours Form</button></li>`;
+                memberMenu.addItem(new Button(null, 'Volunteer Hours Form', () => window.open(volunteerUrl, '_blank')));
               }
             }
 
             if (levelNumber >= this.config.levels.Board.value) {
-              content += `<li><button onclick="window.open('${this.config.baseUrl}?view=event&viewMode=table&memberId=${member.id}', '_blank')">Manage Events</button></li>`;
+              memberMenu.addItem(new Button(null, 'Manage Events', () => window.open(`${this.config.baseUrl}?view=event&viewMode=table&memberId=${member.id}`, '_blank')));
             }
 
             if (levelNumber >= this.config.levels.Administrator.value) {
-              content += `<li><button onclick="window.open('${this.config.baseUrl}?view=admin&adminMode=members&memberId=${member.id}', '_blank')">Manage Members</button></li>`;
+              memberMenu.addItem(new Button(null, 'Manage Members', () => window.open(`${this.config.baseUrl}?view=admin&adminMode=members&memberId=${member.id}`, '_blank')));
             }
+            card.appendChild(memberMenu);
 
-            content += '</ul>';
           }
         } else if (member.registration.status === 'APPLIED') {
           const waiverUrl = this.buildPrefilledFormUrl(this.config.forms.waiver, member);
-          content += `<p>One last step! Please sign the required liability waiver to activate your membership.</p>
-                    <p><button onclick="window.open('${waiverUrl}', '_blank')">Sign Waiver Form</button></p>
-                    <p><button onclick="memberPortal.requestToken('${member.emailAddress}')">Continue</button></p>`;
+          card.appendChild(new Message('waiver-message', 'One last step! Please sign the required liability waiver to activate your membership.', 'waiver-message'));
+          card.appendChild(new Button('sign-waiver-btn', 'Sign Waiver Form', () => window.open(waiverUrl, '_blank')));
+          card.appendChild(new Button('continue-btn', 'Continue', () => memberPortal.requestToken(member.emailAddress)));
         } else if (member.registration.status === 'PENDING') {
-          content += `<p>Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.</p>
-                    <p>Once verified, you will receive an email with further instructions.</p>
-                    <p><button onclick="memberPortal.requestToken('${member.emailAddress}')">Continue</button></p>`;
+          card.appendChild(new Message('pending-message', 'Thank you for registering! Your membership is currently <strong>pending</strong> until payment and waiver are verified by an administrator.', 'pending-message'));
+          card.appendChild(new Button('continue-btn', 'Continue', () => memberPortal.requestToken(member.emailAddress)));
         } else {
-          content += `<p>Your membership status is ${member.registration.status.toLowerCase()}.</p>`;
+          card.appendChild(new Message('unknown-status-message', `Your membership status is ${member.registration.status.toLowerCase()}.`, 'unknown-status-message'));
         }
         break;
 
       default:
-        content += `<p>Unknown status.</p>`;
+        card.appendChild(new Message('unknown-status-message', 'Unknown status.', 'unknown-status-message'))  ;
     }
+    
+    content.appendChild(card);
+    content.appendChild(new Message('error', member.error || '', 'error'));
 
-    content += '</div>';
     return content;
   }
 
   renderDashboard(user) {
-    this.div.innerHTML = this.getDashboardContent(user, this.config);
+    this.clear();
+    this.appendChild(this.getDashboardContent(user, this.config));
   }
 
   requestToken(emailAddress) {
@@ -147,6 +173,7 @@ export class MemberPortal extends Portal {
         const response = JSON.parse(res);
         if (response && response.success) {
           const member = response.data;
+          this.session.member = new Member(member);
           this.renderDashboard(member);
         } else {
           this.renderDashboard({ login: { status: 'VERIFYING', error: 'Email not found in member registry.' } });
@@ -219,16 +246,9 @@ export class MemberPortal extends Portal {
     }).logout(this.email);
   }
 
-  initialize() {
-    if (this.initialized) return this;
-    super.initialize();
-
-    this.initialized = true;
-    return this;
-  }
 
   open() {
     super.open();
-    this.renderDashboard(this.currentMember);
+    return this;
   }
 }

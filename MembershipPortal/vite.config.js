@@ -36,7 +36,7 @@ function htmlMergePlugin() {
     
         // Wrap each portal's content in a section
         portalSections += `
-            <div id="${portal.name.toLowerCase()}Section" style="display: none;">
+            <div id="${portal.name.toLowerCase()}Portal" style="display: none;">
                 ${inlinedHtml}
             </div>
         `;

@@ -20,53 +20,8 @@ textarea {
     box-sizing: border-box;
 }
 
-button {
-    width: 100%;
-    padding: 12px 16px;
-    border: none;
-    background: #3367d6;
-    color: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    text-align: center;
-    font-size: 16px;
-    margin-bottom: 10px;
+login-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
 }
-
-button:hover {
-    background: #254a9e;
-}
-
-.spinner {
-    display: none;
-    margin: 20px auto;
-    border: 6px solid #f3f3f3;
-    border-top: 6px solid #3367d6;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-/* Remove ul dot styling */
-ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-/* Add spacing between list items */
-ul li {
-    margin-bottom: 10px;
-}
-

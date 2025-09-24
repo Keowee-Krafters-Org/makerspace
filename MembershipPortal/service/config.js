@@ -9,14 +9,16 @@ config = {
   dev: {
     version: 'SNAPSHOT-0.2.11',
     deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
-    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
+    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
+    logLevel: 'DEBUG'
   },
 
   prod: {
     // Production configuration
     version: 'RELEASE-0.2.13',
     deploymentId: 'AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR',
-    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
+    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
+    logLevel: 'INFO'
    }
 
 };

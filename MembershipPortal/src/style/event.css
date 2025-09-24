@@ -47,44 +47,7 @@
            background: #26734d;
        }
 
-       .spinner {
-           position: fixed;
-           /* Make the spinner fixed to the viewport */
-           top: 50%;
-           /* Center vertically */
-           left: 50%;
-           /* Center horizontally */
-           transform: translate(-50%, -50%);
-           /* Adjust for the spinner's size */
-           border: 6px solid #f3f3f3;
-           border-top: 6px solid #3367d6;
-           border-radius: 50%;
-           width: 40px;
-           height: 40px;
-           animation: spin 1s linear infinite;
-           z-index: 1000;
-           /* Ensure it appears above other elements */
-           display: none;
-           /* Initially hidden */
-       }
 
-       .hidden {
-           display: none !important;
-       }
-
-       .show {
-           display: block !important;
-       }
-
-       @keyframes spin {
-           0% {
-               transform: rotate(0deg);
-           }
-
-           100% {
-               transform: rotate(360deg);
-           }
-       }
 
        .class-card form {
            display: grid;
@@ -156,6 +119,7 @@
        .class-desc.truncate {
            display: -webkit-box;
            -webkit-line-clamp: 3;
+           line-clamp: 3;
            -webkit-box-orient: vertical;
            overflow: hidden;
            cursor: pointer;
@@ -163,6 +127,7 @@
 
        .class-desc.truncate.expanded {
            -webkit-line-clamp: unset;
+           line-clamp: unset;
            white-space: normal;
        }
 
@@ -222,3 +187,15 @@
            background-color: #ccc;
            cursor: not-allowed;
        }
+
+       .event-past-message {
+           color: gray;
+           text-align: center;
+           margin: 16px 0;
+       }
+
+         .confirmation-message {
+              text-align: center;
+              color: green;
+              margin-top: 20px;
+         }  

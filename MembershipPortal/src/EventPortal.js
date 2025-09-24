@@ -2,18 +2,24 @@ import { Portal } from './Portal.js';
 import { showSpinner, hideSpinner } from './common.js';
 import { Logger } from './Logger.js';
 import { PortalManager } from './PortalManager.js';
+import { Button } from './component/Button.js';
+import { TextInput } from './component/TextInput.js';
+import { Card } from './component/Card.js';
+import { Container } from './Container.js';
+import { List } from './component/List.js';
+import { Message } from './component/Message.js';
+import { EventTable } from './EventTable.js';
 /**
  * EventPortal class for managing event-related functionality.
  */
 export class EventPortal extends Portal {
-    constructor(session = {}) {
-        super(session, 'eventSection', 'Events');
+        constructor(session = {}) {
+        super(session, 'eventPortal', 'Events');
         this.viewMode = session.viewMode; // Default view mode
     }
 
     initialize() {
         if (this.initialized) return this; // Prevent re-initialization
-        this.div = document.getElementById(this.divId);
         Logger.log(`Initializing Event Portal in ${this.viewMode} mode with member:`, this.session.member);
         // Load events when the page is ready
         showSpinner();
@@ -24,7 +30,8 @@ export class EventPortal extends Portal {
             document.getElementById('classes').style.display = 'none'; // Hide card layout
             document.getElementById('eventTableContainer').style.display = 'block'; // Show table layout
 
-            loadEventsTable();
+            this.eventTable = new EventTable();
+            this.eventTable.initialize();
         } else {
             document.getElementById('eventTableContainer').style.display = 'none'; // Hide table layout
             document.getElementById('classes').style.display = 'grid'; // Show card layout
@@ -39,17 +46,17 @@ export class EventPortal extends Portal {
      * @param {Array} classes - The list of class objects to render.
      */
     renderClasses(classes) {
-        const container = document.getElementById('classes');
-        container.innerHTML = ''; // Clear any existing content
+        const container = new Container('classes');
+        container.clear();
 
         if (!classes || !classes.length) {
-            container.innerHTML = '<p>No classes available at this time.</p>';
+            container.setHtml('<p>No classes available at this time.</p>');
             return;
         }
 
         // Render each class using the renderClass method
         classes.forEach(cls => {
-            const classContainer = document.createElement('div');
+            const classContainer = new Container();
             classContainer.className = 'class-card-wrapper'; // Optional wrapper for styling
             container.appendChild(classContainer); // Append the wrapper to the main container
 
@@ -68,14 +75,13 @@ export class EventPortal extends Portal {
             container = document.getElementById('classDetailsContainer');
         }
         const currentMember = this.session.member;
-        container.innerHTML = ''; // Clear any existing content
-        container.style.display = 'block'; // Ensure the container is visible
+        container.clear(); // Clear any existing content
+        container.open(); // Ensure the container is visible
 
-        const card = document.createElement('div');
-        card.className = 'class-card';
-
-        const infoDiv = document.createElement('div');
-        infoDiv.innerHTML = this.generateClassDiv(cls);
+        const card = new Card('login-card');
+        Logger.debug("Rendering class:", cls);
+        const infoDiv = new Container();
+        infoDiv.setHtml(this.generateClassDiv(cls));
         card.appendChild(infoDiv);
 
         const eventDate = new Date(cls.date);
@@ -83,60 +89,37 @@ export class EventPortal extends Portal {
 
         if (eventDate < now) {
             // Event is in the past
-            const msg = document.createElement('div');
-            msg.style.color = 'gray';
-            msg.style.textAlign = 'center';
-            msg.style.margin = '16px 0';
-            msg.textContent = 'Event is in the past.';
+            const msg = new Message('event-past-message', 'Event is in the past.', 'event-past-message');
             card.appendChild(msg);
         } else if (this.session.member && this.session.member.canSignUp()) {
             // Event is in the future and signup is allowed
             const isRegistered = cls.attendees && cls.attendees.some(attendee => attendee.emailAddress === currentMember.emailAddress);
 
             if (isRegistered) {
-                const unregisterBtn = document.createElement('button');
-                unregisterBtn.className = 'signup-btn';
-                unregisterBtn.textContent = 'Cancel my Class Signup';
-                unregisterBtn.onclick = () => this.unregister(cls.id, currentMember.id);
+                const unregisterBtn = new Button('unregister-btn', 'Cancel my Class Signup', () => this.unregister(cls.id, currentMember.id));
                 card.appendChild(unregisterBtn);
             } else {
-                const signupBtn = document.createElement('button');
-                signupBtn.className = 'signup-btn';
-                signupBtn.textContent = 'Sign Me Up';
-                signupBtn.onclick = () => this.signup(cls.id, currentMember.id);
+                const signupBtn = new Button('signup-btn', 'Sign Me Up', () => this.signup(cls.id, currentMember.id));
                 card.appendChild(signupBtn);
             }
         } else {
-            const signinBtn = document.createElement('button');
-            signinBtn.className = 'signup-btn';
-            signinBtn.textContent = 'Sign Me Up';
-            signinBtn.onclick = () => this.signin(cls.id);
-            card.appendChild(signinBtn);
+            card.appendChild(new Button('sign-up-btn', 'Sign Me Up',
+                () => this.signin(cls.id))), 
+                'signup-btn'
         }
 
         if (this.config.levels[currentMember.registration?.level].value >= this.config.levels.Administrator.value) {
-            const editBtn = document.createElement('button');
-            editBtn.className = 'signup-btn';
-            editBtn.textContent = 'Edit Event';
-            editBtn.onclick = () => this.editEvent(cls);
-            card.appendChild(editBtn);
+            card.appendChild(new Button('edit-event-btn', 'Edit Event', () => this.editEvent(cls)));
         }
 
-        const confirmation = document.createElement('div');
-        confirmation.id = 'confirmation-message';
-        confirmation.style.textAlign = 'center';
-        confirmation.style.color = 'green';
-        confirmation.style.marginTop = '20px';
+        const confirmation = new Message('confirmation-message','', 'confirmation-message');
         card.appendChild(confirmation);
 
         // Add "Back to Event List" button only if viewMode is 'table'
         if (this.viewMode === 'table') {
-            const backButton = document.createElement('button');
-            backButton.className = 'signup-btn';
-            backButton.textContent = 'Back to Event List';
-            backButton.onclick = () => {
+            const backButton = new Button('back-to-event-list-btn', 'Back to Event List', () => {
                 container.style.display = 'none'; // Hide the class details container
-            };
+            });
             card.appendChild(backButton);
         }
 
@@ -177,7 +160,7 @@ export class EventPortal extends Portal {
         google.script.run
             .withSuccessHandler(res => {
                 hideSpinner();
-                const confirmation = document.getElementById('confirmation-message');
+                const confirmation = new Container('confirmation-message');
                 let msg = '';
                 let isSuccess = false;
 
@@ -192,8 +175,8 @@ export class EventPortal extends Portal {
                     console.error("Parse error:", err);
                 }
 
-                confirmation.textContent = msg;
-                confirmation.style.color = isSuccess ? 'green' : 'red';
+                confirmation.setHtml(msg);
+                confirmation.setStyle('color', isSuccess ? 'green' : 'red');
 
                 // Reload the events
                 if (isSuccess) {
@@ -202,9 +185,9 @@ export class EventPortal extends Portal {
             })
             .withFailureHandler(err => {
                 hideSpinner();
-                const confirmation = document.getElementById('confirmation-message');
-                confirmation.textContent = `Failed to sign up. ${err}`;
-                confirmation.style.color = 'red';
+                const confirmation = new Container('confirmation-message');
+                confirmation.setHtml(`Failed to sign up. ${err}`);
+                confirmation.setStyle('color', 'red');
             })
             .signup(classId, memberId);
     }
@@ -288,14 +271,7 @@ export class EventPortal extends Portal {
         return textarea;
     }
 
-    createButton(text, onClick) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'signup-btn';
-        button.textContent = text;
-        button.onclick = onClick;
-        return button;
-    }
+
 
     createDropdown(id, options, selectedValue = '') {
         const select = document.createElement('select');
@@ -366,7 +342,7 @@ export class EventPortal extends Portal {
         form.className = 'class-card';
 
         const isNew = !cls.id;
-        const saveBtn = createButton(isNew ? 'Create Class' : 'Save Changes', () => isNew ? this.addEvent() : this.saveEvent(cls.id));
+        const saveBtn = new Button('save-btn', isNew ? 'Create Class' : 'Save Changes', () => isNew ? this.addEvent() : this.saveEvent(cls.id));
 
         // --- Event Item Dropdown at the top ---
         const eventItemFieldContainer = document.createElement('div');
@@ -441,14 +417,15 @@ export class EventPortal extends Portal {
         hostFieldContainer.id = 'host-field-container';
         form.appendChild(hostFieldContainer);
         addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.eventItem.price || 0));
-        addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
+        //addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
+        form.appendChild(new TextInput('edit-duration','Duration (hours):',  cls.eventItem.duration || 0, 'number',true));
         addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
         // --- Image Upload Field ---
         const imageFieldContainer = createImageUploadField(cls, form);
         form.appendChild(imageFieldContainer);
         // --- Add the Cancel Button ---
-        const cancelBtn = createButton('Cancel', () => {
+        const cancelBtn = new Button('cancel-btn', 'Cancel', () => {
             form.remove(); // Remove the form
             container.style.display = 'none';
             this.loadEvents(); // Reload the events (or return to the previous view)
@@ -501,7 +478,7 @@ export class EventPortal extends Portal {
                 // Return to the event table display
                 document.getElementById('classes').style.display = 'none'; // Hide the card layout
                 document.getElementById('eventTableContainer').style.display = 'block'; // Show the table layout
-                loadEventsTable(); // Refresh the table
+                this.eventTable.loadEventsTable(); // Refresh the table
                 hideSpinner();
             })
             .withFailureHandler(err => {
@@ -539,7 +516,7 @@ export class EventPortal extends Portal {
                     // Return to the event table display
                     document.getElementById('classes').style.display = 'none'; // Hide the card layout
                     document.getElementById('eventTableContainer').style.display = 'block'; // Show the table layout
-                    loadEventsTable(); // Refresh the table
+                    this.eventTable.loadEventsTable(); // Refresh the table
                 } else {
                     confirmation.textContent = `Failed to create event: ${response.error || 'Unknown error.'}`;
                     confirmation.style.color = 'red';
