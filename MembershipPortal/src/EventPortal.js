@@ -9,11 +9,15 @@ import { Container } from './Container.js';
 import { List } from './component/List.js';
 import { Message } from './component/Message.js';
 import { EventTable } from './EventTable.js';
+import { ImageViewer } from './component/ImageViewer.js'; // Import the ImageViewer component
+import { DropDown } from './component/DropDown.js';
+import { MoneyInput } from './component/MoneyInput.js';
+
 /**
  * EventPortal class for managing event-related functionality.
  */
 export class EventPortal extends Portal {
-        constructor(session = {}) {
+    constructor(session = {}) {
         super(session, 'eventPortal', 'Events');
         this.viewMode = session.viewMode; // Default view mode
     }
@@ -21,7 +25,6 @@ export class EventPortal extends Portal {
     initialize() {
         if (this.initialized) return this; // Prevent re-initialization
         Logger.log(`Initializing Event Portal in ${this.viewMode} mode with member:`, this.session.member);
-        // Load events when the page is ready
         showSpinner();
 
 
@@ -31,6 +34,7 @@ export class EventPortal extends Portal {
             document.getElementById('eventTableContainer').style.display = 'block'; // Show table layout
 
             this.eventTable = new EventTable();
+            this.eventTable.newEventMethod = () => this.newEvent();
             this.eventTable.initialize();
         } else {
             document.getElementById('eventTableContainer').style.display = 'none'; // Hide table layout
@@ -64,7 +68,6 @@ export class EventPortal extends Portal {
             this.renderClass(cls, classContainer);
         });
     }
-
     /**
      * Renders the details of a specific class into the provided container.
      * @param {Object} cls - The class object to render.
@@ -80,6 +83,15 @@ export class EventPortal extends Portal {
 
         const card = new Card('login-card');
         Logger.debug("Rendering class:", cls);
+
+        // Add the ImageViewer for event images
+        const imageUrls = cls.eventItem.images?.map(image => image.url) || []; // Use an array of image URLs
+        if (imageUrls.length > 0) {
+            const imageViewer = new ImageViewer(`${cls.id}-image-viewer`, imageUrls);
+            imageViewer.initialize();
+            card.appendChild(imageViewer);
+        }
+
         const infoDiv = new Container();
         infoDiv.setHtml(this.generateClassDiv(cls));
         card.appendChild(infoDiv);
@@ -104,7 +116,7 @@ export class EventPortal extends Portal {
             }
         } else {
             card.appendChild(new Button('sign-up-btn', 'Sign Me Up',
-                () => this.signin(cls.id))), 
+                () => this.signin(cls.id))),
                 'signup-btn'
         }
 
@@ -112,7 +124,7 @@ export class EventPortal extends Portal {
             card.appendChild(new Button('edit-event-btn', 'Edit Event', () => this.editEvent(cls)));
         }
 
-        const confirmation = new Message('confirmation-message','', 'confirmation-message');
+        const confirmation = new Message('confirmation-message', '', 'confirmation-message');
         card.appendChild(confirmation);
 
         // Add "Back to Event List" button only if viewMode is 'table'
@@ -235,102 +247,11 @@ export class EventPortal extends Portal {
         }
     }
 
-    addLabeledField(form, labelText, inputElement) {
-        const label = document.createElement('label');
-        label.textContent = labelText;
-        form.appendChild(label);
-        form.appendChild(inputElement);
-    }
-
-    createInput(id, value = '', type = 'text') {
-        const input = document.createElement('input');
-        input.type = type;
-        input.id = id;
-        input.value = value;
-        return input;
-    }
-
-    createMoneyInput(id, value = 0) {
-        const input = createInput(id, value, 'number');
-        input.step = '0.01';
-        return input;
-    }
-
-    createCheckbox(id, checked = false) {
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.id = id;
-        input.checked = checked;
-        return input;
-    }
-
-    createTextarea(id, value = '') {
-        const textarea = document.createElement('textarea');
-        textarea.id = id;
-        textarea.textContent = value;
-        return textarea;
-    }
-
-
-
-    createDropdown(id, options, selectedValue = '') {
-        const select = document.createElement('select');
-        select.id = id;
-        options.forEach(opt => {
-            const value = typeof opt === 'object' ? (opt.id || opt.name) : opt;
-            const label = typeof opt === 'object' ? opt.name : opt;
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = label;
-            if (value === selectedValue) option.selected = true;
-            select.appendChild(option);
-        });
-        return select;
-    }
 
     /**
-    * Creates an image upload field with a preview.
-    * @param {Object} cls - The class object containing the image data.
-    * @param {HTMLFormElement} form - The form element to store the base64 image data.
-    * @returns {HTMLDivElement} The container with the image upload field and preview.
-    */
-    createImageUploadField(cls, form) {
-        const imageFieldContainer = document.createElement('div');
-        // imageFieldContainer.id = 'image-field-container';
-
-        // Image preview
-        const imagePreview = document.createElement('img');
-        imagePreview.id = 'edit-image-preview';
-        imagePreview.style.maxWidth = '200px';
-        imagePreview.style.display = cls.eventItem.image ? 'block' : 'none';
-        if (cls.eventItem.image && cls.eventItem.image.url) imagePreview.src = cls.eventItem.image.url;
-        imageFieldContainer.appendChild(imagePreview);
-
-        // File input
-        const imageInput = document.createElement('input');
-        imageInput.type = 'file';
-        imageInput.id = 'edit-image';
-        imageInput.accept = 'image\/\*';
-        imageFieldContainer.appendChild(imageInput);
-
-        // Show preview on file select and store base64 in a property
-        imageInput.addEventListener('change', () => {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                    // Store the base64 string for later use in createEventObject
-                    form._imageBase64 = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        return imageFieldContainer;
-    }
-
+     * Edits an event by rendering a form with event details.
+     * @param {Object} cls - The class object containing event details.
+     */
     editEvent(cls) {
         showSpinner();
         Logger.log("Editing event:", cls);
@@ -343,6 +264,7 @@ export class EventPortal extends Portal {
 
         const isNew = !cls.id;
         const saveBtn = new Button('save-btn', isNew ? 'Create Class' : 'Save Changes', () => isNew ? this.addEvent() : this.saveEvent(cls.id));
+
 
         // --- Event Item Dropdown at the top ---
         const eventItemFieldContainer = document.createElement('div');
@@ -357,17 +279,19 @@ export class EventPortal extends Portal {
             const itemList = res.data || [];
             eventItemsCache = itemList; // Cache for later use
 
-            const dropdown = createDropdown(
+            const dropdown = new DropDown(
                 'edit-event-item',
+                'Event Item',
                 [{ id: 'null', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
-                cls.eventItem.id || ''
+                cls.eventItem.id || '',
+                'dropdown'
             );
             eventItemFieldContainer.innerHTML = '';
-            addLabeledField(eventItemFieldContainer, 'Event Item:', dropdown);
+            eventItemFieldContainer.appendChild(dropdown.render());
 
             // Add change event to autofill fields
-            dropdown.addEventListener('change', () => {
-                const selectedId = this.value;
+            dropdown.component.addEventListener('change', () => {
+                const selectedId = dropdown.component.value;
                 const selectedItem = eventItemsCache.find(i => i.id === selectedId);
                 if (selectedItem) {
                     if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
@@ -392,48 +316,51 @@ export class EventPortal extends Portal {
         }).getEventItemList({ pageSize: 100 });
 
         // --- Rest of the fields ---
-        addLabeledField(form, 'Title:', createInput('edit-title', cls.eventItem.title));
-        addLabeledField(form, 'Description:', createTextarea('edit-desc', cls.eventItem.description));
-        addLabeledField(form, 'Date:', createInput('edit-date', this.formatDateForInput(cls.date), 'datetime-local'));
-        addLabeledField(form, 'Duration (hours):', createInput('edit-duration', cls.eventItem.duration || '', 'number'));
+        form.appendChild(new TextInput('edit-title', 'Title', 'text', cls.eventItem.title).render());
+        form.appendChild(new TextInput('edit-desc', 'Description', 'textarea', cls.eventItem.description).render());
+        form.appendChild(new TextInput('edit-date', 'Date', 'datetime-local', this.formatDateForInput(cls.date)).render());
+        form.appendChild(new TextInput('edit-duration', 'Duration (hours)', 'number', cls.eventItem.duration || '').render());
 
         const roomFieldContainer = document.createElement('div');
         roomFieldContainer.id = 'room-field-container';
         form.appendChild(roomFieldContainer);
+
         // Fetch available rooms and populate the dropdown
         google.script.run.withSuccessHandler((response) => {
             const res = JSON.parse(response);
             if (res.success) {
                 const rooms = res.data || [];
-                const roomDropdown = createDropdown('edit-room', rooms, cls.location?.id || '');
+                const roomDropdown = new DropDown('edit-room', 'location', rooms, cls.location?.id || '');
                 roomFieldContainer.innerHTML = ''; // Clear existing options
-                addLabeledField(roomFieldContainer, 'Location:', roomDropdown);
+                roomFieldContainer.appendChild(roomDropdown.render());
             } else {
                 Logger.error('Failed to load locations:', res.error);
             }
         }).getEventRooms();
+
         // Placeholder for Host dropdown
         const hostFieldContainer = document.createElement('div');
         hostFieldContainer.id = 'host-field-container';
         form.appendChild(hostFieldContainer);
-        addLabeledField(form, 'Price: $', createMoneyInput('edit-price', cls.eventItem.price || 0));
-        //addLabeledField(form, 'Max Attendees:', createInput('edit-size', cls.eventItem.sizeLimit || 0, 'number'));
-        form.appendChild(new TextInput('edit-duration','Duration (hours):',  cls.eventItem.duration || 0, 'number',true));
-        addLabeledField(form, 'Enabled:', createCheckbox('edit-enabled', cls.eventItem.enabled === true));
 
-        // --- Image Upload Field ---
-        const imageFieldContainer = createImageUploadField(cls, form);
-        form.appendChild(imageFieldContainer);
+        form.appendChild(new MoneyInput('edit-price', cls.eventItem.price || 0, 'Price').render());
+        form.appendChild(new TextInput('edit-size', 'Attendee Limit', 'number', cls.eventItem.sizeLimit || 0).render());
+        form.appendChild(new TextInput('edit-enabled', 'Enabled', 'checkbox', cls.eventItem.enabled === true).render());
+
         // --- Add the Cancel Button ---
         const cancelBtn = new Button('cancel-btn', 'Cancel', () => {
             form.remove(); // Remove the form
             container.style.display = 'none';
             this.loadEvents(); // Reload the events (or return to the previous view)
         });
-
+        // --- Image Upload Field ---
+        const imageViewer = new ImageViewer(`${cls.id}-image-viewer`, cls.eventItem.image ? [cls.eventItem.image.url] : []);
+        imageViewer.addFileUpload();
+        form.appendChild(imageViewer.render());
+        // --- End Image Upload Field ---
         // Append buttons to the form
-        form.appendChild(saveBtn);
-        form.appendChild(cancelBtn);
+        form.appendChild(saveBtn.render());
+        form.appendChild(cancelBtn.render());
 
         container.appendChild(form);
 
@@ -447,12 +374,11 @@ export class EventPortal extends Portal {
                     instructorList = [];
                 }
             }
-            const dropdown = createDropdown('edit-host', instructorList, cls.eventItem.host?.id || '');
+            const dropdown = new DropDown('edit-host', 'Instructor', instructorList, cls.eventItem.host?.id || '');
             hostFieldContainer.innerHTML = '';
-            addLabeledField(hostFieldContainer, 'Host:', dropdown);
+            hostFieldContainer.appendChild(dropdown.render());
             hideSpinner();
         }).getInstructors();
-
     }
 
     saveEvent(eventId) {

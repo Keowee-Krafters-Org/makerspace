@@ -7,8 +7,8 @@ export class Button extends Component {
     /**
      * @param {string} id - The ID of the button element.
      * @param {string} label - The text label for the button.
-     * @param {string} classname - The CSS class name(s) for the button.
      * @param {Function|null} onClick - The click event handler for the button.
+     * @param {string} classname - The CSS class name(s) for the button.
      * @param {Object} [ariaAttributes={}] - Optional accessibility attributes for the button.
      */
     constructor(id, label, onClick = null, classname = 'custom-button', ariaAttributes = {}) {
@@ -34,12 +34,28 @@ export class Button extends Component {
     }
 
     /**
-     * Dynamically updates the button's click event handler.
-     * @param {Function} onClick - The new click event handler.
+     * Binds the Button to an existing HTML element.
+     * @param {HTMLElement} element - The existing HTML element to bind the button to.
+     * @param {Function} onClick - The click event handler for the button.
      */
-    setOnClick(onClick) {
-        this.onClick = onClick;
-        this.element.removeEventListener('click', this.onClick);
-        this.element.addEventListener('click', this.onClick);
+    bindToElement(element, onClick) {
+        // Use the existing element properties if the instance properties are not set
+        element.id = this.id || element.id; 
+        element.className = this.classname || element.className;
+        element.textContent = this.label || element.textContent;
+        element.onclick = onClick;
+    }
+    /**
+     * Binds the Button to an existing HTML element by its ID.
+     * @param {string} elementId - The ID of the existing HTML element to bind the button to.
+     * @param {Function} onClick - The click event handler for the button.
+     */
+    bindToElementId(elementId, onClick) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            this.bindToElement(element, onClick);
+        } else {
+            console.warn(`Element with ID ${elementId} not found.`);
+        }
     }
 }

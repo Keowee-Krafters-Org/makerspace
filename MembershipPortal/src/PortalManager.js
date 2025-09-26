@@ -20,6 +20,22 @@ export class PortalManager {
         manager.initialize();
         PortalManager.instance = manager;
     }
+
+    static getInstance() {
+        if (!PortalManager.instance) {
+            PortalManager.instance = new PortalManager();
+        }
+        return PortalManager.instance;
+    }
+
+    static getPortal(portalName) {
+        return PortalManager.instance.getPortal(portalName);    
+    }
+
+    getPortal(portalName) {
+        return this.portals[portalName];
+    }
+
     initialize() {
 
         showSpinner();

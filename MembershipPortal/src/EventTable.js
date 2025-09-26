@@ -2,6 +2,7 @@ import { Container } from './Container.js';
 import { Logger } from './Logger.js';
 import { showSpinner, hideSpinner } from './common.js';
 import { Button } from './component/Button.js';
+import { PortalManager } from './PortalManager.js';
 /**
  * Component to display and manage the events table with pagination.
  */
@@ -10,10 +11,19 @@ export class EventTable extends Container {
         super(id, className);
         this.pageSize = 10;
         this.currentPage = 1;
+        this.newEventMethod = null;
+        this.viewEventMethod = null;
+        this.editEventMethod = null;
+        this.listAttendeesMethod = null;
     }
 
     initialize() {
         super.initialize();
+        // Bind to the new class button placeholder using the PortalManager instance to bind to the EventPortal instance
+        // addEvent() method to create a new event
+        const newClassButton = new Button(  
+            'newClassBtn'
+        ).bindToElementId('newClassButtonPlaceholder', this.newEventMethod); 
         this.loadEventsTable({ currentPage: this.currentPage, pageSize: this.pageSize });
     }
 

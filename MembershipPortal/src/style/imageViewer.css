@@ -1,0 +1,35 @@
+/* Container for the image viewer */
+.image-viewer {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 400px;
+}
+
+/* Image styling */
+.image-viewer-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Navigation button styling */
+.image-viewer-prev-btn,
+.image-viewer-next-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.image-viewer-prev-btn {
+    left: 10px;
+}
+
+.image-viewer-next-btn {
+    right: 10px;
+}
