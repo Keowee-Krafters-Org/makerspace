@@ -5,13 +5,14 @@ import { PortalManager } from './PortalManager.js';
 import { Button } from './component/Button.js';
 import { TextInput } from './component/TextInput.js';
 import { Card } from './component/Card.js';
-import { Container } from './Container.js';
+import { Container } from './component/Container.js';
 import { List } from './component/List.js';
 import { Message } from './component/Message.js';
 import { EventTable } from './EventTable.js';
 import { ImageViewer } from './component/ImageViewer.js'; // Import the ImageViewer component
 import { DropDown } from './component/DropDown.js';
 import { MoneyInput } from './component/MoneyInput.js';
+import { EventEditor } from './EventEditor.js';
 
 /**
  * EventPortal class for managing event-related functionality.
@@ -59,21 +60,21 @@ export class EventPortal extends Portal {
         }
 
         // Render each class using the renderClass method
-        classes.forEach(cls => {
+        classes.forEach(event => {
             const classContainer = new Container();
             classContainer.className = 'class-card-wrapper'; // Optional wrapper for styling
             container.appendChild(classContainer); // Append the wrapper to the main container
 
             // Pass the wrapper to renderClass to render the class inside it
-            this.renderClass(cls, classContainer);
+            this.renderClass(event, classContainer);
         });
     }
     /**
      * Renders the details of a specific class into the provided container.
-     * @param {Object} cls - The class object to render.
+     * @param {Object} event - The class object to render.
      * @param {HTMLElement} container - The container to render the class into.
      */
-    renderClass(cls, container) {
+    renderClass(event, container) {
         if (!container) {
             container = document.getElementById('classDetailsContainer');
         }
@@ -82,21 +83,21 @@ export class EventPortal extends Portal {
         container.open(); // Ensure the container is visible
 
         const card = new Card('login-card');
-        Logger.debug("Rendering class:", cls);
+        Logger.debug("Rendering class:", event);
 
         // Add the ImageViewer for event images
-        const imageUrls = cls.eventItem.images?.map(image => image.url) || []; // Use an array of image URLs
+        const imageUrls = event.eventItem.images?.map(image => image.url) || []; // Use an array of image URLs
         if (imageUrls.length > 0) {
-            const imageViewer = new ImageViewer(`${cls.id}-image-viewer`, imageUrls);
+            const imageViewer = new ImageViewer(`${event.id}-image-viewer`, imageUrls);
             imageViewer.initialize();
             card.appendChild(imageViewer);
         }
 
         const infoDiv = new Container();
-        infoDiv.setHtml(this.generateClassDiv(cls));
+        infoDiv.setHtml(this.generateClassDiv(event));
         card.appendChild(infoDiv);
 
-        const eventDate = new Date(cls.date);
+        const eventDate = new Date(event.date);
         const now = new Date();
 
         if (eventDate < now) {
@@ -105,23 +106,23 @@ export class EventPortal extends Portal {
             card.appendChild(msg);
         } else if (this.session.member && this.session.member.canSignUp()) {
             // Event is in the future and signup is allowed
-            const isRegistered = cls.attendees && cls.attendees.some(attendee => attendee.emailAddress === currentMember.emailAddress);
+            const isRegistered = event.attendees && event.attendees.some(attendee => attendee.emailAddress === currentMember.emailAddress);
 
             if (isRegistered) {
-                const unregisterBtn = new Button('unregister-btn', 'Cancel my Class Signup', () => this.unregister(cls.id, currentMember.id));
+                const unregisterBtn = new Button('unregister-btn', 'Cancel my Class Signup', () => this.unregister(event.id, currentMember.id));
                 card.appendChild(unregisterBtn);
             } else {
-                const signupBtn = new Button('signup-btn', 'Sign Me Up', () => this.signup(cls.id, currentMember.id));
+                const signupBtn = new Button('signup-btn', 'Sign Me Up', () => this.signup(event.id, currentMember.id));
                 card.appendChild(signupBtn);
             }
         } else {
             card.appendChild(new Button('sign-up-btn', 'Sign Me Up',
-                () => this.signin(cls.id))),
+                () => this.signin(event.id))),
                 'signup-btn'
         }
 
         if (this.config.levels[currentMember.registration?.level].value >= this.config.levels.Administrator.value) {
-            card.appendChild(new Button('edit-event-btn', 'Edit Event', () => this.editEvent(cls)));
+            card.appendChild(new Button('edit-event-btn', 'Edit Event', () => this.editEvent(event)));
         }
 
         const confirmation = new Message('confirmation-message', '', 'confirmation-message');
@@ -142,21 +143,21 @@ export class EventPortal extends Portal {
         PortalManager.instance.routeTo('member', { viewMode: 'event', eventId: classId });
     }
 
-    generateClassDiv(cls) {
-        const dateObj = new Date(cls.date);
+    generateClassDiv(event) {
+        const dateObj = new Date(event.date);
         const formattedDate = `${dateObj.toLocaleString('en-US', { month: 'long' })} ${dateObj.getDate()} ${dateObj.getFullYear()} at: ${dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-        const spotsAvailable = cls.eventItem.sizeLimit - (Array.isArray(cls.attendees) ? cls.attendees.length : 0);
-        const imageHtml = cls.eventItem.image && cls.eventItem.image.url ? `<div class="class-image"><img src="${cls.eventItem.image.url}" alt="Class Image" /></div>` : '';
+        const spotsAvailable = event.eventItem.sizeLimit - (Array.isArray(event.attendees) ? event.attendees.length : 0);
+        const imageHtml = event.eventItem.image && event.eventItem.image.url ? `<div class="class-image"><img src="${event.eventItem.image.url}" alt="Class Image" /></div>` : '';
         return `
                 ${imageHtml}
-                <div class="class-title">${cls.eventItem.title}</div>
-                <div class="class-desc truncate" onclick="this.classList.toggle('expanded')">${cls.eventItem.description}</div>
-                <div class="class-info"><strong>Price:</strong> $${Number(cls.eventItem.price).toFixed(2)}</div>
+                <div class="class-title">${event.eventItem.title}</div>
+                <div class="class-desc truncate" onclick="this.classList.toggle('expanded')">${event.eventItem.description}</div>
+                <div class="class-info"><strong>Price:</strong> $${Number(event.eventItem.price).toFixed(2)}</div>
                 <div class="class-info"><strong>Date:</strong> ${formattedDate}</div>
-                <div class="class-info"><strong>Duration:</strong> ${cls.eventItem.duration || 0} hours</div>
-                <div class="class-info"><strong>Location:</strong> ${cls.location.description}</div>
-                <div class="class-info"><strong>Instructor:</strong> ${cls.eventItem.host?.name || cls.eventItem.host || ''}</div>
-                <div class="class-info"><strong>Max Attendees:</strong> ${cls.eventItem.sizeLimit}</div>
+                <div class="class-info"><strong>Duration:</strong> ${event.eventItem.duration || 0} hours</div>
+                <div class="class-info"><strong>Location:</strong> ${event.location.description}</div>
+                <div class="class-info"><strong>Instructor:</strong> ${event.eventItem.host?.name || event.eventItem.host || ''}</div>
+                <div class="class-info"><strong>Max Attendees:</strong> ${event.eventItem.sizeLimit}</div>
                 <div class="class-info"><strong>Spots Available:</strong> ${spotsAvailable}</div>
             `;
     }
@@ -250,150 +251,31 @@ export class EventPortal extends Portal {
 
     /**
      * Edits an event by rendering a form with event details.
-     * @param {Object} cls - The class object containing event details.
+     * @param {Object} event - The class object containing event details.
      */
-    editEvent(cls) {
+    editEvent(event) {
         showSpinner();
-        Logger.log("Editing event:", cls);
-        const container = document.getElementById('classes');
-        container.style.display = 'block';
-        container.innerHTML = '';
+        Logger.log("Editing event:", event);
 
-        const form = document.createElement('form');
-        form.className = 'class-card';
+        const container = new Container('classes', 'div', 'event-editor-container');
+        container.clear().open;
 
-        const isNew = !cls.id;
-        const saveBtn = new Button('save-btn', isNew ? 'Create Class' : 'Save Changes', () => isNew ? this.addEvent() : this.saveEvent(cls.id));
-
-
-        // --- Event Item Dropdown at the top ---
-        const eventItemFieldContainer = document.createElement('div');
-        eventItemFieldContainer.id = 'event-item-field-container';
-        form.appendChild(eventItemFieldContainer);
-
-        let eventItemsCache = []; // Store event items for lookup
-
-        // Fetch event items from backend and populate the Event Item dropdown
-        google.script.run.withSuccessHandler((response) => {
-            const res = JSON.parse(response);
-            const itemList = res.data || [];
-            eventItemsCache = itemList; // Cache for later use
-
-            const dropdown = new DropDown(
-                'edit-event-item',
-                'Event Item',
-                [{ id: 'null', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
-                cls.eventItem.id || '',
-                'dropdown'
-            );
-            eventItemFieldContainer.innerHTML = '';
-            eventItemFieldContainer.appendChild(dropdown.render());
-
-            // Add change event to autofill fields
-            dropdown.component.addEventListener('change', () => {
-                const selectedId = dropdown.component.value;
-                const selectedItem = eventItemsCache.find(i => i.id === selectedId);
-                if (selectedItem) {
-                    if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
-                    if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
-                    if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
-                    if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit;
-                    if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
-                }
-            });
-
-            // Optionally, trigger autofill if editing an existing event with an eventItemId
-            if (cls.eventItem.id) {
-                const selectedItem = eventItemsCache.find(i => i.id === cls.eventItem.id);
-                if (selectedItem) {
-                    if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
-                    if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
-                    if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
-                    if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit;
-                    if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
-                }
+        const eventEditor = new EventEditor(
+            event || { eventItem: {} },
+            (eventId) => this.saveEvent(eventId), // Save callback
+            () => {
+                container.style.display = 'none'; // Cancel callback
+                this.loadEvents();
             }
-        }).getEventItemList({ pageSize: 100 });
+        );
 
-        // --- Rest of the fields ---
-        form.appendChild(new TextInput('edit-title', 'Title', 'text', cls.eventItem.title).render());
-        form.appendChild(new TextInput('edit-desc', 'Description', 'textarea', cls.eventItem.description).render());
-        form.appendChild(new TextInput('edit-date', 'Date', 'datetime-local', this.formatDateForInput(cls.date)).render());
-        form.appendChild(new TextInput('edit-duration', 'Duration (hours)', 'number', cls.eventItem.duration || '').render());
-
-        const roomFieldContainer = document.createElement('div');
-        roomFieldContainer.id = 'room-field-container';
-        form.appendChild(roomFieldContainer);
-
-        // Fetch available rooms and populate the dropdown
-        google.script.run.withSuccessHandler((response) => {
-            const res = JSON.parse(response);
-            if (res.success) {
-                const rooms = res.data || [];
-                const roomDropdown = new DropDown('edit-room', 'location', rooms, cls.location?.id || '');
-                roomFieldContainer.innerHTML = ''; // Clear existing options
-                roomFieldContainer.appendChild(roomDropdown.render());
-            } else {
-                Logger.error('Failed to load locations:', res.error);
-            }
-        }).getEventRooms();
-
-        // Placeholder for Host dropdown
-        const hostFieldContainer = document.createElement('div');
-        hostFieldContainer.id = 'host-field-container';
-        form.appendChild(hostFieldContainer);
-
-        form.appendChild(new MoneyInput('edit-price', cls.eventItem.price || 0, 'Price').render());
-        form.appendChild(new TextInput('edit-size', 'Attendee Limit', 'number', cls.eventItem.sizeLimit || 0).render());
-        form.appendChild(new TextInput('edit-enabled', 'Enabled', 'checkbox', cls.eventItem.enabled === true).render());
-
-        // --- Add the Cancel Button ---
-        const cancelBtn = new Button('cancel-btn', 'Cancel', () => {
-            form.remove(); // Remove the form
-            container.style.display = 'none';
-            this.loadEvents(); // Reload the events (or return to the previous view)
-        });
-        // --- Image Upload Field ---
-        const imageViewer = new ImageViewer(`${cls.id}-image-viewer`, cls.eventItem.image ? [cls.eventItem.image.url] : []);
-        imageViewer.addFileUpload();
-        form.appendChild(imageViewer.render());
-        // --- End Image Upload Field ---
-        // Append buttons to the form
-        form.appendChild(saveBtn.render());
-        form.appendChild(cancelBtn.render());
-
-        container.appendChild(form);
-
-        // Fetch instructors from backend and populate the Host dropdown
-        google.script.run.withSuccessHandler((instructors) => {
-            let instructorList = instructors;
-            if (typeof instructors === 'string') {
-                try {
-                    instructorList = JSON.parse(instructors);
-                } catch (e) {
-                    instructorList = [];
-                }
-            }
-            const dropdown = new DropDown('edit-host', 'Instructor', instructorList, cls.eventItem.host?.id || '');
-            hostFieldContainer.innerHTML = '';
-            hostFieldContainer.appendChild(dropdown.render());
-            hideSpinner();
-        }).getInstructors();
+        container.appendChild(eventEditor);
+        hideSpinner();
     }
 
     saveEvent(eventId) {
-        const requiredFields = ['edit-title', 'edit-date', 'edit-room'];
-        for (const id of requiredFields) {
-            const field = document.getElementById(id);
-            if (!field.value.trim()) {
-                const confirmation = document.getElementById('confirmation-message');
-                confirmation.textContent = `${field.previousSibling.textContent.replace(':', '')} is required.`;
-                confirmation.style.color = 'red';
-                return;
-            }
-        }
-        const updated = this.createEventObject(eventId);
-        Logger.log(JSON.stringify(updated, null, 2));
+        const eventObject = this.eventEditor.createEventObject(eventId); // Get the event object from EventEditor
+        Logger.log(JSON.stringify(eventObject, null, 2));
         showSpinner();
         google.script.run
             .withSuccessHandler(() => {
@@ -413,23 +295,12 @@ export class EventPortal extends Portal {
                 confirmation.textContent = `Failed to update event. ${err}`;
                 confirmation.style.color = 'red';
             })
-            .updateEvent(JSON.stringify(updated));
+            .updateEvent(JSON.stringify(eventObject));
     }
 
     addEvent() {
-        const requiredFields = ['edit-date', 'edit-room', 'edit-event-item', 'edit-host', 'edit-title', 'edit-desc', 'edit-price', 'edit-size', 'edit-duration'];
-        for (const id of requiredFields) {
-            const field = document.getElementById(id);
-            if (!field.value.trim()) {
-                const confirmation = document.getElementById('confirmation-message');
-                confirmation.textContent = `${field.previousSibling.textContent.replace(':', '')} is required.`;
-                confirmation.style.color = 'red';
-                return;
-            }
-        }
-
-        const newEvent = this.createEventObject();
-        Logger.log("Creating event object:", newEvent);
+        const eventObject = this.eventEditor.createEventObject(); // Get the event object from EventEditor
+        Logger.log("Creating event object:", eventObject);
         showSpinner();
         google.script.run
             .withSuccessHandler(res => {
@@ -455,64 +326,10 @@ export class EventPortal extends Portal {
                 confirmation.textContent = `Failed to create event. ${err}`;
                 confirmation.style.color = 'red';
             })
-            .createEvent(JSON.stringify(newEvent));
+            .createEvent(JSON.stringify(eventObject));
     }
 
-    createEventObject(eventId = null) {
-
-        const eventItemId = document.getElementById('edit-event-item').value;
-        const title = document.getElementById('edit-title').value;
-        const description = document.getElementById('edit-desc').value;
-        const date = document.getElementById('edit-date').value;
-        const location = { id: document.getElementById('edit-room').value };
-        const price = parseFloat(document.getElementById('edit-price').value) || 0;
-        const sizeLimit = parseInt(document.getElementById('edit-size').value) || 0;
-        const enabled = document.getElementById('edit-enabled').checked;
-        const host = { id: document.getElementById('edit-host').value };
-        const duration = parseInt(document.getElementById('edit-duration').value) || 0; // <-- Add this line
-        const imageInput = document.getElementById('edit-image');
-
-        let imageBase64 = '';
-        // Try to get the base64 from the form property (set by the FileReader)
-        const form = imageInput.closest('form');
-        if (form && form._imageBase64) {
-            imageBase64 = form._imageBase64;
-        } else if (document.getElementById('edit-image-preview').src && document.getElementById('edit-image-preview').src.startsWith('data:image')) {
-            imageBase64 = document.getElementById('edit-image-preview').src;
-        } else if (window.activeEvent && window.activeEvent.eventItem && window.activeEvent.eventItem.image) {
-            imageBase64 = window.activeEvent.eventItem.image;
-        }
-
-        return {
-            id: eventId === 'null' ? null : eventId,
-            eventItem: {
-                id: eventItemId,
-                type: 'event',
-                title: title,
-                description: description,
-                price: price,
-                sizeLimit: sizeLimit,
-                enabled: enabled,
-                host: host,
-                duration: duration,
-                image: { data: imageBase64 }
-            },
-            date: new Date(date),
-            location: location
-        };
-    }
-
-    formatDateForInput(date) {
-        if (!date) return '';
-        const d = new Date(date);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const hh = String(d.getHours()).padStart(2, '0');
-        const min = String(d.getMinutes()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-    }
-
+ 
     /**
      * Handles the unregistration process for a class.
      * @param {string} classId - The ID of the class to unregister from.

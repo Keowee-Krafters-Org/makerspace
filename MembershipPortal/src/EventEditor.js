@@ -1,4 +1,4 @@
-import { Container } from './Container.js';
+import { Container } from './component/Container.js';
 import { Button } from './component/Button.js';
 import { TextInput } from './component/TextInput.js';
 import { DropDown } from './component/DropDown.js';
@@ -12,105 +12,145 @@ import { showSpinner, hideSpinner } from './common.js';
  */
 export class EventEditor extends Container {
     /**
-     * @param {Object} config - The shared configuration for the application.
+     *
      * @param {Function} saveEventCallback - Callback function to save the event.
      * @param {Function} cancelCallback - Callback function to cancel editing.
      */
-    constructor(config, saveEventCallback, cancelCallback) {
+    constructor(event = null,  saveEventCallback, cancelCallback) {
         super('eventEditor');
-        this.config = config;
+        this.event = event || {};
         this.saveEventCallback = saveEventCallback;
         this.cancelCallback = cancelCallback;
     }
 
     /**
      * Renders the event editing form.
-     * @param {Object} cls - The class object containing event details.
+     * @param {Object} event - The class object containing event details.
      */
-    render(cls) {
+    render() {
+        const event = this.event || {};
+        Logger.debug("Rendering Event Editor for class:", event);
         this.clear(); // Clear any existing content
 
-        const form = document.createElement('form');
-        form.className = 'class-card';
+        // Create the form container
+        const form = new Container('event-editor-form', 'form', 'card');
 
-        const isNew = !cls.id;
-        const saveBtn = new Button('save-btn', isNew ? 'Create Class' : 'Save Changes', () => this.saveEvent(cls.id));
+        const isNew = !event.id;
+        const saveBtn = new Button('save-btn', isNew ? 'Create Class' : 'Save Changes', () => this.saveEvent(event.id));
         const cancelBtn = new Button('cancel-btn', 'Cancel', () => this.cancelCallback());
 
         // --- Event Item Dropdown ---
-        const eventItemFieldContainer = document.createElement('div');
-        eventItemFieldContainer.id = 'event-item-field-container';
-        form.appendChild(eventItemFieldContainer);
+        const eventItemDropdown = new DropDown(
+            'edit-event-item',
+            'Event Item',
+            [{ id: 'null', name: 'Select Event Item' }],
+            this.event.eventItem.id || '',
+            'dropdown'
+        ).setOnChange((selectedItem) => this.updateFieldsFromEventItem(selectedItem))
+        .setItemLoader((callback) => {
+            showSpinner();
+        });
+        form.appendChild(eventItemDropdown);
 
-        let eventItemsCache = []; // Store event items for lookup
-
-        // Fetch event items from backend and populate the Event Item dropdown
+        // Fetch event items from backend and populate the dropdown
         google.script.run.withSuccessHandler((response) => {
             const res = JSON.parse(response);
             const itemList = res.data || [];
-            eventItemsCache = itemList; // Cache for later use
-
-            const dropdown = new DropDown(
-                'edit-event-item',
-                'Event Item',
-                [{ id: 'null', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title }))),
-                cls.eventItem.id || '',
-                'dropdown'
+            eventItemDropdown.setOptions(
+                [{ id: 'null', name: 'Select Event Item' }].concat(itemList.map(i => ({ id: i.id, name: i.title })))
             );
-            eventItemFieldContainer.innerHTML = '';
-            eventItemFieldContainer.appendChild(dropdown.render());
 
-            // Add change event to autofill fields
-            dropdown.component.addEventListener('change', () => {
-                const selectedId = dropdown.component.value;
-                const selectedItem = eventItemsCache.find(i => i.id === selectedId);
-                if (selectedItem) {
-                    if (selectedItem.title) document.getElementById('edit-title').value = selectedItem.title;
-                    if (selectedItem.description) document.getElementById('edit-desc').value = selectedItem.description;
-                    if (selectedItem.price) document.getElementById('edit-price').value = selectedItem.price;
-                    if (selectedItem.sizeLimit) document.getElementById('edit-size').value = selectedItem.sizeLimit;
-                    if (selectedItem.duration) document.getElementById('edit-duration').value = selectedItem.duration;
-                }
-            });
+            // // Add change event to autofill fields
+            // eventItemDropdown.component.addEventListener('change', () => {
+            //     const selectedId = eventItemDropdown.getValue();
+            //     const selectedItem = itemList.find(i => i.id === selectedId);
+            //     if (selectedItem) {
+            //         this.updateFieldsFromEventItem(selectedItem);
+            //     }
+            // });
         }).getEventItemList({ pageSize: 100 });
 
         // --- Rest of the fields ---
-        form.appendChild(new TextInput('edit-title', 'Title', 'text', cls.eventItem.title).render());
-        form.appendChild(new TextInput('edit-desc', 'Description', 'textarea', cls.eventItem.description).render());
-        form.appendChild(new TextInput('edit-date', 'Date', 'datetime-local', this.formatDateForInput(cls.date)).render());
-        form.appendChild(new TextInput('edit-duration', 'Duration (hours)', 'number', cls.eventItem.duration || '').render());
+        const titleInput = new TextInput('edit-title', 'Title', 'text', this.event.eventItem.title);
+        const descriptionInput = new TextInput('edit-desc', 'Description', 'textarea', event.eventItem.description);
+        const dateInput = new TextInput('edit-date', 'Date', 'datetime-local', this.formatDateForInput(event.date));
+        const durationInput = new TextInput('edit-duration', 'Duration (hours)', 'number', event.eventItem.duration || '');
+        const priceInput = new MoneyInput('edit-price', event.eventItem.price || 0, 'Price');
+        const sizeLimitInput = new TextInput('edit-size', 'Attendee Limit', 'number', event.eventItem.sizeLimit || 0);
+        const enabledInput = new TextInput('edit-enabled', 'Enabled', 'checkbox', event.eventItem.enabled === true);
 
-        const roomFieldContainer = document.createElement('div');
-        roomFieldContainer.id = 'room-field-container';
-        form.appendChild(roomFieldContainer);
+
+
+        form.appendChild(titleInput);
+        form.appendChild(descriptionInput);
+                // --- Room Dropdown ---
+        const roomDropdown = new DropDown('edit-room', 'Location', [], event.location?.id || '');
+        form.appendChild(roomDropdown);
 
         // Fetch available rooms and populate the dropdown
         google.script.run.withSuccessHandler((response) => {
             const res = JSON.parse(response);
             if (res.success) {
-                const rooms = res.data || [];
-                const roomDropdown = new DropDown('edit-room', 'Location', rooms, cls.location?.id || '');
-                roomFieldContainer.innerHTML = ''; // Clear existing options
-                roomFieldContainer.appendChild(roomDropdown.render());
+                roomDropdown.setOptions(res.data || []);
             } else {
                 Logger.error('Failed to load locations:', res.error);
             }
         }).getEventRooms();
 
-        // --- Image Upload Field ---
-        const imageViewer = new ImageViewer(`${cls.id}-image-viewer`, cls.eventItem.image ? [cls.eventItem.image.url] : []);
-        imageViewer.addFileUpload();
-        form.appendChild(imageViewer.render());
 
-        form.appendChild(new MoneyInput('edit-price', cls.eventItem.price || 0, 'Price').render());
-        form.appendChild(new TextInput('edit-size', 'Attendee Limit', 'number', cls.eventItem.sizeLimit || 0).render());
-        form.appendChild(new TextInput('edit-enabled', 'Enabled', 'checkbox', cls.eventItem.enabled === true).render());
+        form.appendChild(dateInput);
+        form.appendChild(durationInput);
+        form.appendChild(priceInput);
+        form.appendChild(sizeLimitInput);
+        form.appendChild(enabledInput);
+
+
+        // --- Image Upload Field ---
+        const imageViewer = new ImageViewer(`${event.id}-image-viewer`, event.eventItem.image ? [event.eventItem.image.url] : []);
+        imageViewer.addFileUpload();
+        form.appendChild(imageViewer);
 
         // Append buttons to the form
-        form.appendChild(saveBtn.render());
-        form.appendChild(cancelBtn.render());
+        form.appendChild(saveBtn);
+        form.appendChild(cancelBtn);
 
         this.appendChild(form);
+    }
+
+    /**
+     * Updates form fields based on the selected event item.
+     * @param {Object} eventItem - The selected event item.
+     */
+    updateFieldsFromEventItem(eventItem) {
+        this.components.titleInput.setValue(eventItem.title || '');
+        this.components.descriptionInput.setValue(eventItem.description || '');
+        this.components.priceInput.setValue(eventItem.price || 0);
+        this.components.sizeLimitInput.setValue(eventItem.sizeLimit || 0);
+        this.components.durationInput.setValue(eventItem.duration || 0);
+    }
+
+    /**
+     * Collects data from the form and creates an event object.
+     * @param {string|null} eventId - The ID of the event being edited (or null for new events).
+     * @returns {Object} The event object.
+     */
+    createEventObject(eventId = null) {
+        return {
+            id: eventId === 'null' ? null : eventId,
+            eventItem: {
+                id: this.components.eventItemDropdown.getValue(),
+                type: 'event',
+                title: this.components.titleInput.getValue(),
+                description: this.components.descriptionInput.getValue(),
+                price: parseFloat(this.components.priceInput.getValue()) || 0,
+                sizeLimit: parseInt(this.components.sizeLimitInput.getValue()) || 0,
+                enabled: this.components.enabledInput.getValue(),
+                duration: parseInt(this.components.durationInput.getValue()) || 0,
+                image: { data: this.components.imageViewer.getBase64Image() }
+            },
+            date: new Date(this.components.dateInput.getValue()),
+            location: { id: this.components.roomDropdown.getValue() }
+        };
     }
 
     /**
@@ -127,13 +167,5 @@ export class EventEditor extends Container {
         const hh = String(d.getHours()).padStart(2, '0');
         const min = String(d.getMinutes()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-    }
-
-    /**
-     * Saves the event by calling the saveEventCallback.
-     * @param {string|null} eventId - The ID of the event being saved.
-     */
-    saveEvent(eventId) {
-        this.saveEventCallback(eventId);
     }
 }

@@ -33,6 +33,6 @@ export class Image extends Component {
      */
     updateSrc(newSrc) {
         this.src = newSrc;
-        this.component.src = newSrc;
+        this.element.src = newSrc;
     }
 }

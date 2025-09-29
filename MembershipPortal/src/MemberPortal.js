@@ -9,7 +9,7 @@ import { TextInput } from './component/TextInput.js';
 import { List } from './component/List.js';
 import { Card } from './component/Card.js';
 import { Message } from './component/Message.js';
-import { Container } from './Container.js';
+import { Container } from './component/Container.js';
 import { PortalManager } from './PortalManager.js';
 /**
  * MemberPortal class for managing member-specific functionality.

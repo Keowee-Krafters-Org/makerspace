@@ -95,6 +95,6 @@ export class ImageViewer extends Card {
      */
     updateImage() {
         this.imgElement.updateSrc(this.imageUrls[this.currentIndex]);
-        this.label.component.textContent = `Image ${this.currentIndex + 1} of ${this.imageUrls.length}`;
+        this.label.element.textContent = `Image ${this.currentIndex + 1} of ${this.imageUrls.length}`;
     }
 }

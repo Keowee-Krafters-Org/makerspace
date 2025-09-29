@@ -4,11 +4,16 @@ export class Component {
         this.className = className;
         this.onClick = onClick;
         this.id = id;
-        this.component = document.createElement(type || this.type);
+        this.element = document.createElement(type || this.type);
+        if (id) {
+            this.element.id = id;
+        } else {
+            this.element.id = `component-${Math.random().toString(36).substr(2, 9)}`;
+        }
     }
 
        render() {
-        const component = this.component;
+        const component = this.element;
         if (this.id) component.id = this.id;
         component.className = this.className;
         if (this.onClick) {
@@ -18,7 +23,7 @@ export class Component {
     }
 
     appendChild(child) {
-        this.component.appendChild(child.render());
+        this.element.appendChild(child.render());
         return this;
     }
 }

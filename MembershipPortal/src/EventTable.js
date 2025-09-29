@@ -1,4 +1,4 @@
-import { Container } from './Container.js';
+import { Container } from './component/Container.js';
 import { Logger } from './Logger.js';
 import { showSpinner, hideSpinner } from './common.js';
 import { Button } from './component/Button.js';

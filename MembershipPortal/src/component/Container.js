@@ -1,18 +1,24 @@
-import { showSpinner, hideSpinner    } from "./common";
+import { showSpinner, hideSpinner    } from "../common";
 
 /**
  * Base class for different document elements eg: portals, components, etc.
  */
 export class Container {
-    constructor(divId = null) {
-        if (!divId) {
-            this.div = document.createElement('div');
+    constructor(id = null, type = 'div', className = 'container') {
+        if (!id) {
+            // Create a unique ID if none is provided
+            this.id = `container-${Math.random().toString(36).substring(2, 9)}`;
         } else {
-            // If a divId is provided, use the existing div
-            this.divId = divId;
-            this.div = document.getElementById(this.divId);
+            // If a id is provided, use the existing div or create one
+            this.id = id;
+            this.div = document.getElementById(this.id);
+            if (!this.div) {
+                this.div = document.createElement(type);
+            }   
         }
-       
+        this.div.className = className;
+        document.body.appendChild(this.div);
+        this.components = {}; // Store references to child components
     }
     /**
      * Initialize the component.
@@ -47,6 +53,7 @@ export class Container {
     }
 
     appendChild(child) {
+        this.components[child.id || child.div.id] = child;
         this.div.appendChild(child.render());
         return this;
     }
