@@ -7,7 +7,7 @@ export class Logger {
         }
         return Logger.instance; 
     }
-    static instance= null;
+    static instance= new Logger('DEBUG');
     static log(message, data = '') {
         this.instance.log(message, data);
     }

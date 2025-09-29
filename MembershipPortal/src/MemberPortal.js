@@ -4,12 +4,11 @@ import { Portal } from './Portal.js';
 import { PortalSession } from './PortalSession.js';
 import { Logger } from './Logger.js';
 import { Member} from './model/Member.js';
-import { Button } from './component/Button.js';
-import { TextInput } from './component/TextInput.js';
-import { List } from './component/List.js';
-import { Card } from './component/Card.js';
-import { Message } from './component/Message.js';
-import { Container } from './component/Container.js';
+import { Button } from './components/Button.js';
+import { TextInput } from './components/TextInput.js';
+import { List } from './components/List.js';
+import { Card } from './components/Card.js';
+import { Container } from './components/Container.js';
 import { PortalManager } from './PortalManager.js';
 /**
  * MemberPortal class for managing member-specific functionality.
@@ -26,7 +25,7 @@ export class MemberPortal extends Portal {
     if (this.initialized) return this;
     super.initialize();
 
-    this.renderDashboard(this.currentMember);
+//    this.renderDashboard(this.currentMember);
     this.initialized = true;
     return this;
   }

@@ -3,15 +3,14 @@ import { MemberPortal } from './MemberPortal.js';
 import { AdminPortal } from './AdminPortal.js';
 import { EventPortal } from './EventPortal.js';
 import { PortalSession } from './PortalSession.js';
-import { Member } from './model/Member.js';
-import { hideSpinner, showSpinner } from './common.js';
+import { showSpinner, hideSpinner } from './common.js';
 /**
  * Manages different portals within the application.
  */
 export class PortalManager {
     constructor() {
-
-
+        this.portals = {};
+        this.session = null;
     }
 
     static instance = null;
@@ -28,65 +27,63 @@ export class PortalManager {
         return PortalManager.instance;
     }
 
-    static getPortal(portalName) {
-        return PortalManager.instance.getPortal(portalName);    
-    }
-
-    getPortal(portalName) {
-        return this.portals[portalName];
-    }
-
     initialize() {
 
         showSpinner();
-        const params = JSON.parse(document.getElementById('params').textContent);
-        // get the config from the service worker using the Google App Script call getConfig()
+        const paramsElement = document.getElementById('params');
+        if (!paramsElement) {
+            // Not running in Google Apps Script environment
+            // Use default parameters or handle accordingly
+
+            Logger.log("Params element not found");
+            hideSpinner();
+            return this.start();
+        }
+        const params = JSON.parse(paramsElement.textContent);
+        // Fetch the configuration from the backend
         google.script.run.withSuccessHandler(config => {
             window.logger = new Logger(config.logLevel || 'INFO');
             Logger.log("Initializing Portal Manager");
-            Logger.log(`Parameters: ${document.getElementById('params').textContent}`);
+            Logger.log(`Parameters: ${JSON.stringify(params)}`);
 
             window.sharedConfig = config;
             document.getElementById('version').textContent = `Version: ${config.version}\nService Version: ${config.membershipVersion}`;
-            console.log("Config loaded:", config);
-            // Initialize the PortalSession
+            this.start(config);
+            Logger.log("Portal Manager initialized with config:", config);
+           
+            hideSpinner();
+        }).getConfig();
+    }
+
+    /**
+     * Get the current session.
+     * Initialize service classes and return the session.
+     * @returns {PortalSession} The initialized session object.
+     */
+    start(config, params = {}) {
+         // Initialize the PortalSession
             const session = new PortalSession(config);
-            session.view = params.view || 'event';
-            session.viewMode = params.viewMode || 'list';
+            session.view = params?.view || 'member';
+            session.viewMode = params?.viewMode || 'list';
             this.session = session;
+
             Logger.log("Portal Session initialized");
+
+            // Initialize service classes
             this.portals = {
                 member: new MemberPortal(session),
                 admin: new AdminPortal(session),
                 event: new EventPortal(session)
             };
 
-            Logger.log(`Selected view: ${params.view}`);
-            this.routeTo(params.view);
-            hideSpinner();
             Logger.log("Portal Manager initialized");
-        }).getConfig();
+        return this.session;
+    }
+    getSession() {
+        return this.session;
     }
 
-    hidePortals() {
-        Object.values(this.portals).forEach(portal => portal.close());
-    }
-
-    setPortal(portal) {
-        if (this.currentPortal) {
-            this.currentPortal.close();
-        }
-        this.currentPortal = portal;
-        this.currentPortal.open().initialize();
-    }
-
-    routeTo(view, params = {}) {
-        this.session.view = view;
-        this.session.params = params;
-        if (this.portals[view]) {
-            this.setPortal(this.portals[view]);
-        } else {
-            console.error(`No portal found for view: ${view}`);
-        }
+    getPortal(portalName) {
+        return this.portals[portalName];
     }
 }

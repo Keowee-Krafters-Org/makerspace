@@ -1,7 +1,7 @@
-import { Container } from './component/Container.js';
+import { Container } from './components/Container.js';
 import { Logger } from './Logger.js';
 import { showSpinner, hideSpinner } from './common.js';
-import { Button } from './component/Button.js';
+import { Button } from './components/Button.js';
 import { PortalManager } from './PortalManager.js';
 /**
  * Component to display and manage the events table with pagination.

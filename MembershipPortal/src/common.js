@@ -1,3 +1,9 @@
+import { reactive } from 'vue';
+
+export const spinnerState = reactive({
+  visible: false,
+});
+
 export function processURLParams() {
     const currentMember = JSON.parse(document.getElementById('member-data').textContent);
     window.currentMember = currentMember;
@@ -6,15 +12,13 @@ export function processURLParams() {
 }
 
 export function showSpinner() {
-    console.log("Showing spinner");
-    document.getElementById('spinner').classList.remove('hidden');
-    document.getElementById('spinner').classList.add('show');
+  console.log('Showing spinner');
+  spinnerState.visible = true;
 }
 
 export function hideSpinner() {
-    console.log("Hiding spinner");
-    document.getElementById('spinner').classList.remove('show');
-    document.getElementById('spinner').classList.add('hidden');
+  console.log('Hiding spinner');
+  spinnerState.visible = false;
 }
 
 export function isAdministrator(user) {

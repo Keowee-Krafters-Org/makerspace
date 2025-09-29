@@ -1,7 +1,7 @@
 /**
  * Interface for a Portal.
  */
-import { Container } from './component/Container.js';
+import { Container } from './components/Container.js';
 /**
  * Base class for different portals eg: member, admin, event, etc.
  */

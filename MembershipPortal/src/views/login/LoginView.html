@@ -1,0 +1,35 @@
+  <div class="login-view">
+    <Card>
+      <Message v-if="status === 'UNVERIFIED'" type="info" text="Please verify your email to continue." />
+      <Message v-if="status === 'TOKEN_EXPIRED'" type="error" text="Your token has expired. Please request a new one." />
+      <Message v-if="status === 'VERIFYING'" type="info" text="A verification code has been sent to your email." />
+
+      <TextInput
+        v-if="status === 'UNVERIFIED' || status === 'TOKEN_EXPIRED'"
+        label="Email Address"
+        v-model="email"
+        :disabled="status === 'VERIFYING'"
+      />
+      <TextInput
+        v-if="status === 'VERIFYING'"
+        label="Verification Code"
+        v-model="token"
+      />
+
+      <Button
+        v-if="status === 'UNVERIFIED'"
+        text="Verify Email"
+        @click="requestToken"
+      />
+      <Button
+        v-if="status === 'VERIFYING'"
+        text="Verify Code"
+        @click="verifyCode"
+      />
+      <Button
+        v-if="status === 'VERIFYING'"
+        text="Resend Code"
+        @click="resendToken"
+      />
+    </Card>
+  </div>

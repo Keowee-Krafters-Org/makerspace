@@ -1,9 +1,9 @@
-import { Container } from './component/Container.js';
-import { Button } from './component/Button.js';
-import { TextInput } from './component/TextInput.js';
-import { DropDown } from './component/DropDown.js';
-import { MoneyInput } from './component/MoneyInput.js';
-import { ImageViewer } from './component/ImageViewer.js';
+import { Container } from './components/Container.js';
+import { Button } from './components/Button.js';
+import { TextInput } from './components/TextInput.js';
+import { DropDown } from './components/DropDown.js';
+import { MoneyInput } from './components/MoneyInput.js';
+import { ImageViewer } from './components/ImageViewer.js';
 import { Logger } from './Logger.js';
 import { showSpinner, hideSpinner } from './common.js';
 

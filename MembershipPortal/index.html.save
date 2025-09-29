@@ -1,0 +1,176 @@
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="src/style/style.css">
+  <base target="_top">
+  <title>Membership Portal</title>
+</head>
+
+<body>
+
+  <!-- Spinner -->
+  <div id="spinner" class="spinner"></div>
+
+  <!-- Navigation Panel -->
+  <nav class="hidden">
+    <button id="adminTab">Admin</button>
+    <button id="eventTab">Events</button>
+    <button id="memberTab">Members</button>
+  </nav>
+
+  <!-- Placeholder for dynamically injected portal sections -->
+  <div id="content">
+
+    <div id="adminPortal" style="display: none;">
+      <div id="adminContainer">
+        <div id="memberListContainer">
+          <h2>Member Admin </h2>
+          <div>
+            <input type="text" id="search" placeholder="Search by name or email" />
+            <select id="filter">
+              <option value="">All Statuses</option>
+              <option value="NEW">New</option>
+              <option value="REGISTERED">Registered</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="APPLIED">Applied</option>
+              <option value="PENDING">Pending</option>
+            </select>
+            <button onclick="loadMembers()">Search</button>
+          </div>
+          <table class="member-list" id="memberList">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Level</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="memberRows"></tbody>
+          </table>
+          <div id="paginationControls"></div>
+        </div>
+
+        <div id="memberEditor" class="member-editor hidden">
+          <h3>Edit Member</h3>
+          <label>Email: <input type="text" id="editEmail" disabled /></label>
+          <label>First Name: <input type="text" id="editFirstName" /></label>
+          <label>Last Name: <input type="text" id="editLastName" /></label>
+
+          <label>Level:
+            <select id="editLevel"></select>
+          </label>
+
+          <label>Status:
+            <select id="editStatus">
+              <option value="NEW">New</option>
+              <option value="REGISTERED">Registered</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="APPLIED">Applied</option>
+              <option value="PENDING">Pending</option>
+            </select>
+          </label>
+
+          <label>Waiver Signed:
+            <select id="editWaiverSigned">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+
+          <label>Waiver PDF Link:</label>
+          <a id="editWaiverLink" class="readonly-link" href="#" target="_blank" hidden="true">View Waiver</a>
+
+          <button onclick="saveMember()">Save Changes</button>
+          <button onclick="cancelEdit()">Cancel</button>
+        </div>
+
+        <h5>
+          <p id="version"></p>
+        </h5>
+      </div>
+    </div>
+  </div>
+
+  <div id="eventPortal" style="display: none;">
+    <div class="container" id="eventContainer">
+      <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
+      <h1>Classes and Events</h1>
+      <div id="eventTableContainer" style="display: block;"> <!-- Table layout -->
+        <table class="event-list" id="eventList">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Attendees</th>
+              <th>
+                Actions
+                <!-- Placeholder for the Button class -->
+                <button id="newClassButtonPlaceholder" class="signup-btn">New Event</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="eventRows"></tbody>
+        </table>
+        <div id="paginationControls"></div>
+      </div>
+      <div id="classes" class="classes-grid"></div> <!-- Card layout -->
+
+      <!-- New container for class details -->
+      <div id="classDetailsContainer" style="display: none; margin-top: 20px;"></div>
+
+      <div id="confirmation-message" style="text-align: center; color: green; margin-top: 20px;"></div>
+
+      <!-- New container for attendees list -->
+      <div id="attendeesContainer" style="display: none; margin-top: 20px;">
+        <h3>Attendees</h3>
+        <table class="event-list" id="attendeesTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+          <tbody id="attendeesRows"></tbody>
+        </table>
+        <button id="hideAttendeesBtn" class="signup-btn">Hide Attendees</button>
+      </div>
+
+      <h5>
+        <p id="version"></p>
+      </h5>
+    </div>
+  </div>
+
+  <div id="memberPortal" style="display: none;">
+    <div class="container" id="memberContainer">
+
+    </div>
+  </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Developed by MakeKeowee</p>
+    <h5>
+      <p id="version"></p>
+    </h5>
+  </div>
+
+  <script type="application/json" id="params">
+    <?!= JSON.stringify(params) ?>
+  </script>
+
+  <script src="src/app.js" type="module"></script>
+
+</body>
+
+</html>

@@ -2,16 +2,15 @@ import { Portal } from './Portal.js';
 import { showSpinner, hideSpinner } from './common.js';
 import { Logger } from './Logger.js';
 import { PortalManager } from './PortalManager.js';
-import { Button } from './component/Button.js';
-import { TextInput } from './component/TextInput.js';
-import { Card } from './component/Card.js';
-import { Container } from './component/Container.js';
-import { List } from './component/List.js';
-import { Message } from './component/Message.js';
+import { Button } from './components/Button.js';
+import { TextInput } from './components/TextInput.js';
+import { Card } from './components/Card.js';
+import { Container } from './components/Container.js';
+import { List } from './components/List.js';
 import { EventTable } from './EventTable.js';
-import { ImageViewer } from './component/ImageViewer.js'; // Import the ImageViewer component
-import { DropDown } from './component/DropDown.js';
-import { MoneyInput } from './component/MoneyInput.js';
+import { ImageViewer } from './components/ImageViewer.js'; // Import the ImageViewer component
+import { DropDown } from './components/DropDown.js';
+import { MoneyInput } from './components/MoneyInput.js';
 import { EventEditor } from './EventEditor.js';
 
 /**

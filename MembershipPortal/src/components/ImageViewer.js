@@ -7,7 +7,7 @@ import { Label } from "./Label.js";
 import { Card } from "./Card.js";
 import { Image } from "./Image.js";
 import { FileUpload } from "./FileUpload.js";
-import "../style/imageViewer.css";
+import "../styles/imageViewer.css";
 
 export class ImageViewer extends Card {
     /**
