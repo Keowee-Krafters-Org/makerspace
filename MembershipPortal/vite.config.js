@@ -22,7 +22,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    minify: true,
+    minify: false,
     outDir: resolve(__dirname, 'dist/ui'),
     rollupOptions: {
       output: {
@@ -35,4 +35,5 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'), // Ensure this alias is configured
     },
   },
+
 });

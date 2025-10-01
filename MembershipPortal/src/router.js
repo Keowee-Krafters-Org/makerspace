@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import Member from '@/views/member/Member.vue';
 import Admin from '@/views/admin/Admin.vue';
 import Event from '@/views/event/Event.vue';
@@ -11,7 +11,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(), // Use hash-based routing
   routes,
 });
 

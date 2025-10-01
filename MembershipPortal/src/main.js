@@ -4,8 +4,11 @@ import router from './router';
 import './styles/style.css';
 import { PortalManager } from './PortalManager.js';
 
-PortalManager.start(); // Start the PortalManager to initialize services
+async function initializeApp() {
 
-const session = PortalManager.getInstance().getSession(); // Get the initialized session
+  // Create and mount the Vue app
+  createApp(App ).use(router).mount('#app');
+}
 
-createApp(App, { session }).use(router).mount('#app'); // Pass the session and use the router
+// Initialize the app
+initializeApp();

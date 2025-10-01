@@ -25,6 +25,7 @@
       />
       <TextInput
         v-if="status === 'VERIFYING'"
+        required="true"
         label="Verification Code"
         v-model="verificationCode"
       />
@@ -32,17 +33,17 @@
       <Button
         v-if="status === 'UNVERIFIED'"
         label="Verify Email"
-        @click="requestToken"
+        @click="emitRequestToken"
       />
       <Button
         v-if="status === 'VERIFYING'"
         label="Verify Code"
-        @click="verifyCode"
+        @click="emitVerifyCode"
       />
       <Button
         v-if="status === 'VERIFYING'"
         label="Resend Code"
-        @click="resendToken"
+        @click="emitResendToken"
       />
     </Card>
   </div>
@@ -63,27 +64,25 @@ export default {
     Button,
   },
   props: {
-    session: {
+    member: {
       type: Object,
       required: true,
     },
   },
-  data() {
-    return {
-      email: '',
-      verificationCode: '',
-      status: this.session.member.login.status,
-    };
+  computed: {
+    status() {
+      return this.member.login?.status || 'UNVERIFIED';
+    },
   },
   methods: {
-    requestToken() {
-      this.session.memberPortal.requestToken(this.email);
+    emitRequestToken() {
+      this.$emit('request-token', this.email); // Emit the email to the parent
     },
-    verifyCode() {
-      this.session.memberPortal.verifyCode(this.verificationCode);
+    emitVerifyCode() {
+      this.$emit('verify-code', this.verificationCode); // Emit the verification code to the parent
     },
-    resendToken() {
-      this.session.memberPortal.resendToken();
+    emitResendToken() {
+      this.$emit('resend-token', this.email); // Emit the resend token event to the parent
     },
   },
 };

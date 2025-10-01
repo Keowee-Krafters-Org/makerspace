@@ -1,22 +1,24 @@
 const config = {
   dev: {
-    version: 'SNAPSHOT-0.2.4',
+    version: 'SNAPSHOT-0.2.6',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
     baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
     calendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com',
-    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
+    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
+    logLevel: 'DEBUG'
   },
   prod: {
     version: 'RELEASE-0.2.9',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',    
     calendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com',
-    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY'
+    imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
+    logLevel: 'INFO'
   }
 }
 
 var SharedConfig = {
-  mode: 'prod',
+  mode: 'dev',
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date
@@ -99,6 +101,6 @@ var SharedConfig = {
   }
 };
 
-function getConfig() {
+export function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }

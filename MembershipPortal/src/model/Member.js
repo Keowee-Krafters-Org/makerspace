@@ -5,7 +5,7 @@ export class Member extends Entity{
         this.emailAddress = data.emailAddress || '';
         this.firstName = data.firstName || '';
         this.lastName = data.lastName || '';
-        this.login = { status: 'UNVERIFIED' };
+        this.login = data.login || { status: 'UNVERIFIED' };
         this.registration = data.registration || { status: 'NEW', level: 'Guest' };
     }
 

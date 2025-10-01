@@ -7,7 +7,7 @@ export class Logger {
         }
         return Logger.instance; 
     }
-    static instance= new Logger('DEBUG');
+    static instance= null;
     static log(message, data = '') {
         this.instance.log(message, data);
     }
@@ -35,13 +35,11 @@ export class Logger {
         }
     }
     info(message, data = '') {
-        if (this.level === 'INFO') {
+        if (this.level === 'INFO' || this.level === 'DEBUG') {
             console.info("Info:", message, data);
         }
     }
     error(message, data = '') {
-        if (this.level === 'ERROR' || this.level === 'DEBUG' || this.level === 'INFO') {
             console.error("Error:", message, data);
-        }
     }
 }   
