@@ -1,6 +1,7 @@
 <!-- filepath: /home/csmith/Development/makerspace/MembershipPortal/src/views/member/Member.vue -->
 <template>
   <div>
+    <!-- Render LoginView if the member is unverified or verifying -->
     <LoginView
       v-if="member.login.status === 'UNVERIFIED' || member.login.status === 'VERIFYING'"
       :member="member"
@@ -8,6 +9,14 @@
       @verify-code="verifyCode"
       @resend-token="resendToken"
     />
+
+    <!-- Render MemberLanding if the member is verified and registered -->
+    <MemberLanding
+      v-else-if="member.login.status === 'VERIFIED' && member.registration.status === 'REGISTERED'"
+      :member="member"
+    />
+
+    <!-- Render UserDetailView for other verified members -->
     <UserDetailView
       v-else
       :member="member"
@@ -18,12 +27,14 @@
 <script>
 import LoginView from '@/views/login/LoginView.vue';
 import UserDetailView from '@/views/userDetails/UserDetailsForm.vue';
+import MemberLanding from '@/views/memberLanding/MemberLanding.vue';
 
 export default {
   name: 'Member',
   components: {
     LoginView,
     UserDetailView,
+    MemberLanding,
   },
   inject: ['logger', 'session', 'memberPortal'], // Inject dependencies
   data() {
@@ -50,7 +61,7 @@ export default {
         this.logger.error('Failed to verify code:', error.message);
       }
     },
-    async resendToken(emailAddress) {
+    async resendToken() {
       try {
         const updatedMember = await this.memberPortal.resendToken();
         this.member = updatedMember; // Update the member object

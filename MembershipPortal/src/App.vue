@@ -26,7 +26,6 @@ export default {
       logger: null, // Store the logger instance
       session: null, // Store the session instance
       memberPortal: null, // Store the MemberPortal instance
-      eventPortal: null, // Store the EventPortal instance
       adminPortal: null, // Store the AdminPortal instance
       loading: true, // Add a loading state
       member: null, // Store member data if needed
@@ -47,17 +46,15 @@ export default {
     this.logger = portalManager.logger; // Store the logger instance
     this.session = portalManager.getSession(); // Store the session instance
     this.memberPortal = portalManager.portals.member; // Store the MemberPortal instance
-    this.eventPortal = portalManager.portals.event; // Store the EventPortal instance
     this.adminPortal = portalManager.portals.admin; // Store the AdminPortal instance
     this.member = this.session.member; // Store member data if needed
     return {  
-      portalManager: this.portalManager, // Provide PortalManager as a reactive getter
-      logger:  this.logger, // Provide logger as a reactive getter
-      session: this.session, // Provide session as a reactive getter
-      memberPortal:  this.memberPortal, // Provide MemberPortal as a reactive getter
-      eventPortal: this.eventPortal, // Provide EventPortal as a reactive getter
-      adminPortal: this.adminPortal, // Provide AdminPortal as a reactive getter
-      member: this.member, // Provide member data as a reactive getter
+      portalManager: this.portalManager, // Provide PortalManager 
+      logger:  this.logger, // Provide logger 
+      session: this.session, // Provide session
+      memberPortal:  this.memberPortal, // Provide MemberPortal
+      adminPortal: this.adminPortal, // Provide AdminPortal
+      member: this.member, // Provide member data
     };
   },
 };
