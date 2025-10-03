@@ -29,7 +29,7 @@ export class AppService {
     const session = new PortalSession(config);
     session.view = 'event';
     session.viewMode = 'list';
-    this.session = session;
+    this.session = reactive(session);
 
     this.logger.info('AppService initialized');
     return this;

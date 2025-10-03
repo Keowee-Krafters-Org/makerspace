@@ -19,6 +19,8 @@ const config = {
 
 var SharedConfig = {
   mode: 'dev',
+  appName: 'MakerSpace Portal',
+  organizationName: 'MakeKeowee',
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date
@@ -84,6 +86,32 @@ var SharedConfig = {
     'Treasurer': {value: 14, discount: 20},
     'Advisor': {value: 15, discount: 20},
     'Administrator': {value: 30, discount: 20}
+  },
+  interests: {
+    'General ': {value: 1},
+    'Arduino': {value: 2},
+    'Automotive': {value: 3},
+    'Blacksmithing': {value: 4},
+    'Book Arts': {value: 5},
+    'Ceramics': {value: 6},
+    'CNC': {value: 7},
+    'Coding': {value: 8},
+    'Electronics': {value: 9},
+    'Fabric Arts': {value: 10},
+    'Food': {value: 11},
+    'Furniture Making': {value: 12},
+    'Gardening': {value: 13},
+    'Glassworking': {value: 14},
+    'Jewelry Making': {value: 15},
+    'Laser Cutting': {value: 16},
+    'Leatherworking': {value: 17},
+    'Metalworking': {value: 18},
+    'Photography': {value: 19},
+    'Podcasting': {value: 20},
+    'Robotics': {value: 21},
+    'Video Production': {value: 22},
+    'Woodworking': {value: 23},
+    'Other': {value: 99}
   },
   locations: ['Eagles Nest Arts Center,4 Eagle Lane, Salem, SC 29676',
     'Keowee Key Clubhouse, Stamp Creek Road, Salem, SC 29676',

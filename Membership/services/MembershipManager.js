@@ -160,14 +160,27 @@ class MembershipManager {
     return newMember;
   }
 
-  getMember(memberId) {
-    return (this.storageManager.getById(memberId));
+  /**
+   * 
+   * @param {*} memberId 
+   * @param {*} options optionally include authentication data delete it by default
+   * @returns {Response} the member record
+   */
+  getMember(memberId, options = {}) {
+    if (options.includeAuthentication) {
+      return (this.storageManager.getById(memberId));
+    }
+    const memberResponse = this.storageManager.getById(memberId);
+    if (memberResponse && memberResponse.success && memberResponse.data) {
+      delete memberResponse.data.login.authentication;
+    }
+    return memberResponse;
   }
   addMemberRegistration(memberData) {
     let registeredMember = this.storageManager.createNew(memberData);
     let member = this.memberLookup(memberData.emailAddress);
     if (!member) {
-      member = addMember(memberData);
+      member = this.addMember(memberData);
     }
     registeredMember.id = member.id;
     if (member && member.login.status === 'VERIFIED') {

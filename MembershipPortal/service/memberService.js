@@ -32,4 +32,3 @@ function logout(emailAddress) {
   return JSON.stringify(membershipManager.memberLogout(emailAddress));
 }
 
-
