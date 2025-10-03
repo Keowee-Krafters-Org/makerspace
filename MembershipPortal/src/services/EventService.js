@@ -1,57 +1,137 @@
-import { reactive } from 'vue';
+import { AppService } from './AppService.js';
+
 export class EventService {
-  constructor(connector) {
+  constructor(connector, appService) {
     if (!connector) throw new Error('EventService requires a ServiceConnector');
+    if (!appService) throw new Error('EventService requires AppService');
     this.connector = connector;
+    this.app = appService;
   }
 
-  // Utility: unwrap { success, data } envelopes if present
   static normalize(res) {
     return (res && typeof res === 'object' && 'success' in res && 'data' in res) ? res.data : res;
   }
 
-  // GAS: getEventList({ pageSize: 100 })
-  async listEvents(options = { pageSize: 100 }) {
-    const res = await this.connector.invoke('getEventList', options);
-    return EventService.normalize(res);
+  listEvents(options = { pageSize: 100 }) {
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('getEventList', options);
+      return EventService.normalize(res);
+    });
   }
 
-  async getEventById(id) {
+  getEventById(id) {
     if (!id) throw new Error('getEventById requires id');
-    const res = await this.connector.invoke('getEventById', id);
-    return EventService.normalize(res);
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('getEventById', id);
+      return EventService.normalize(res);
+    });
   }
 
-  // Chooses create vs update; stringify only if GAS expects strings
-  async saveEvent(event) {
+  saveEvent(event) {
     if (!event) throw new Error('saveEvent requires event');
     const isGAS = typeof google !== 'undefined' && google?.script?.run;
     const payload = isGAS ? JSON.stringify(event) : event;
 
-    if (event.id) {
-      const res = await this.connector.invoke('updateEvent', payload);
+    return this.app.withSpinner(async () => {
+      const res = event.id
+        ? await this.connector.invoke('updateEvent', payload)
+        : await this.connector.invoke('createEvent', payload);
       return EventService.normalize(res);
-    } else {
-      const res = await this.connector.invoke('createEvent', payload);
-      return EventService.normalize(res);
-    }
+    });
   }
 
-  async deleteEvent(id) {
+  deleteEvent(id) {
     if (!id) throw new Error('deleteEvent requires id');
-    const res = await this.connector.invoke('deleteEvent', id);
-    return EventService.normalize(res);
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('deleteEvent', id);
+      return EventService.normalize(res);
+    });
   }
 
-  async signup(eventId, memberId) {
+  signup(eventId, memberId) {
     if (!eventId || !memberId) throw new Error('signup requires eventId and memberId');
-    const res = await this.connector.invoke('signup', eventId, memberId);
-    return EventService.normalize(res);
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('signup', eventId, memberId);
+      return EventService.normalize(res);
+    });
   }
 
-  async unregister(eventId, memberId) {
+  unregister(eventId, memberId) {
     if (!eventId || !memberId) throw new Error('unregister requires eventId and memberId');
-    const res = await this.connector.invoke('unregister', eventId, memberId);
-    return EventService.normalize(res);
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('unregister', eventId, memberId);
+      return EventService.normalize(res);
+    });
+  }
+
+  // Updated: derive attendees from event; resolve contacts when needed.
+  async getEventAttendees(eventId) {
+    if (!eventId) throw new Error('getEventAttendees requires eventId');
+    return this.app.withSpinner(async () => {
+      // Try direct API first (for Node/demo), else fall back to event details.
+      try {
+        const maybe = await this.connector.invoke('getEventAttendees', eventId);
+        const direct = EventService.normalize(maybe);
+        if (Array.isArray(direct)) return direct;
+      } catch (_) {
+        // ignore and fall back
+      }
+
+      const event = await this.connector.invoke('getEventById', eventId).then(EventService.normalize);
+      let attendees = event?.attendees || [];
+
+      // Legacy pattern: attendees are contact refs (no id, but emailAddress)
+      if (attendees.length && !attendees[0].id && attendees[0].emailAddress) {
+        try {
+          const resolved = await this.connector.invoke('getMembersFromContacts', attendees);
+          attendees = EventService.normalize(resolved);
+        } catch {
+          // keep original contacts if resolve not available
+        }
+      }
+      return attendees;
+    });
+  }
+
+  // New: Editor data
+  getEventItemList(options = { pageSize: 100 }) {
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('getEventItemList', options);
+      return EventService.normalize(res);
+    });
+  }
+
+  getEventRooms() {
+    return this.app.withSpinner(async () => {
+      const res = await this.connector.invoke('getEventRooms');
+      return EventService.normalize(res);
+    });
+  }
+
+  // New: Hosts for dropdown (optional on GAS, handled gracefully in UI)
+  async getEventHosts() {
+    // Try several backends/endpoints; return [] if none available.
+    return this.app.withSpinner(async () => {
+      const tryInvoke = async (fn, arg) => {
+        try {
+          const res = await this.connector.invoke(fn, arg);
+          const data = EventService.normalize(res);
+          if (Array.isArray(data)) return data;
+          if (Array.isArray(data?.data)) return data.data;
+        } catch (e) {
+          // noop
+        }
+        return null;
+      };
+
+      // Primary
+      let hosts = await tryInvoke('getEventHosts');
+      if (!hosts) hosts = await tryInvoke('getHosts');
+      // Fallback: member list filtered to host role/level
+      if (!hosts) hosts = await tryInvoke('getMemberList', { role: 'HOST', pageSize: 500 });
+      if (!hosts) hosts = await tryInvoke('getMembers', { minLevel: 'HOST', pageSize: 500 });
+
+      return hosts || [];
+    });
   }
 }

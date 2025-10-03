@@ -1,63 +1,45 @@
 <!-- filepath: /home/csmith/Development/makerspace/MembershipPortal/src/components/Button.vue -->
 <template>
   <button
-    :id="id"
-    :class="[
-      'px-4 py-2 font-semibold text-white rounded-md transition duration-200',
-      buttonClasses,
-      classname
-    ]"
-    v-bind="ariaAttributes"
+    class="btn"
+    :disabled="disabled"
+    @click="$emit('click', $event)"
+    type="button"
   >
-    {{ label }}
+    <span v-if="icon" class="btn-icon" aria-hidden="true">
+      <Icon :name="icon" :size="iconSize" />
+    </span>
+    <span class="btn-label"><slot>{{ label }}</slot></span>
   </button>
 </template>
 
 <script>
+import Icon from './Icon.vue';
+
 export default {
   name: 'Button',
+  components: { Icon },
   props: {
-    id: {
-      type: String,
-      required: false,
-    },
-    label: {
-      type: String,
-      required: true,
-    },
-    type: {
-      type: String,
-      default: 'default',
-      validator: (value) => ['save', 'cancel', 'next', 'back', 'default'].includes(value),
-    },
-    classname: {
-      type: String,
-      default: '',
-    },
-    ariaAttributes: {
-      type: Object,
-      default: () => ({}),
-    },
+    label: { type: String, default: '' },
+    disabled: { type: Boolean, default: false },
+    // Icon names mapped in Icon.vue: 'eye' | 'pencil' | 'trash' | 'users' | 'list' | 'table' | 'refresh'
+    icon: { type: String, default: '' },
+    iconSize: { type: [Number, String], default: 20 },
   },
-  computed: {
-    buttonClasses() {
-      switch (this.type) {
-        case 'save':
-          return 'bg-green-500 hover:bg-green-600 focus:ring-2 focus:ring-green-300';
-        case 'cancel':
-          return 'bg-red-500 hover:bg-red-600 focus:ring-2 focus:ring-red-300';
-        case 'next':
-          return 'bg-blue-500 hover:bg-blue-600 focus:ring-2 focus:ring-blue-300';
-        case 'back':
-          return 'bg-gray-500 hover:bg-gray-600 focus:ring-2 focus:ring-gray-300';
-        default:
-          return 'bg-gray-300 hover:bg-gray-400 focus:ring-2 focus:ring-gray-200';
-      }
-    },
-  },
+  emits: ['click'],
 };
 </script>
 
 <style scoped>
-/* No custom styles, relying entirely on Tailwind CSS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-icon {
+  display: inline-flex;
+}
+.btn-label {
+  line-height: 1;
+}
 </style>

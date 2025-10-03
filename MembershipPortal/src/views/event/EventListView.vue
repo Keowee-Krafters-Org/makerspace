@@ -1,22 +1,25 @@
 <template>
-  <div>
-    <EventList
-      :events="events"
-      @select="$emit('select', $event)"
-      @delete="$emit('delete', $event)"
-      @edit="$emit('edit', $event)"
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <Event
+      v-for="ev in events"
+      :key="ev.id"
+      :id="ev.id"
+      :initial="ev"
+      :mode="mode"
+      variant="card"
     />
   </div>
 </template>
 
 <script>
-import EventList from '@/components/EventList.vue';
+import Event from '@/views/event/Event.vue';
 
 export default {
   name: 'EventListView',
-  components: { EventList },
+  components: { Event },
   props: {
-    events: { type: Array, required: true },
+    events: { type: Array, default: () => [] },
+    mode: { type: String, default: 'list' },
   },
 };
 </script>

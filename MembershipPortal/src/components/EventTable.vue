@@ -3,22 +3,23 @@
     <thead>
       <tr class="bg-gray-100">
         <th class="text-left p-2 border">Title</th>
-        <th class="text-left p-2 border">Date</th>
-        <th class="text-left p-2 border">Duration</th>
+        <th class="text-left p-2 border">Start</th>
+        <th class="text-left p-2 border">End</th>
         <th class="text-left p-2 border">Location</th>
         <th class="text-left p-2 border">Actions</th>
       </tr>
     </thead>
     <tbody>
       <tr v-for="ev in events" :key="ev.id" class="hover:bg-gray-50">
-        <td class="p-2 border">{{ ev.title || ev.eventItem.title }}</td>
-        <td class="p-2 border">{{ formatDate(ev.date) }}</td>
-        <td class="p-2 border">{{ ev.eventItem.duration }}</td>
-        <td class="p-2 border">{{ ev.location?.name }}</td>
+        <td class="p-2 border">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
+        <td class="p-2 border">{{ formatDate(ev.startDate || ev.date) }}</td>
+        <td class="p-2 border">{{ formatDate(ev.endDate) }}</td>
+        <td class="p-2 border">{{ ev.location?.name || ev.location }}</td>
         <td class="p-2 border">
-          <Button label="View" @click="$emit('select', ev)" />
-          <Button label="Edit" class="ml-2" @click="$emit('edit', ev)" />
-          <Button label="Delete" class="ml-2" @click="$emit('delete', ev)" />
+          <Button icon="eye" label="View" @click="$emit('select', ev)" />
+          <Button icon="pencil" label="Edit" class="ml-2" @click="$emit('edit', ev)" />
+          <Button icon="trash" label="Delete" class="ml-2" @click="$emit('delete', ev)" />
+          <Button icon="users" label="Attendees" class="ml-2" @click="$emit('attendees', ev)" />
         </td>
       </tr>
       <tr v-if="!events?.length">

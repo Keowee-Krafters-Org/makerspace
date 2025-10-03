@@ -84,6 +84,24 @@ export default {
     emitResendToken() {
       this.$emit('resend-token', this.email); // Emit the resend token event to the parent
     },
+    async onLogin() {
+      // ...existing login logic...
+      // After successful login:
+      const r = this.$route.query.redirect;
+      if (r) {
+        try {
+          const target = JSON.parse(decodeURIComponent(r));
+          this.$router.push(target);
+          return;
+        } catch {
+          // fallback if redirect is a plain path
+          this.$router.push(decodeURIComponent(r));
+          return;
+        }
+      }
+      // Default fallback
+      this.$router.push({ path: '/event' });
+    },
   },
 };
 </script>
