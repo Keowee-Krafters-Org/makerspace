@@ -5,9 +5,11 @@
  * 
  */
 class InvoiceManager {
-  constructor(storageManager, membershipManager) {
+  constructor(storageManager, membershipManager, eventManager) {
     this.storageManager = storageManager; // Handles ZohoInvoice storage
     this.membershipManager = membershipManager; // Handles member-related operations
+    this.eventManager = eventManager;
+    this.config = getConfig();;
   }
 
   /**
@@ -167,5 +169,112 @@ class InvoiceManager {
       console.error('Failed to send invoice:', err);
       return { success: false, message: 'Failed to send invoice.', error: err.toString() };
     }
+  }
+
+   /**
+   * Creates an invoice for a specific event and member.
+   * @param {Member} member - The member for whom the invoice is created.
+   * @param {Event} event - The event for which the invoice is created.
+   * @returns {Object} The created invoice.
+   */
+  createInvoiceForEvent(member, event) {
+    const eventItem = event.eventItem;
+    if (!eventItem || !eventItem.id) {
+        throw new Error('Event item not found for invoicing.');
+    }
+
+    // Get the event start date
+    const eventStartDate = new Date(event.date);
+    if (isNaN(eventStartDate)) {
+        throw new Error('Invalid event start date.');
+    }
+
+    // Calculate the due date based on config.eventInvoiceLeadTime
+    const leadTime = this.config.eventInvoiceLeadTime || 7; // Default to 7 days if not configured
+    const dueDate = new Date(eventStartDate);
+    // limit due date to no earlier than today
+    if (dueDate < new Date()) {
+        dueDate.setTime(new Date().getTime());
+    } else {
+        dueDate.setDate(dueDate.getDate() - leadTime); // Subtract lead time from the event start date
+    }
+
+    const discountPercent = member.discount || 0;
+    const invoiceData = {
+        customerId: member.id,
+        eventId: event.id,
+        date: new Date(), // Invoice creation date
+        dueDate: dueDate, // Calculated due date
+        status: 'UNPAID',
+        discount: `${discountPercent}%`,
+        totalAmount: eventItem.price,
+        lineItems: [
+            {
+                itemId: eventItem.id,
+                description: eventItem.description,
+                quantity: 1,
+                rate: eventItem.price,
+            },
+        ],
+        contacts: [
+            { id: member.primaryContactId }
+        ]
+    };
+
+    return this.createAndSendInvoice(invoiceData);
+  }
+    
+  /** Creates a membership invoice for a member based on their registration level.
+   * 
+   * @param {*} member 
+   * @returns 
+   */
+  createMembershipInvoice(member) {
+    if (!member || !member.id) {
+      throw new Error('Invalid member. Cannot generate invoice.');
+    }
+
+      // Ensure the member has a registration level
+      if (!member.registration || !member.registration.level) {
+      throw new Error('Member does not have a registration level. Cannot generate invoice.');
+    } 
+
+    // Get the membership fee from config based on the member's registration level
+    const membershipLevel = member.registration.level;
+    if (!this.config.levels || !this.config.levels[membershipLevel]) {
+      throw new Error(`Membership level '${membershipLevel}' not found in configuration.`);
+    } 
+
+    const membershipItemId = this.config.levels[membershipLevel].itemId;
+    if (!membershipItemId) {
+      throw new Error(`No itemId configured for membership level '${membershipLevel}'. Cannot generate invoice.`);
+    }   
+
+    const eventItemResponse = this.eventManager.getEventItemById(membershipItemId); 
+    if (!eventItemResponse || !eventItemResponse.data || !eventItemResponse.data.id) {
+      throw new Error(`Membership item with ID '${membershipItemId}' not found. Cannot generate invoice.`);
+    } 
+    const eventItem = eventItemResponse.data;
+        
+    // Create the invoice data
+    const invoiceData = {
+      customerId: member.id,
+      currency: 'USD',
+      dueDate: new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0], // Default due upon receipt
+      status: 'UNPAID',
+      totalAmount: eventItem.price,
+        lineItems: [
+            {
+                itemId: eventItem.id,
+                description: eventItem.description,
+                quantity: 1,
+                rate: eventItem.price,
+            },
+        ],
+        contacts: [
+            { id: member.primaryContactId }
+        ]
+    };
+    return this.createAndSendInvoice(invoiceData);
   }
 }

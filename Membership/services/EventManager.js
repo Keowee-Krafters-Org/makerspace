@@ -328,50 +328,8 @@ class EventManager {
    * @returns {Object} The created invoice.
    */
   createInvoiceForEvent(member, event) {
-    const eventItem = event.eventItem;
-    if (!eventItem || !eventItem.id) {
-        throw new Error('Event item not found for invoicing.');
-    }
-
-    // Get the event start date
-    const eventStartDate = new Date(event.date);
-    if (isNaN(eventStartDate)) {
-        throw new Error('Invalid event start date.');
-    }
-
-    // Calculate the due date based on config.eventInvoiceLeadTime
-    const leadTime = this.config.eventInvoiceLeadTime || 7; // Default to 7 days if not configured
-    const dueDate = new Date(eventStartDate);
-    // limit due date to no earlier than today
-    if (dueDate < new Date()) {
-        dueDate.setTime(new Date().getTime());
-    } else {
-        dueDate.setDate(dueDate.getDate() - leadTime); // Subtract lead time from the event start date
-    }
-
-    const discountPercent = member.discount || 0;
-    const invoiceData = {
-        customerId: member.id,
-        eventId: event.id,
-        date: new Date(), // Invoice creation date
-        dueDate: dueDate, // Calculated due date
-        status: 'UNPAID',
-        discount: `${discountPercent}%`,
-        totalAmount: eventItem.price,
-        lineItems: [
-            {
-                itemId: eventItem.id,
-                description: eventItem.description,
-                quantity: 1,
-                rate: eventItem.price,
-            },
-        ],
-        contacts: [
-            { id: member.primaryContactId }
-        ]
-    };
-
-    return this.invoiceManager.createAndSendInvoice(invoiceData);
+   
+    return this.invoiceManager.createInvoiceForEvent(member, event);
   }
 
   /**

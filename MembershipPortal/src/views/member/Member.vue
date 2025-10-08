@@ -23,7 +23,7 @@
           @click="onRequestToken"
           :disabled="!email || loading"
         >
-          Send Sign-in Link
+          Verify Email
         </button>
         <button
           class="px-3 py-2 rounded bg-gray-600 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
@@ -130,6 +130,12 @@ export default {
     isNewRegistration() {
       return this.registrationStatus === 'NEW';
     },
+    isAppliedRegistration() {
+      return this.registrationStatus === 'APPLIED';
+    },
+    canSignUp() {
+      return this.currentMember?.canSignup() || false;
+    },
   },
   created() {
     this.memberService = inject('memberService');
@@ -142,33 +148,18 @@ export default {
 
     this.redirectTarget = this.parseRedirect(this.$route?.query?.redirect);
 
-    if (this.redirectTarget && this.isVerified) {
-      this.redirectBack(true);
-      return;
-    }
-    // If verified and NEW, route to registration
-    if (!this.redirectTarget && this.isVerified && this.isNewRegistration) {
-      this.routeToMemberRegistration(true);
-      return;
-    }
-    if (!this.redirectTarget && this.isVerifiedAndRegistered) {
-      this.routeToMemberLanding(true);
-    }
+    if (this.redirectTarget && this.isVerified) { this.redirectBack(true); return; }
+    if (!this.redirectTarget && this.isVerified && this.isAppliedRegistration) { this.routeToMemberWaiver(true); return; }
+    if (!this.redirectTarget && this.isVerified && this.isNewRegistration) { this.routeToMemberRegistration(true); return; }
+    if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding(true); }
   },
   watch: {
     currentMember(m) {
       if (m?.emailAddress || m?.email) this.email = m.emailAddress || m.email;
-      if (this.redirectTarget && this.isVerified) {
-        this.redirectBack();
-        return;
-      }
-      if (!this.redirectTarget && this.isVerified && this.isNewRegistration) {
-        this.routeToMemberRegistration();
-        return;
-      }
-      if (!this.redirectTarget && this.isVerifiedAndRegistered) {
-        this.routeToMemberLanding();
-      }
+      if (this.redirectTarget && this.isVerified && this.canSignUp) { this.redirectBack(); return; }
+      if (!this.redirectTarget && this.isVerified && this.isAppliedRegistration) { this.routeToMemberWaiver(); return; }
+      if (!this.redirectTarget && this.isVerified && this.isNewRegistration) { this.routeToMemberRegistration(); return; }
+      if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding(); }
     },
   },
   methods: {
@@ -206,6 +197,16 @@ export default {
       const pathTarget = { path: '/member/register' };
       const pathRes = this.$router.resolve(pathTarget);
       if (pathRes && pathRes.matched && pathRes.matched.length) return replace ? this.$router.replace(pathTarget) : this.$router.push(pathTarget);
+    },
+    routeToMemberWaiver(replace = false) {
+      const query = {};
+      if (this.$route?.query?.redirect) query.redirect = this.$route.query.redirect;
+      const named = { name: 'MemberWaiver', query };
+      const r = this.$router.resolve(named);
+      if (r && r.name) return replace ? this.$router.replace(named) : this.$router.push(named);
+      const pathTarget = { path: '/member/waiver', query };
+      const rp = this.$router.resolve(pathTarget);
+      if (rp?.matched?.length) return replace ? this.$router.replace(pathTarget) : this.$router.push(pathTarget);
     },
 
     async onRequestToken() {
@@ -284,16 +285,24 @@ export default {
           await nextTick();
           this.message = 'Signed in successfully.';
           this.token = '';
-          if (this.redirectTarget) {
+          if (this.redirectTarget && this.canSignUp) {
             this.redirectBack();
-          } else if (this.isVerifiedAndRegistered) {
+          } else if (this.isVerified && this.isAppliedRegistration) {
+            this.routeToMemberWaiver();
+          } else if (this.isVerified && this.isNewRegistration) {
+            this.routeToMemberRegistration();
+          } else if (this.isVerified && this.canSignUp) {
             this.routeToMemberLanding();
           }
         } else {
           this.message = 'Verification complete.';
-          if (this.redirectTarget) {
+          if (this.redirectTarget && this.canSignUp) {
             this.redirectBack();
-          } else if (this.isVerifiedAndRegistered) {
+          } else if (this.isVerified && this.isAppliedRegistration) {
+            this.routeToMemberWaiver();
+          } else if (this.isVerified && this.isNewRegistration) {
+            this.routeToMemberRegistration();
+          } else if (this.isVerified && this.canSignUp) {
             this.routeToMemberLanding();
           }
         }

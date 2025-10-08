@@ -70,6 +70,9 @@ class MembershipManager {
 
 
       if (member.login && member.login.status === 'VERIFYING') {
+        
+        member.login.authentication = this.generateAuthentication();        
+        member = this.storageManager.update(member.id, member).data;
         this.sendEmail({
           emailAddress: emailAddress,
           title: 'Your MakeKeowee Login Code',
@@ -146,8 +149,12 @@ class MembershipManager {
 
   memberLookup(emailAddress) {
     const response = this.storageManager.getByKeyValue('emailAddress', emailAddress);
-    if (response.length === 0) return null;
-    const member = response.data[0];
+    if (response.success && response.data.length === 0) return null;
+    // Double check for matching email (case insensitive)
+    const data = response.data.filter(m => (m.emailAddress || '').toLowerCase() === (emailAddress || '').toLowerCase());
+    if (data.length === 0) return null;
+    // Return the first match
+    const member = data[0];
     if (!member) return null;
     return this.storageManager.getById(member.id).data;
   }
@@ -177,17 +184,29 @@ class MembershipManager {
     return memberResponse;
   }
   addMemberRegistration(memberData) {
-    let registeredMember = this.storageManager.createNew(memberData);
-    let member = this.memberLookup(memberData.emailAddress);
-    if (!member) {
-      member = this.addMember(memberData);
+    let registeredMember = null
+    // Use id lookup to avoid duplicates
+
+    if (memberData.id) {
+      const existing = this.storageManager.getById(memberData.id);
+      if (existing && existing.success && existing.data) {
+        registeredMember = existing.data;
+      }
+    } else {
+      // Try email lookup
+      const existing = this.memberLookup(memberData.emailAddress);
+      if (existing) {
+        registeredMember = existing;
+      }
     }
-    registeredMember.id = member.id;
-    if (member && member.login.status === 'VERIFIED') {
+    if (!registeredMember) {
+      registeredMember = this.addMember(memberData);
+    }
+    if (registeredMember && registeredMember.login.status === 'VERIFIED') {
       registeredMember.registration.status = 'APPLIED';
     }
-    member = this.storageManager.update(member.id, registeredMember);
-    return member;
+    registeredMember = this.storageManager.update(registeredMember.id, registeredMember);
+    return registeredMember;
   }
 
   setMemberStatus(id, status) {
@@ -305,5 +324,6 @@ class MembershipManager {
     // Filter out null values (emails without corresponding members)
     return members.filter(member => member !== null);
   }
+
 
 }

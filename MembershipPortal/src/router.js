@@ -26,6 +26,7 @@ export function createRouter(session) {
         return { path: '/event', query: { mode } };
       },
     },
+    { path: '/member/waiver', name: 'MemberWaiver', component: () => import('@/views/member/MemberWaiver.vue') },
   ];
 
   const router = createVueRouter({

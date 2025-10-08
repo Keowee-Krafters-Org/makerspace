@@ -3,4 +3,4 @@ export class Entity {
     constructor(id = null) {
         this.id = id;
     }
-}   
+}

@@ -9,12 +9,37 @@
 
     <form v-if="member" @submit.prevent="onSave" class="space-y-4 bg-white border border-gray-200 rounded-md p-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- New: ID (disabled) -->
+        <div>
+          <label class="block text-sm font-medium mb-1">ID</label>
+          <input
+            v-model="member.id"
+            type="text"
+            class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-gray-600"
+            disabled
+          />
+        </div>
+
+        <!-- Email (now disabled) -->
         <div>
           <label class="block text-sm font-medium mb-1">Email</label>
-          <input v-model.trim="member.emailAddress" type="email" class="w-full border border-gray-300 rounded px-3 py-2" />
+          <input
+            v-model.trim="member.emailAddress"
+            type="email"
+            class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-gray-600"
+            disabled
+          />
         </div>
+
+        <!-- Level -->
         <div>
           <label class="block text-sm font-medium mb-1">Level</label>
+          <p v-if="rateSheetLink" class="text-xs mb-1">
+            See annual fees in the
+            <a :href="rateSheetLink" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 underline">
+              Membership Rate Sheet
+            </a>.
+          </p>
           <select
             v-model="selectedLevel"
             :key="'level-'+(member?.id || member?.emailAddress || '')"
@@ -23,6 +48,8 @@
             <option v-for="opt in levelOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </div>
+
+        <!-- First / Last Name -->
         <div>
           <label class="block text-sm font-medium mb-1">First Name</label>
           <input v-model.trim="member.firstName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" />
@@ -31,6 +58,8 @@
           <label class="block text-sm font-medium mb-1">Last Name</label>
           <input v-model.trim="member.lastName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" />
         </div>
+
+        <!-- Registration Status -->
         <div>
           <label class="block text-sm font-medium mb-1">Registration Status</label>
           <select v-model="member.registration.status" class="w-full border border-gray-300 rounded px-3 py-2">
@@ -40,6 +69,8 @@
             <option value="PENDING">Pending</option>
           </select>
         </div>
+
+        <!-- Waiver Signed -->
         <div class="flex items-center gap-2">
           <input id="waiverSigned" v-model="member.registration.waiverSigned" type="checkbox" class="h-4 w-4" />
           <label for="waiverSigned" class="text-sm">Waiver Signed</label>
@@ -69,17 +100,23 @@ export default {
   },
   computed: {
     levelOptions() {
-      const cfg = this.appService?.config?.levels || {};
-      if (Array.isArray(cfg)) return cfg.map(x => ({ label: x.label || x.name || x.value, value: x.value || x.label || x.name }));
-      return Object.entries(cfg).map(([label, val]) => ({ label, value: (val && (val.value || val.label)) || label }));
+      const levels = this.appService?.config?.levels || {};
+      // Include fees in labels; store string level name as value
+      return Object.entries(levels).map(([label, val]) => {
+        const fee = typeof val?.price === 'number' ? `$${val.price}/yr` : '';
+        const text = fee ? `${label} — ${fee}` : label;
+        return { label: text, value: label };
+      });
+    },
+    rateSheetLink() {
+      return this.appService?.config?.rateSheetLink || '';
     },
     selectedLevel: {
       get() {
         const lvl = this.member?.registration?.level || '';
-        const norm = (s) => String(s || '').trim().toLowerCase();
-        // find by value or label (case-insensitive)
+        const norm = s => String(s || '').trim().toLowerCase();
         const match = this.levelOptions.find(opt => norm(opt.value) === norm(lvl)) ||
-                      this.levelOptions.find(opt => norm(opt.label) === norm(lvl));
+                      this.levelOptions.find(opt => norm(opt.label.split(' — ')[0]) === norm(lvl));
         return match ? match.value : (lvl || (this.levelOptions[0]?.value || ''));
       },
       set(val) {
