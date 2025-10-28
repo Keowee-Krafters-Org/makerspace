@@ -1,7 +1,7 @@
 import { Logger } from './Logger.js';
 import { MemberPortal } from './MemberPortal.js';
 import { AdminPortal } from './AdminPortal.js';
-import { PortalSession } from './PortalSession.js';
+import { PortalSession } from './services/PortalSession.js';
 import { showSpinner, hideSpinner } from './common.js';
 import { getConfig } from '../../Membership/config.js';
 /**

@@ -176,6 +176,19 @@ export default {
     this.logger = inject('logger');
     this.loadAll();
   },
+  watch: {
+    // When hosts list loads (async), try to resolve current form host to an id
+    hosts(newHosts, oldHosts) {
+      if (Array.isArray(newHosts) && newHosts.length && !this.selectedHostId) {
+        const id = this.resolveHostId(this.form?.eventItem?.host);
+        if (id) this.selectedHostId = id;
+      }
+    },
+    // Keep form.eventItem.host in sync with selectedHostId
+    selectedHostId() {
+      this.applyHost();
+    },
+  },
   methods: {
     emptyForm() {
       return {
@@ -197,52 +210,96 @@ export default {
       };
     },
 
+    // Resolve a host id from various shapes: {id,name,emailAddress} | 'name' | 'email' | 'id'
+    resolveHostId(host) {
+      if (!host) return '';
+      const list = Array.isArray(this.hosts) ? this.hosts : [];
+
+      const byId = (id) => list.find(h => String(h.id) === String(id))?.id || '';
+      const byEmail = (email) => {
+        const norm = String(email || '').trim().toLowerCase();
+        return list.find(h => String(h.emailAddress || '').trim().toLowerCase() === norm)?.id || '';
+      };
+      const byName = (name) => {
+        const norm = String(name || '').trim().toLowerCase();
+        return list.find(h => String(h.name || '').trim().toLowerCase() === norm)?.id || '';
+      };
+
+      if (typeof host === 'object') {
+        return (
+          (host.id && byId(host.id)) ||
+          (host.emailAddress && byEmail(host.emailAddress)) ||
+          (host.name && byName(host.name)) ||
+          ''
+        );
+      }
+      // string: could be id, email, or name
+      return byId(host) || byEmail(host) || byName(host) || '';
+    },
+
+    // Normalize various service response shapes to an array
+    unwrapList(res, keys = []) {
+      if (Array.isArray(res)) return res;
+      if (!res || typeof res !== 'object') return [];
+      const cands = [
+        ...keys,
+        'data',
+        'rows',
+        'list',
+        'items',
+        'hosts',
+        'members',
+        'contacts',
+        'eventItems',
+        'values',
+        'records',
+      ];
+      for (const k of cands) {
+        const v = res[k];
+        if (Array.isArray(v)) return v;
+      }
+      if (Array.isArray(res.data?.rows)) return res.data.rows;
+      if (Array.isArray(res.data?.list)) return res.data.list;
+      return [];
+    },
+
     async loadAll() {
       this.error = '';
       try {
-        console.debug('[EventEditor] loading items/rooms/hosts...');
         const [itemsRes, roomsRes, hostsRes] = await Promise.allSettled([
-          this.eventService.getEventItemList({ pageSize: 100 }),
-          this.eventService.getEventRooms(),
-          this.eventService.getEventHosts(),
+          this.eventService.getEventItemList?.({ pageSize: 100 }),
+          this.eventService.getEventRooms?.(),
+          this.eventService.getEventHosts?.(), // now implemented in EventService
         ]);
 
         const itemsVal = itemsRes.status === 'fulfilled' ? itemsRes.value : [];
         const roomsVal = roomsRes.status === 'fulfilled' ? roomsRes.value : [];
         const hostsVal = hostsRes.status === 'fulfilled' ? hostsRes.value : [];
 
-        this.eventItems = Array.isArray(itemsVal) ? itemsVal : (itemsVal?.data || []);
-        this.rooms = Array.isArray(roomsVal) ? roomsVal : (roomsVal?.data || []);
-        const rawHosts = Array.isArray(hostsVal) ? hostsVal : (hostsVal?.data || []);
-        this.hosts = rawHosts
-          .map(h => ({
-            id: h.id || h.memberId || h.emailAddress || h.email || h.name || h.fullName,
-            name:
-              h.name ||
-              h.fullName ||
-              [h.firstName, h.lastName].filter(Boolean).join(' ') ||
-              h.emailAddress ||
-              h.email ||
-              String(h.id || ''),
-            emailAddress: h.emailAddress || h.email || '',
-          }))
-          .filter(h => !!h.id);
+        // Unwrap items/rooms (these may be JSON from GAS)
+        this.eventItems = this.unwrapList(itemsVal, ['eventItems', 'items']);
+        this.rooms = this.unwrapList(roomsVal, ['rooms']);
 
-        console.debug('[EventEditor] hosts loaded:', this.hosts.length);
+        // Hosts are already normalized by EventService.getEventHosts
+        this.hosts = Array.isArray(hostsVal) ? hostsVal : this.unwrapList(hostsVal, ['hosts', 'members', 'contacts']);
 
         if (!this.isNew) {
           const ev = await this.eventService.getEventById(this.id);
           this.hydrateForm(ev);
           this.selectedEventItemId = ev?.eventItem?.id || '';
           this.previewUrl = ev?.eventItem?.image?.url || '';
-          const host = ev?.eventItem?.host;
-          if (host && typeof host === 'object' && host.id) {
-            this.selectedHostId = host.id;
-          } else if (host && typeof host === 'string') {
-            const found = this.hosts.find(h => h.name === host);
-            this.selectedHostId = found?.id || '';
-          } else {
-            this.selectedHostId = '';
+          const resolved = this.resolveHostId(ev?.eventItem?.host);
+          if (resolved) this.selectedHostId = resolved;
+
+          // Ensure current host appears even if not in the list
+          if (this.form?.eventItem?.host && !this.hosts.find(h => h.id === resolved)) {
+            const hObj = this.form.eventItem.host || {};
+            const fallback = {
+              id: resolved || hObj.id || hObj.emailAddress || hObj.name || '',
+              name: hObj.name || hObj.fullName || [hObj.firstName, hObj.lastName].filter(Boolean).join(' ') || hObj.emailAddress || hObj.id || '',
+              emailAddress: hObj.emailAddress || '',
+            };
+            if (fallback.id) this.hosts.unshift(fallback);
           }
         } else {
           this.form = this.emptyForm();
@@ -286,11 +343,10 @@ export default {
       this.form.eventItem.sizeLimit = Number(item.sizeLimit ?? 0);
       this.form.eventItem.enabled = !!item.enabled;
       this.form.eventItem.duration = Number(item.duration ?? 0);
-      if (item.host) {
-        const hostId = typeof item.host === 'object' ? item.host.id : '';
-        if (hostId) this.selectedHostId = hostId;
-      }
       this.previewUrl = item?.image?.url || '';
+
+      // Resolve and set host from the item (object or string)
+      this.selectedHostId = this.resolveHostId(item.host);
     },
 
     applyHost() {
@@ -298,24 +354,51 @@ export default {
       this.form.eventItem.host = sel ? { id: sel.id, name: sel.name } : '';
     },
 
+    onImageChange(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || ''); // keep full data URL (data:image/...;base64,xxx)
+        this.form.eventItem.image = {
+          data: dataUrl,
+          name: file.name || 'event-image',
+          contentType: file.type || 'image/png',
+        };
+        this.previewUrl = URL.createObjectURL(file);
+      };
+      reader.readAsDataURL(file);
+    },
+
     async onSave() {
       this.error = '';
       try {
         this.applyHost();
+
+        const img = this.form.eventItem.image || {};
+        const hasNewImage =
+          typeof img.data === 'string' && img.data.startsWith('data:image');
+
+        const eventItem = {
+          id: this.form.eventItem.id || this.selectedEventItemId || '',
+          type: 'event',
+          title: this.form.eventItem.title,
+          description: this.form.eventItem.description,
+          price: Number(this.form.eventItem.price || 0),
+          sizeLimit: Number(this.form.eventItem.sizeLimit || 0),
+          enabled: !!this.form.eventItem.enabled,
+          duration: Number(this.form.eventItem.duration || 0),
+          host: this.form.eventItem.host || '',
+          // Include image only when a new data URL is present,
+          // otherwise omit so existing image stays unchanged.
+          ...(hasNewImage
+            ? { image: { data: img.data, name: img.name || '', contentType: img.contentType || '' } }
+            : {}),
+        };
+
         const payload = {
           id: this.form.id,
-          eventItem: {
-            id: this.form.eventItem.id || this.selectedEventItemId || '',
-            type: 'event',
-            title: this.form.eventItem.title,
-            description: this.form.eventItem.description,
-            price: Number(this.form.eventItem.price || 0),
-            sizeLimit: Number(this.form.eventItem.sizeLimit || 0),
-            enabled: !!this.form.eventItem.enabled,
-            duration: Number(this.form.eventItem.duration || 0),
-            host: this.form.eventItem.host || '',
-            image: { data: this.form.eventItem.image?.data || '' },
-          },
+          eventItem,
           date: this.form.date ? new Date(this.form.date) : null,
           location: { id: this.form.location.id || '' },
         };
@@ -332,18 +415,6 @@ export default {
       this.$router.push({ path: '/event', query: { mode: this.fromMode } });
     },
 
-    onImageChange(e) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = String(reader.result).split(',')[1] || '';
-        this.form.eventItem.image = { data: base64 };
-        this.previewUrl = URL.createObjectURL(file);
-      };
-      reader.readAsDataURL(file);
-    },
-
     formatDateForInput(date) {
       if (!date) return '';
       try {
@@ -358,6 +429,29 @@ export default {
         return '';
       }
     },
+     async getEventHosts() {
+    // Calls GAS getInstructors and normalizes the result
+    const raw = await this.connector.invoke('getInstructors');
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    const list = Array.isArray(obj) ? obj
+      : (Array.isArray(obj?.data) ? obj.data
+      : (Array.isArray(obj?.rows) ? obj.rows
+      : (Array.isArray(obj?.list) ? obj.list : [])));
+
+    // Normalize to { id, name, emailAddress }
+    return list.map(h => {
+      const id = h.id || h.memberId || h.contactId || h.emailAddress || h.email || h.name || h.fullName || '';
+      const name =
+        h.name ||
+        h.fullName ||
+        [h.firstName, h.lastName].filter(Boolean).join(' ') ||
+        h.emailAddress ||
+        String(id);
+      const emailAddress = h.emailAddress || h.email || '';
+      return { id: String(id), name, emailAddress };
+    }).filter(h => !!h.id);
+  },
   },
 };
 </script>

@@ -66,4 +66,26 @@ export class Member extends Entity{
         },
       };
     }
+
+    // Build a minimal instance for registration from current member + form edits
+  static forRegistration(current = {}, edits = {}) {
+    const id = current?.id || edits?.id || '';
+    const emailAddress = current?.emailAddress || current?.email || edits?.emailAddress || '';
+    const firstName = edits?.firstName ?? current?.firstName ?? '';
+    const lastName = edits?.lastName ?? current?.lastName ?? '';
+    const phoneNumber = edits?.phoneNumber ?? current?.phoneNumber ?? current?.phone ?? '';
+    const interests = Array.isArray(edits?.interests) ? edits.interests.slice() : [];
+    const level = edits?.registration?.level ?? current?.registration?.level ?? '';
+    const status = 'PENDING'; // always set when submitting registration
+
+    return new Member({
+      id,
+      emailAddress,
+      firstName,
+      lastName,
+      phoneNumber,
+      interests,
+      registration: { level, status, waiverSigned: false, waiverPdfLink: '' },
+    });
+  }
 }

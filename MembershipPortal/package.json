@@ -1,17 +1,18 @@
 {
   "name": "MembershipPortal",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "",
-  "main": "build.js",
   "type": "module",
   "directories": {
     "test": "tests"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build",                 
+    "build:dev": "vite build --mode development",
     "push": "clasp push",
-    "deploy": "npm run build && npm run push",
+    "deploy:dev": "npm run build:dev && npm run push",
+    "deploy:prod": "npm run build && npm run push",
     "test": "jest"
   },
   "keywords": [],
@@ -42,20 +43,12 @@
     "vue-router": "^4.5.1"
   },
   "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "vue"
-    ],
+    "moduleFileExtensions": ["js","json","vue"],
     "transform": {
       "^.+\\.vue$": "vue-jest",
       "^.+\\.js$": "babel-jest"
     },
-    "transformIgnorePatterns": [
-      "/node_modules/(?!@vue/test-utils|vue).+\\.js$"
-    ],
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
-    }
+    "transformIgnorePatterns": ["/node_modules/(?!@vue/test-utils|vue).+\\.js$"],
+    "moduleNameMapper": { "^@/(.*)$": "<rootDir>/src/$1" }
   }
 }

@@ -10,7 +10,12 @@
       </div>
     </header>
 
-    <Message v-if="error && isPage" type="error" :message="error" class="mb-4" />
+    <div v-if="message" class="mb-3 p-3 rounded border border-green-300 bg-green-50 text-green-800 text-sm">
+      {{ message }}
+    </div>
+    <div v-if="error" class="mb-3 p-3 rounded border border-red-300 bg-red-50 text-red-800 text-sm">
+      {{ error }}
+    </div>
 
     <div v-if="event" :class="bodyClass">
       <!-- Image -->
@@ -138,6 +143,7 @@ export default {
   data() {
     return {
       event: null,
+      message: '',
       error: '',
       fromMode: this.mode === 'table' ? 'table' : 'list',
       descExpanded: false,
@@ -222,9 +228,9 @@ export default {
     },
   },
   created() {
+    this.eventService = inject('eventService');
     this.session = inject('session');
     this.logger = inject('logger');
-    this.eventService = inject('eventService');
 
     if (this.initial) {
       this.event = EventModel.fromObject(this.initial);
@@ -272,15 +278,22 @@ export default {
     },
 
     async onSignup() {
-      if (this.requireVerified()) {
-        this.redirectToLogin();
-        return;
-      }
+      this.error = '';
+      this.message = '';
       try {
-        await this.eventService.signup(this.event.id, this.member.id);
-        await this.loadEvent();
+        const eventId = this.event?.id || this.$route?.query?.id;
+        const memberId = this.session?.member?.id || '';
+        const res = await this.eventService.signup(eventId, memberId);
+        if (res.success) {
+          this.message = res.message;
+          // Optionally refresh event details to reflect attendee list
+          // await this.loadEvent();
+        } else {
+          this.error = res.message;
+        }
       } catch (e) {
-        this.error = e?.message || 'Failed to sign up';
+        this.error = e?.message || 'Failed to sign up for the event';
+        this.logger?.error?.('Event signup failed', e);
       }
     },
     async onUnregister() {

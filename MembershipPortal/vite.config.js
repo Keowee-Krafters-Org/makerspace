@@ -7,33 +7,33 @@ import copy from 'rollup-plugin-copy';
 import clean from 'vite-plugin-clean';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
-  plugins: [
-    clean(),
-    vue(), // Use Vue plugin
-    viteSingleFile(),
-    tailwindcss(), // Add Tailwind CSS plugin here
-    copy({
-      targets: [
-        { src: 'service/**/*', dest: 'dist/service' },
-        { src: 'appsscript.json', dest: 'dist' },
-      ],
-      hook: 'writeBundle',
-    }),
-  ],
-  build: {
-    minify: false,
-    outDir: resolve(__dirname, 'dist/ui'),
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: true, // Ensure dynamic imports are inlined
-      },
-    },
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'), // Ensure this alias is configured
-    },
-  },
+export default defineConfig(({ mode }) => {
+  const isProd = mode === 'production';
 
+  return {
+    plugins: [
+      clean(),
+      vue(),
+      viteSingleFile(),
+      tailwindcss(),
+      copy({
+        targets: [
+          // Always include GAS service code and manifest in dist root
+          { src: 'service/**/*', dest: 'dist/service' },
+          { src: 'appsscript.json', dest: 'dist' },
+          // Include tests only for dev deploys
+          ...(!isProd ? [{ src: 'tests/**/*', dest: 'dist/tests' }] : []),
+        ],
+        hook: 'writeBundle',
+      }),
+    ],
+    build: {
+      minify: isProd,
+      // Emit index.html directly into dist/ui for GAS compatibility
+      outDir: resolve(__dirname, 'dist/ui'),
+      rollupOptions: { output: { inlineDynamicImports: true } },
+      emptyOutDir: true,
+    },
+    resolve: { alias: { '@': resolve(__dirname, 'src') } },
+  };
 });

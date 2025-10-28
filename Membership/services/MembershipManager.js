@@ -183,27 +183,27 @@ class MembershipManager {
     }
     return memberResponse;
   }
+  /**
+   * Update the member registration (for event or membership level).
+   * This incudes essential infomration like first and last name, email address, phone number, interests, and registration details. 
+   * @param {*} memberData 
+   * @returns 
+   */
   addMemberRegistration(memberData) {
-    let registeredMember = null
-    // Use id lookup to avoid duplicates
-
-    if (memberData.id) {
-      const existing = this.storageManager.getById(memberData.id);
-      if (existing && existing.success && existing.data) {
-        registeredMember = existing.data;
-      }
-    } else {
-      // Try email lookup
-      const existing = this.memberLookup(memberData.emailAddress);
-      if (existing) {
-        registeredMember = existing;
-      }
+    let registeredMember = this.storageManager.createNew(memberData);
+    let existingMember = null;
+    const existingMemberResponse = this.getMember(memberData.id);
+    if (existingMemberResponse && existingMemberResponse.success && existingMemberResponse.data) {
+      existingMember = existingMemberResponse.data;
+     
     }
-    if (!registeredMember) {
-      registeredMember = this.addMember(memberData);
-    }
-    if (registeredMember && registeredMember.login.status === 'VERIFIED') {
+   
+    if (existingMember && existingMember.login.status === 'VERIFIED') {
+       // Update registration status 
       registeredMember.registration.status = 'APPLIED';
+      registeredMember.login = existingMember.login;
+    } else {
+      throw new Error('Member must be verified before registering.');
     }
     registeredMember = this.storageManager.update(registeredMember.id, registeredMember);
     return registeredMember;

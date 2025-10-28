@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import { inject } from 'vue';
+import { inject, nextTick } from 'vue';
 import { Member } from '@/model/Member.js';
 
 export default {
@@ -118,26 +118,23 @@ export default {
       this.message = '';
       this.saving = true;
       try {
-        const connector = this.memberService?.connector;
-        if (!connector) throw new Error('Service connector unavailable');
+        await nextTick(); // flush v-model edits
 
-        const request = JSON.stringify(this.member);
-        // Persist registration entry if backend requires it
-        const regRun = () => connector.invoke('addMemberRegistration', request);
-        try {
-          const regResp = this.appService?.withSpinner ? await this.appService.withSpinner(regRun) : await regRun();
-            const respObj = (typeof regResp === 'string') ? JSON.parse(regResp) : regResp;
-            if (!respObj?.success) throw new Error(respObj?.message || 'Registration failed');
-            const merged = Member.merge(this.currentMember, respObj.data || {});
-            if (!merged) throw new Error('Failed to merge member data');
-            this.session.member = merged;  // Update session member
-        } catch (e) {
-          // Log but do not block
-          this.logger?.warn?.('addMemberRegistration failed', e);
-        }
+        // Build minimal Member instance from current session + form fields
+        const current = this.session?.member || {};
+        const edits = this.member || {};
+        const regMember = Member.forRegistration(current, edits);
 
-         this.message = 'Registration submitted.';
-        this.$router.push({ name: 'MemberLanding' });
+        // Post minimal registration
+        const result = await this.memberService.addMemberRegistration(regMember);
+
+        // Update session member from response or refetch
+        const updated = result?.member || null;
+        if (updated) this.session.member = updated;
+        const target = { path: '/member' };
+        const redirect = this.$route?.query?.redirect;
+        if (redirect) target.query = { redirect };
+        this.$router.push(target);
       } catch (e) {
         this.error = e?.message || 'Failed to submit registration';
         this.logger?.error?.('MemberRegistration.onSubmit', e);
@@ -145,9 +142,7 @@ export default {
         this.saving = false;
       }
     },
-    onCancel() {
-      this.$router.push({ path: '/member' });
-    },
+    onCancel() { this.$router.push({ path: '/member' }); },
   },
 };
 </script>

@@ -2,17 +2,29 @@
   <div class="events-view">
     <header class="flex items-center justify-between mb-4">
       <h2 class="text-2xl font-bold">Events</h2>
-      <div class="flex gap-2">
-        <Button icon="list" label="List" @click="viewMode = 'list'" :disabled="viewMode === 'list'" />
-        <!-- Only show Table button when allowed -->
+      <div class="flex items-center gap-2">
+        <Button icon="list" label="List" @click="viewMode = 'list'" :disabled="viewMode === 'list' || loading" />
         <Button
           v-if="isTableAllowed"
           icon="table"
           label="Table"
           @click="viewMode = 'table'"
-          :disabled="viewMode === 'table'"
+          :disabled="viewMode === 'table' || loading"
         />
-        <Button icon="refresh" label="Refresh" @click="loadEvents" />
+        <!-- Show a header refresh only in list mode to avoid duplicate with table toolbar -->
+        <button
+          v-if="viewMode === 'list'"
+          type="button"
+          class="p-2 rounded border border-gray-300 hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+          @click="onRefresh"
+          :disabled="loading"
+          aria-label="Refresh"
+          title="Refresh"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 6v3l4-4-4-4v3C7.58 4 4 7.58 4 12c0 1.57.46 3.03 1.26 4.26l1.49-1.49A5.98 5.98 0 0 1 6 12a6 6 0 0 1 6-6zm6.74 1.74-1.49 1.49A5.98 5.98 0 0 1 18 12a6 6 0 0 1-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.26-4.26z"/>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -32,6 +44,10 @@
       v-else-if="viewMode === 'table' && isTableAllowed"
       :events="events"
       :page="page"
+      :allowAdd="isTableAllowed"
+      :loading="loading"
+      @refresh="onRefresh"
+      @add="addEvent"
       @select="handleSelect"
       @delete="handleDelete"
       @edit="handleEdit"
@@ -67,6 +83,7 @@ export default {
       error: '',
       page: { currentPage: 1, pageSize: 10, hasMore: false },
       viewMode: this.$route.query.mode === 'table' ? 'table' : 'list',
+      loading: false, // NEW: track loading for UI/child
     };
   },
   created() {
@@ -111,20 +128,15 @@ export default {
       );
     },
     isTableAllowed() {
-      // Define rank order; must be greater than HOST
-      const order = ['GUEST', 'MEMBER', 'HOST', 'INSTRUCTOR', 'MANAGER', 'ADMIN', 'OWNER'];
-      const toRank = (lvl) => {
-        const idx = order.indexOf((lvl || '').toString().toUpperCase());
-        return idx >= 0 ? idx : -1;
-      };
-      const rankHost = toRank('HOST');
-      const rankUser = toRank(this.memberLevel);
-      return !!this.member && this.isMemberRegisteredLogin && rankUser > rankHost;
+      const hostRank = this.getLevelValue('Host');
+      const userRank = this.getLevelValue(this.memberLevel);
+      return !!this.member && this.isMemberRegisteredLogin && userRank > hostRank;
     },
   },
   methods: {
     async loadEvents() {
       this.error = '';
+      this.loading = true;
       try {
         const res = await this.eventService.listEvents({
           currentPage: this.page.currentPage,
@@ -144,7 +156,16 @@ export default {
       } catch (e) {
         this.error = e?.message || 'Failed to load events';
         this.logger?.error?.('loadEvents failed', e);
+      } finally {
+        this.loading = false;
       }
+    },
+    onRefresh() {
+      this.loadEvents();
+    },
+    addEvent() {
+      // Always use the explicit "new" route
+      this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode } });
     },
     prevPage() {
       if (this.page.currentPage > 1) {
@@ -170,7 +191,11 @@ export default {
       }
     },
     handleEdit(ev) {
-      this.$router.push({ name: 'EventEditor', params: { id: ev?.id }, query: { mode: this.viewMode } });
+      this.$router.push({
+        name: 'EventEditor',
+        params: { id: String(ev?.id || '') },
+        query: { mode: this.viewMode },
+      });
     },
     openAttendees(ev) {
       this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode } });
@@ -185,6 +210,17 @@ export default {
         // Ensure URL has mode on first load
         this.$router.replace({ path: '/event', query: { mode: this.viewMode } });
       }
+    },
+    getLevelValue(name) {
+      const levels = this.appService?.config?.levels || {};
+      if (!name) return Number.NEGATIVE_INFINITY;
+      const norm = String(name).trim().toLowerCase();
+      for (const [key, val] of Object.entries(levels)) {
+        if (key.trim().toLowerCase() === norm) {
+          return typeof val?.value === 'number' ? val.value : Number.NEGATIVE_INFINITY;
+        }
+      }
+      return Number.NEGATIVE_INFINITY;
     },
   },
 };

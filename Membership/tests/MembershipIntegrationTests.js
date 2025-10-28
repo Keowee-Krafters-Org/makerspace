@@ -54,7 +54,11 @@ function deleteTestMember() {
 function test_if_member_registers__then_member_data_is_complete() {
   try {
     const testMember = testMemberMinimum;
-    testMember.registration = ZohoRegistration.createNew({ level: 'Active' });
+    testMember.registration = { level: 'Active' };
+    testMember.login = { status: 'VERIFIED' };
+    const existingMember = membershipManager.memberLookup(testMember.emailAddress);
+    testMember.id = existingMember ? existingMember.id : '';
+    testMember.login = existingMember ? existingMember.login : testMember.login;
     const memberResponse = membershipManager.addMemberRegistration(testMember);
     const member = memberResponse.data; 
    assert('Email', testMember.emailAddress, member.emailAddress);

@@ -1,7 +1,7 @@
 /**
  * Manages the session for a specific portal.
  */
-import { Member } from './model/Member.js';
+import { Member } from '../model/Member.js';
 export class PortalSession {
     constructor(config = {}) {
         this.view = 'event'; // default view

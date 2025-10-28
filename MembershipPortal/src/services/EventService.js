@@ -2,10 +2,8 @@ import { AppService } from './AppService.js';
 
 export class EventService {
   constructor(connector, appService) {
-    if (!connector) throw new Error('EventService requires a ServiceConnector');
-    if (!appService) throw new Error('EventService requires AppService');
     this.connector = connector;
-    this.app = appService;
+    this.appService = appService || null;
   }
 
   static normalize(res) {
@@ -13,7 +11,7 @@ export class EventService {
   }
 
   listEvents(options = { pageSize: 100 }) {
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventList', options);
       return EventService.normalize(res);
     });
@@ -21,7 +19,7 @@ export class EventService {
 
   getEventById(id) {
     if (!id) throw new Error('getEventById requires id');
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventById', id);
       return EventService.normalize(res);
     });
@@ -29,36 +27,42 @@ export class EventService {
 
   saveEvent(event) {
     if (!event) throw new Error('saveEvent requires event');
-    const isGAS = typeof google !== 'undefined' && google?.script?.run;
-    const payload = isGAS ? JSON.stringify(event) : event;
+    const payload = JSON.stringify(event); // GAS needs JSON for nested objects (image.data)
 
-    return this.app.withSpinner(async () => {
-      const res = event.id
+    const run = async () => {
+      return event.id
         ? await this.connector.invoke('updateEvent', payload)
         : await this.connector.invoke('createEvent', payload);
-      return EventService.normalize(res);
-    });
+    };
+    return this.appService?.withSpinner ? this.appService.withSpinner(run) : run();
   }
 
   deleteEvent(id) {
     if (!id) throw new Error('deleteEvent requires id');
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('deleteEvent', id);
       return EventService.normalize(res);
     });
   }
 
-  signup(eventId, memberId) {
-    if (!eventId || !memberId) throw new Error('signup requires eventId and memberId');
-    return this.app.withSpinner(async () => {
-      const res = await this.connector.invoke('signup', eventId, memberId);
-      return EventService.normalize(res);
-    });
+  async signup(eventId, memberId) {
+    if (!eventId) throw new Error('Missing eventId');
+    if (!memberId) throw new Error('Missing memberId');
+
+    // Send primitive args; GAS handles (classId, memberId)
+    const raw = await this.connector.invoke('signup', String(eventId), String(memberId));
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
+    const success = !!obj?.success;
+    const defaultMsg = 'You have signed up for the class/event. You will receive an email from KeoweeKrafters Org. with your invoice shortly. Note that until you make the payment using the link in the email or post a check to us you may be subject to cancelation in favor of a member on the waitlist.';
+    const message = success
+      ? (obj?.data?.message || obj?.message || defaultMsg)
+      : (obj?.error || obj?.message || 'Failed to sign up for the event');
+    return { success, message, data: obj?.data || null };
   }
 
   unregister(eventId, memberId) {
     if (!eventId || !memberId) throw new Error('unregister requires eventId and memberId');
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('unregister', eventId, memberId);
       return EventService.normalize(res);
     });
@@ -67,7 +71,7 @@ export class EventService {
   // Updated: derive attendees from event; resolve contacts when needed.
   async getEventAttendees(eventId) {
     if (!eventId) throw new Error('getEventAttendees requires eventId');
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       // Try direct API first (for Node/demo), else fall back to event details.
       try {
         const maybe = await this.connector.invoke('getEventAttendees', eventId);
@@ -95,14 +99,14 @@ export class EventService {
 
   // New: Editor data
   getEventItemList(options = { pageSize: 100 }) {
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventItemList', options);
       return EventService.normalize(res);
     });
   }
 
   getEventRooms() {
-    return this.app.withSpinner(async () => {
+    return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventRooms');
       return EventService.normalize(res);
     });
@@ -110,28 +114,26 @@ export class EventService {
 
   // New: Hosts for dropdown (optional on GAS, handled gracefully in UI)
   async getEventHosts() {
-    // Try several backends/endpoints; return [] if none available.
-    return this.app.withSpinner(async () => {
-      const tryInvoke = async (fn, arg) => {
-        try {
-          const res = await this.connector.invoke(fn, arg);
-          const data = EventService.normalize(res);
-          if (Array.isArray(data)) return data;
-          if (Array.isArray(data?.data)) return data.data;
-        } catch (e) {
-          // noop
-        }
-        return null;
-      };
+    // Calls GAS getInstructors and normalizes the result
+    const raw = await this.connector.invoke('getInstructors');
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
-      // Primary
-      let hosts = await tryInvoke('getEventHosts');
-      if (!hosts) hosts = await tryInvoke('getHosts');
-      // Fallback: member list filtered to host role/level
-      if (!hosts) hosts = await tryInvoke('getMemberList', { role: 'HOST', pageSize: 500 });
-      if (!hosts) hosts = await tryInvoke('getMembers', { minLevel: 'HOST', pageSize: 500 });
+    const list = Array.isArray(obj) ? obj
+      : (Array.isArray(obj?.data) ? obj.data
+      : (Array.isArray(obj?.rows) ? obj.rows
+      : (Array.isArray(obj?.list) ? obj.list : [])));
 
-      return hosts || [];
-    });
+    // Normalize to { id, name, emailAddress }
+    return list.map(h => {
+      const id = h.id || h.memberId || h.contactId || h.emailAddress || h.email || h.name || h.fullName || '';
+      const name =
+        h.name ||
+        h.fullName ||
+        [h.firstName, h.lastName].filter(Boolean).join(' ') ||
+        h.emailAddress ||
+        String(id);
+      const emailAddress = h.emailAddress || h.email || '';
+      return { id: String(id), name, emailAddress };
+    }).filter(h => !!h.id);
   }
 }

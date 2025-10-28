@@ -100,41 +100,20 @@ export default {
       redirectTarget: null,
       showNewAccountPrompt: false,
       allowAutoCreate: false,
+      // New: controls visibility of the verification code input
+      showVerificationInputs: false,
     };
   },
   computed: {
-    currentMember() {
-      return this.session?.member || null;
-    },
-    loginStatus() {
-      return (this.currentMember?.login?.status || '').toString().toUpperCase() || 'UNREGISTERED';
-    },
-    registrationStatus() {
-      return (this.currentMember?.registration?.status || '').toString().toUpperCase() || '';
-    },
-    isVerified() {
-      return this.loginStatus === 'VERIFIED';
-    },
-    isRegistered() {
-      return this.registrationStatus === 'REGISTERED';
-    },
-    isVerifiedAndRegistered() {
-      return this.isVerified && this.isRegistered;
-    },
-    showVerificationInputs() {
-      return this.loginStatus === 'VERIFYING';
-    },
-    orgName() {
-      return this.appService?.config?.organizationName || 'our organization';
-    },
-    isNewRegistration() {
-      return this.registrationStatus === 'NEW';
-    },
-    isAppliedRegistration() {
-      return this.registrationStatus === 'APPLIED';
-    },
+    currentMember() { return this.session?.member || null; },
+    loginStatus() { return (this.currentMember?.login?.status || '').toString().toUpperCase(); },
+    registrationStatus() { return (this.currentMember?.registration?.status || '').toString().toUpperCase(); },
+    isVerified() { return this.loginStatus === 'VERIFIED'; },
+    isNewRegistration() { return this.registrationStatus === 'NEW'; },
+    isAppliedRegistration() { return this.registrationStatus === 'APPLIED'; },
     canSignUp() {
-      return this.currentMember?.canSignup() || false;
+      const s = this.registrationStatus;
+      return s === 'PENDING' || s === 'REGISTERED';
     },
   },
   created() {
@@ -145,24 +124,37 @@ export default {
     if (this.currentMember?.emailAddress || this.currentMember?.email) {
       this.email = this.currentMember.emailAddress || this.currentMember.email;
     }
+    this.redirectTarget = this.parseRedirect?.(this.$route?.query?.redirect);
 
-    this.redirectTarget = this.parseRedirect(this.$route?.query?.redirect);
-
-    if (this.redirectTarget && this.isVerified) { this.redirectBack(true); return; }
-    if (!this.redirectTarget && this.isVerified && this.isAppliedRegistration) { this.routeToMemberWaiver(true); return; }
-    if (!this.redirectTarget && this.isVerified && this.isNewRegistration) { this.routeToMemberRegistration(true); return; }
-    if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding(true); }
+    // Centralized nav:
+    // APPLIED -> Waiver; NEW -> Registration; redirect back if allowed; else Landing when canSignUp.
+    if (this.isVerified && this.isAppliedRegistration) { this.routeToMemberWaiver(true); return; }
+    if (this.isVerified && this.isNewRegistration) { this.routeToMemberRegistration(true); return; }
+    if (this.redirectTarget && this.isVerified && this.canSignUp) { this.redirectBack?.(true); return; }
+    if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding?.(true); }
   },
   watch: {
-    currentMember(m) {
-      if (m?.emailAddress || m?.email) this.email = m.emailAddress || m.email;
-      if (this.redirectTarget && this.isVerified && this.canSignUp) { this.redirectBack(); return; }
-      if (!this.redirectTarget && this.isVerified && this.isAppliedRegistration) { this.routeToMemberWaiver(); return; }
-      if (!this.redirectTarget && this.isVerified && this.isNewRegistration) { this.routeToMemberRegistration(); return; }
-      if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding(); }
+    currentMember() {
+      // React to status changes (e.g., after submitting registration form)
+      if (this.isVerified && this.isAppliedRegistration) { this.routeToMemberWaiver(); return; }
+      if (this.isVerified && this.isNewRegistration) { this.routeToMemberRegistration(); return; }
+      if (this.redirectTarget && this.isVerified && this.canSignUp) { this.redirectBack?.(); return; }
+      if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding?.(); }
     },
   },
   methods: {
+    routeToMemberLanding(replace = false) {
+      const named = { name: 'MemberLanding' };
+      return replace ? this.$router.replace(named) : this.$router.push(named);
+    },
+    routeToMemberRegistration(replace = false) {
+      const named = { name: 'MemberRegistration' };
+      return replace ? this.$router.replace(named) : this.$router.push(named);
+    },
+    routeToMemberWaiver(replace = false) {
+      const named = { name: 'MemberWaiver', query: this.$route?.query?.redirect ? { redirect: this.$route.query.redirect } : undefined };
+      return replace ? this.$router.replace(named) : this.$router.push(named);
+    },
     parseRedirect(raw) {
       if (!raw) return null;
       try {
@@ -181,33 +173,6 @@ export default {
       if (!this.redirectTarget) return;
       return replace ? this.$router.replace(this.redirectTarget) : this.$router.push(this.redirectTarget);
     },
-    routeToMemberLanding(replace = false) {
-      const named = { name: 'MemberLanding' };
-      const namedRes = this.$router.resolve(named);
-      if (namedRes && namedRes.name) return replace ? this.$router.replace(named) : this.$router.push(named);
-      const pathTarget = { path: '/member/landing' };
-      const pathRes = this.$router.resolve(pathTarget);
-      if (pathRes && pathRes.matched && pathRes.matched.length) return replace ? this.$router.replace(pathTarget) : this.$router.push(pathTarget);
-      if (this.$route.path !== '/member') return replace ? this.$router.replace({ path: '/member' }) : this.$router.push({ path: '/member' });
-    },
-    routeToMemberRegistration(replace = false) {
-      const named = { name: 'MemberRegistration' };
-      const res = this.$router.resolve(named);
-      if (res && res.name) return replace ? this.$router.replace(named) : this.$router.push(named);
-      const pathTarget = { path: '/member/register' };
-      const pathRes = this.$router.resolve(pathTarget);
-      if (pathRes && pathRes.matched && pathRes.matched.length) return replace ? this.$router.replace(pathTarget) : this.$router.push(pathTarget);
-    },
-    routeToMemberWaiver(replace = false) {
-      const query = {};
-      if (this.$route?.query?.redirect) query.redirect = this.$route.query.redirect;
-      const named = { name: 'MemberWaiver', query };
-      const r = this.$router.resolve(named);
-      if (r && r.name) return replace ? this.$router.replace(named) : this.$router.push(named);
-      const pathTarget = { path: '/member/waiver', query };
-      const rp = this.$router.resolve(pathTarget);
-      if (rp?.matched?.length) return replace ? this.$router.replace(pathTarget) : this.$router.push(pathTarget);
-    },
 
     async onRequestToken() {
       this.error = '';
@@ -218,22 +183,23 @@ export default {
         const email = (this.email || '').trim();
         if (!email) throw new Error('Email is required');
 
-        // Pre-check existence unless user already confirmed new-account flow
+        // Pre-check existence unless user confirmed new-account flow
         if (!this.allowAutoCreate) {
           const existing = await this.memberService.findMemberByEmail(email);
           if (!existing) {
             this.showNewAccountPrompt = true;
+            this.showVerificationInputs = false; // ensure code input stays hidden for new account prompt
             this.message = '';
-            return; // stop here; wait for user decision
+            return;
           }
         }
 
-        // Proceed with sending sign-in link/code
         const member = await this.memberService.requestToken(email);
         if (member && typeof member === 'object') {
           this.session.member = member;
         }
         this.message = 'If the email exists, a sign-in link or code has been sent.';
+        this.showVerificationInputs = true; // show code input after sending
         this.allowAutoCreate = false; // reset after use
       } catch (e) {
         this.error = e?.message || 'Failed to request token';
@@ -246,11 +212,10 @@ export default {
     onCorrectEmail() {
       this.showNewAccountPrompt = false;
       this.allowAutoCreate = false;
-      // keep focus on email field for correction
+      this.showVerificationInputs = false; // hide code input while correcting email
     },
 
     async onConfirmCreateNew() {
-      // User confirmed new-account creation: allow and re-run request
       this.allowAutoCreate = true;
       await this.onRequestToken();
     },
@@ -262,6 +227,7 @@ export default {
       try {
         await this.memberService.resendToken(this.email);
         this.message = 'Verification email resent.';
+        this.showVerificationInputs = true; // keep code input visible
       } catch (e) {
         this.error = e?.message || 'Failed to resend token';
         this.logger?.error?.('resendToken failed', e);
@@ -285,6 +251,7 @@ export default {
           await nextTick();
           this.message = 'Signed in successfully.';
           this.token = '';
+          this.showVerificationInputs = false; // hide after successful verification
           if (this.redirectTarget && this.canSignUp) {
             this.redirectBack();
           } else if (this.isVerified && this.isAppliedRegistration) {
@@ -296,6 +263,8 @@ export default {
           }
         } else {
           this.message = 'Verification complete.';
+          // keep/hide based on your UX preference; hiding here:
+          this.showVerificationInputs = false;
           if (this.redirectTarget && this.canSignUp) {
             this.redirectBack();
           } else if (this.isVerified && this.isAppliedRegistration) {
@@ -325,6 +294,7 @@ export default {
       } finally {
         this.session.member = null;
         this.message = 'Logged out.';
+        this.showVerificationInputs = false; // reset UI
         this.loading = false;
       }
     },

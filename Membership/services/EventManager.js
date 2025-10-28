@@ -287,7 +287,7 @@ class EventManager {
     if (!eventItemResponse || !eventItemResponse.success) {
       return (new Response(false, "Failed to sign you up for the event - please contact system administrator"));
     }
-    const eventItem = eventItemResponse.data
+    const eventItem = eventItemResponse.data;
     event.eventItem = eventItem;
 
     // Prevent duplicate signups
@@ -295,8 +295,9 @@ class EventManager {
       return { success: false, error: 'Member already signed up for this event.' };
     }
 
-    // Check if event is full (if sizeLimit is set)
-    if (event.sizeLimit && event.attendees && event.attendees.length >= eventItem.sizeLimit) {
+    // Check if event is full (use eventItem.sizeLimit)
+    const limit = Number(eventItem?.sizeLimit || 0);
+    if (limit > 0 && Array.isArray(event.attendees) && event.attendees.length >= limit) {
       return { success: false, error: 'Event is full.' };
     }
 
@@ -305,20 +306,28 @@ class EventManager {
       throw new Error('Member not found');
     }
     const member = memberResponse.data;
+
+    // Add attendee (by email)
     this.calendarManager.addAttendee(eventId, member.emailAddress);
 
-    // Invoice member for event if cost is set
-    if (eventItem && eventItem.price && eventItem.price > 0) {
+    // Invoice member if price > 0
+    const price = Number(eventItem?.price || 0);
+    if (price > 0) {
       const invoiceResponse = this.createInvoiceForEvent(member, event);
-      if (!invoiceResponse.sucess) {
-        return {...invoiceResponse}; 
+      if (!invoiceResponse || invoiceResponse.success === false) {
+        return { ...invoiceResponse };
       }
+      invoice = invoiceResponse?.data || null;
     }
-
 
     return {
-      success: true, data: { message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`, eventId: eventId }
-    }
+      success: true,
+      data: {
+        message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`,
+        eventId: eventId,
+        invoice, // optional, may be null if free event
+      }
+    };
   }
 
   /**
@@ -328,7 +337,7 @@ class EventManager {
    * @returns {Object} The created invoice.
    */
   createInvoiceForEvent(member, event) {
-   
+
     return this.invoiceManager.createInvoiceForEvent(member, event);
   }
 
@@ -392,20 +401,20 @@ class EventManager {
     }
   }
 
-getEventRooms() {
-  try {
-    const optionalArgs = {
-      
-    };
-    const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
-    return resources.items.map(resource => ({
-      id: resource.resourceId,
-      name: resource.resourceName,
-      email: resource.resourceEmail,
-    }));
-  } catch (error) {
-    Logger.log(`getEventRooms failed: ${error.message}`);
-    throw error;
+  getEventRooms() {
+    try {
+      const optionalArgs = {
+
+      };
+      const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
+      return resources.items.map(resource => ({
+        id: resource.resourceId,
+        name: resource.resourceName,
+        email: resource.resourceEmail,
+      }));
+    } catch (error) {
+      Logger.log(`getEventRooms failed: ${error.message}`);
+      throw error;
+    }
   }
-}
 }

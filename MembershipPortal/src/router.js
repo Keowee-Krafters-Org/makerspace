@@ -1,22 +1,25 @@
 import { createRouter as createVueRouter, createWebHashHistory } from 'vue-router';
-import Member from '@/views/member/Member.vue';
-import MemberLanding from '@/views/member/MemberLanding.vue';
-import Admin from '@/views/admin/Admin.vue';
-import EventAttendees from '@/views/event/EventAttendees.vue';
-import EventEditor from '@/views/event/EventEditor.vue';
 
 export function createRouter(session) {
   const routes = [
-    { path: '/member', component: Member, props: true },
-    { path: '/member/landing', name: 'MemberLanding', component: MemberLanding },
+    { path: '/member', name: 'Member', component: () => import('@/views/member/Member.vue') },
+    { path: '/member/landing', name: 'MemberLanding', component: () => import('@/views/member/MemberLanding.vue') },
     { path: '/member/register', name: 'MemberRegistration', component: () => import('@/views/member/MemberRegistration.vue') },
-    { path: '/admin', component: Admin, props: true },
+    { path: '/member/waiver', name: 'MemberWaiver', component: () => import('@/views/member/MemberWaiver.vue') },
+
+    { path: '/admin', component: () => import('@/views/admin/Admin.vue'), props: true },
     { path: '/admin/member/:id?', name: 'MemberEditor', component: () => import('@/views/admin/MemberEditor.vue'), props: (route) => ({ id: route.params.id, email: route.query.email }) },
-    { path: '/event', component: () => import('@/views/event/Events.vue') },
-    { path: '/event/edit/:id?', name: 'EventEditor', component: EventEditor, props: true },
-    { path: '/event/attendees', component: EventAttendees, props: (route) => ({ id: route.query.id }) },
+
+    // Events
+    { path: '/event', name: 'Events', component: () => import('@/views/event/Events.vue') },
+    // New route for creating an event (reuses EventEditor)
+    { path: '/event/new', name: 'EventEditorNew', component: () => import('@/views/event/EventEditor.vue'), props: true },
+    { path: '/event/edit/:id?', name: 'EventEditor', component: () => import('@/views/event/EventEditor.vue'), props: true },
+    { path: '/event/attendees', component: () => import('@/views/event/EventAttendees.vue'), props: (route) => ({ id: route.query.id }) },
     { path: '/event/view', name: 'EventView', component: () => import('@/views/event/Event.vue'), props: (route) => ({ id: route.query.id, mode: route.query.mode }) },
+
     { path: '/login', component: () => import('@/views/login/LoginView.vue') },
+
     {
       path: '/',
       redirect: () => {
@@ -26,7 +29,6 @@ export function createRouter(session) {
         return { path: '/event', query: { mode } };
       },
     },
-    { path: '/member/waiver', name: 'MemberWaiver', component: () => import('@/views/member/MemberWaiver.vue') },
   ];
 
   const router = createVueRouter({
@@ -34,14 +36,17 @@ export function createRouter(session) {
     routes,
   });
 
-  // Extend guard: if VERIFIED + NEW, go to MemberRegistration; if VERIFIED + REGISTERED, go to MemberLanding
+  // Centralized guard: APPLIED -> Waiver; NEW -> Registration; canSignUp -> Landing
   router.beforeEach((to) => {
-    const status = (session?.member?.login?.status || '').toString().toUpperCase();
+    const login = (session?.member?.login?.status || '').toString().toUpperCase();
     const reg = (session?.member?.registration?.status || '').toString().toUpperCase();
-    const hasRedirect = !!to.query?.redirect;
-    if (to.path === '/member' && !hasRedirect && status === 'VERIFIED') {
-      if (reg === 'NEW') return { name: 'MemberRegistration', replace: true };
-      if (reg === 'REGISTERED') return { name: 'MemberLanding', replace: true };
+    const redirect = to.query?.redirect;
+    const canSignUp = reg === 'PENDING' || reg === 'REGISTERED';
+
+    if (to.path === '/member' && login === 'VERIFIED') {
+      if (reg === 'APPLIED') return { name: 'MemberWaiver', query: redirect ? { redirect } : undefined, replace: true };
+      if (reg === 'NEW') return { name: 'MemberRegistration', query: redirect ? { redirect } : undefined, replace: true };
+      if (canSignUp) return { name: 'MemberLanding', replace: true };
     }
     return true;
   });

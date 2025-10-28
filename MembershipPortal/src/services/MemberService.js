@@ -274,4 +274,27 @@ export class MemberService {
       return '';
     }
   }
+
+  async addMemberRegistration(payload) {
+    // Accept Member instance or plain object
+    const obj = payload instanceof Member
+      ? payload.toUpdateRequest({ registrationStatus: payload?.registration?.status || 'PENDING' })
+      : (typeof payload === 'string' ? JSON.parse(payload) : { ...(payload || {}) });
+
+    // Do not send contacts; let backend/Zoho sync
+    delete obj.contacts;
+    delete obj.primaryContactId;
+
+    return this.withSpinner(async () => {
+      const raw = await this.connector.invoke('addMemberRegistration', JSON.stringify(obj));
+      const resp = this.toJson(raw) || {};
+      const member = this.fromResponseToMember(resp);
+      if (member) return { ...resp, member };
+      // Fallback: refetch to pick up backend-side updates
+      if (obj.emailAddress) {
+        try { return { ...resp, member: await this.getMemberByEmail(obj.emailAddress) }; } catch {}
+      }
+      return resp;
+    });
+  }
 }
