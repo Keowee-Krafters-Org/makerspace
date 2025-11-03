@@ -1,6 +1,6 @@
 import { reactive, computed } from 'vue';
-import { Logger } from '@/Logger.js';
-import { PortalSession } from '@/PortalSession.js';
+import { Logger } from '@/services/Logger.js';
+import { PortalSession } from '@/services/PortalSession.js';
 import { getConfig } from '../../../Membership/config.js';
 
 

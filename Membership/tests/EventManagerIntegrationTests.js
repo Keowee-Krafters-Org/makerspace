@@ -8,6 +8,7 @@
 const TEST_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
+const RECURRING_EVENT_ID = '2kdq6q1ond4udslu88gl8dbra8@google.com'; 
 const eventData = {
   date: new Date()+(7*24*60*60*1000), // One week from now
   attendees: [],
@@ -316,6 +317,39 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
     if (eventId) {
       eventManager.unregister(eventId, testMemberId); 
       eventManager.deleteCalendarEvent(eventId);
+    }
+  }
+}
+
+function test_when_member_signs_up_for_recurring_event__then_event_is_updated() {
+  let eventId;
+  let testMemberId;
+  let startIso;
+  const eventManager = modelFactory.eventManager();
+
+  const membershipManager = modelFactory.membershipManager();
+  try {
+    const member = membershipManager.memberLookup('testuser@keoweekrafters.org');
+    assert('Found member', member != undefined, true);
+    testMemberId = member.id;
+
+    const testEvent = eventManager.getEventById(RECURRING_EVENT_ID);
+    assert('Recurring Event found', true, (testEvent != undefined));
+    const eventId = testEvent.id;
+
+    // EventManager.signup now requires the occurrence start time (ISO)
+    const start = testEvent.date || testEvent.start;
+    startIso = (start instanceof Date) ? start.toISOString() : new Date(start).toISOString();
+
+    const confirmation = eventManager.signup(eventId, testMemberId, startIso);
+    Logger.log(JSON.stringify(confirmation));
+    assert('Member signup should succeed', confirmation && confirmation.success === true, true);
+  } catch (e) {
+    throw (e);
+  } finally {
+    if (eventId) {
+      try { eventManager.unregister(eventId, testMemberId, startIso); } catch (e) {}
+      try { eventManager.deleteCalendarEvent(eventId); } catch (e) {}
     }
   }
 }

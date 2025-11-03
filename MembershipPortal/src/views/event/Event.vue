@@ -282,28 +282,32 @@ export default {
       this.message = '';
       try {
         const eventId = this.event?.id || this.$route?.query?.id;
-        const memberId = this.session?.member?.id || '';
-        const res = await this.eventService.signup(eventId, memberId);
+        const memberId = this.session?.member?.id;
+        const start = this.event?.start || this.event?.date; // ensure this is the occurrence start
+        const res = await this.eventService.signup(eventId, memberId, start);
         if (res.success) {
           this.message = res.message;
-          // Optionally refresh event details to reflect attendee list
-          // await this.loadEvent();
+          // optionally refresh event details
         } else {
           this.error = res.message;
         }
       } catch (e) {
         this.error = e?.message || 'Failed to sign up for the event';
-        this.logger?.error?.('Event signup failed', e);
       }
     },
     async onUnregister() {
-      if (this.requireVerified()) {
-        this.redirectToLogin();
-        return;
-      }
+      this.error = '';
+      this.message = '';
       try {
-        await this.eventService.unregister(this.event.id, this.member.id);
-        await this.loadEvent();
+        const eventId = this.event?.id || this.$route?.query?.id;
+        const memberId = this.session?.member?.id;
+        const start = this.event?.start || this.event?.date;
+        const res = await this.eventService.unregister(eventId, memberId, start);
+        if (res?.success) {
+          this.message = res?.message || 'You have been unregistered.';
+        } else {
+          this.error = res?.error || res?.message || 'Failed to unregister.';
+        }
       } catch (e) {
         this.error = e?.message || 'Failed to unregister';
       }

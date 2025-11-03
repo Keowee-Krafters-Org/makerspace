@@ -7,10 +7,10 @@ function getEventList(params={}) {
 }
 
 
-function signup(classId, memberId) {
+function signup(classId, memberId, startIso) {
 
   const eventManager = Membership.newModelFactory().eventManager();
-  const response = eventManager.signup(classId, memberId);
+  const response = eventManager.signup(classId, memberId, startIso);
   return JSON.stringify(response);
 }
 
@@ -91,13 +91,11 @@ function getEventItemById(eventItemId) {
   return JSON.stringify(item);
 }
 
-function unregister(classId, memberId) {
+function unregister(classId, memberId, startIso) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
 
-  // Call the eventManager's method to unregister the member
-  const response = eventManager.unregister(classId, memberId);
-
+  const response = eventManager.unregister(classId, memberId, startIso);
   return JSON.stringify(response);
 }
 

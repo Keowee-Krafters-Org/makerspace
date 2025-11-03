@@ -5,7 +5,6 @@
  */
 
 class CalendarManager extends StorageManager {
-
   constructor(calendarId = null) {
     super();
     this.calendar = calendarId
@@ -186,6 +185,22 @@ getLocationByEmail(email) {
     return this.getEvent(id);
   }
 
+  getEventByTitle(title, timeMin = new Date(), timeMax = new Date(Date.now() + 365*24*60*60*1000)) {
+    const calendarId = this.calendar.getId();
+    const res = Calendar.Events.list(calendarId, {
+      q: String(title),
+      singleEvents: true,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      maxResults: 10,
+    });
+    const item = (res.items || []).find(i => String(i.summary || '').trim() === String(title).trim());
+    if (!item) throw new Error(`Event Not Found for title: ${title}`);
+    // Fetch Apps Script event to reuse fromRecord pipeline
+    const event = this.calendar.getEventById(item.id);
+    return event ? this.fromRecord(event) : this.fromRecord(this.calendar.createAllDayEvent(item.summary, new Date(item.start.date || item.start.dateTime)));
+  }
+
   /**
    * Complies with StorageManager.getAll
    */
@@ -229,39 +244,81 @@ getLocationByEmail(email) {
     }
   }
 
-  addAttendee(id, emailAddress) {
-    
-    const event = this.calendar.getEventById(id);
-    if (!event) {
-      throw new Error(`No calendar event found for ID: ${calendarId}`);
-    }
-    event.addGuest(emailAddress); 
-    return this.fromRecord(event); 
+  static matchInstanceByStart_(inst, start) {
+    const s = (start instanceof Date) ? start : new Date(start);
+    const dt =
+      inst.originalStartTime?.dateTime ||
+      inst.originalStartTime?.date ||
+      inst.start?.dateTime ||
+      inst.start?.date;
+    return dt && new Date(dt).getTime() === s.getTime();
   }
 
-  /**
-   * Unregister an attendee from an event
-   * @param {string} eventId - The ID of the event
-   * @param {string} email - The email of the attendee to remove
-   * @returns {Object} Response indicating success or failure
-   */
-  unregisterAttendee(eventId, email) {
-    const event = this.calendar.getEventById(eventId);
-    if (!event) {
-      return { success: false, error: 'Event not found.' };
-    }
+  addAttendee(eventOrId, emailAddress, startTime) {
+    const isObj = eventOrId && typeof eventOrId === 'object';
+    const id = isObj ? eventOrId.id : String(eventOrId);
+    const start = (isObj ? (eventOrId.start || eventOrId.date) : startTime);
+    if (!id) throw new Error('addAttendee requires an event id');
+    if (!start) throw new Error('addAttendee requires the occurrence start time for recurring events');
 
-    try {
-        // Remove the attendee from the guest list
-        event.removeGuest(email);
+    const series = this.calendar.getEventById(id);
+    if (!series) throw new Error(`No calendar event found for ID: ${id}`);
 
-        return {
-            success: true,
-             message: `Attendee with email ${email} has been successfully unregistered from: ${event.getTitle()}`, eventId: eventId, 
-             data: this.fromRecord(event)
-        };
-    } catch (error) {
-        return { success: false, error: `Failed to unregister attendee: ${error.message}` };
-    }
+    const calendarId = this.calendar.getId();
+    const windowStart = (start instanceof Date) ? start : new Date(start);
+    const windowEnd = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000);
+
+    // Only use Advanced Calendar API; no series-level fallback
+    const res = Calendar.Events.instances(calendarId, series.getId(), {
+      timeMin: windowStart.toISOString(),
+      timeMax: windowEnd.toISOString(),
+      maxResults: 25,
+      singleEvents: true,
+    });
+
+    const match = (res.items || []).find(inst => CalendarManager.matchInstanceByStart_(inst, windowStart));
+    if (!match) throw new Error('Occurrence not found for provided start time');
+
+    const list = Array.isArray(match.attendees) ? match.attendees.slice() : [];
+    const exists = list.some(a => (a.email || '').toLowerCase() === String(emailAddress).toLowerCase());
+    if (!exists) list.push({ email: emailAddress });
+
+    Calendar.Events.patch({ attendees: list }, calendarId, match.id);
+    return this.fromRecord(series);
+  }
+
+  unregisterAttendee(eventOrId, email, startTime) {
+    const isObj = eventOrId && typeof eventOrId === 'object';
+    const id = isObj ? eventOrId.id : String(eventOrId);
+    const start = (isObj ? (eventOrId.start || eventOrId.date) : startTime);
+    if (!id) throw new Error('unregisterAttendee requires an event id');
+    if (!start) throw new Error('unregisterAttendee requires the occurrence start time for recurring events');
+
+    const series = this.calendar.getEventById(id);
+    if (!series) return { success: false, error: 'Event not found.' };
+
+    const calendarId = this.calendar.getId();
+    const windowStart = (start instanceof Date) ? start : new Date(start);
+    const windowEnd = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const res = Calendar.Events.instances(calendarId, series.getId(), {
+      timeMin: windowStart.toISOString(),
+      timeMax: windowEnd.toISOString(),
+      maxResults: 25,
+      singleEvents: true,
+    });
+
+    const match = (res.items || []).find(inst => CalendarManager.matchInstanceByStart_(inst, windowStart));
+    if (!match) return { success: false, error: 'Occurrence not found for provided start time.' };
+
+    const list = (match.attendees || []).filter(a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
+    Calendar.Events.patch({ attendees: list }, calendarId, match.id);
+
+    return {
+      success: true,
+      message: `Attendee ${email} removed from this occurrence.`,
+      eventId: id,
+      data: this.fromRecord(series),
+    };
   }
 }

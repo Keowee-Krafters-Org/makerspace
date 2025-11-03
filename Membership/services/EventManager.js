@@ -111,6 +111,16 @@ class EventManager {
     return this.enrichCalendarEvents(calendarEvents);
   }
 
+
+  getEventByTitle(title) {
+    const calendarEvent = this.calendarManager.getEventByTitle(title);
+    if (!calendarEvent) {
+      throw new Error(`Event Not Found for title: ${title}`);
+    }
+    const newEvent = this.enrichCalendarEvent(calendarEvent);
+    return newEvent;
+  }
+
   getEventById(eventId) {
     const event = this.calendarManager.getById(eventId);
     if (!event) {
@@ -274,14 +284,13 @@ class EventManager {
    * @param {*} memberId 
    * @returns Response(EventConfirmation) 
    */
-  signup(eventId, memberId) {
+  signup(eventId, memberId, startIso) {
     let invoice;
     const event = this.calendarManager.getById(eventId);
-    if (!event) {
-      throw new Error('Event not found.');
-    }
+    if (!event) throw new Error('Event not found.');
+    const start = startIso ? new Date(startIso) : null;
+    if (!start) return { success: false, error: 'Missing event start time.' };
 
-    // Lookup the eventItem
     const eventItemId = event.eventItem.id;
     const eventItemResponse = this.getEventItemById(eventItemId);
     if (!eventItemResponse || !eventItemResponse.success) {
@@ -290,27 +299,21 @@ class EventManager {
     const eventItem = eventItemResponse.data;
     event.eventItem = eventItem;
 
-    // Prevent duplicate signups
-    if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
-      return { success: false, error: 'Member already signed up for this event.' };
-    }
-
-    // Check if event is full (use eventItem.sizeLimit)
-    const limit = Number(eventItem?.sizeLimit || 0);
-    if (limit > 0 && Array.isArray(event.attendees) && event.attendees.length >= limit) {
-      return { success: false, error: 'Event is full.' };
-    }
-
     const memberResponse = this.membershipManager.getMember(memberId);
     if (!(memberResponse && memberResponse.success)) {
       throw new Error('Member not found');
     }
     const member = memberResponse.data;
 
-    // Add attendee (by email)
-    this.calendarManager.addAttendee(eventId, member.emailAddress);
+    // Capacity check (instance-level attendees list may be managed by Calendar API; still enforce sizeLimit here)
+    const limit = Number(eventItem?.sizeLimit || 0);
+    if (limit > 0 && Array.isArray(event.attendees) && event.attendees.length >= limit) {
+      return { success: false, error: 'Event is full.' };
+    }
 
-    // Invoice member if price > 0
+    // Add attendee to the single occurrence
+    this.calendarManager.addAttendee(event, member.emailAddress, start);
+
     const price = Number(eventItem?.price || 0);
     if (price > 0) {
       const invoiceResponse = this.createInvoiceForEvent(member, event);
@@ -325,7 +328,7 @@ class EventManager {
       data: {
         message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`,
         eventId: eventId,
-        invoice, // optional, may be null if free event
+        invoice,
       }
     };
   }
@@ -347,21 +350,19 @@ class EventManager {
    * @param {string} memberId - The ID of the member
    * @returns {Object} Response indicating success or failure
    */
-  unregister(eventId, memberId) {
+  unregister(eventId, memberId, startIso) {
     try {
-
       const memberResponse = this.membershipManager.getMember(memberId);
       if (!(memberResponse && memberResponse.success)) {
         return { success: false, error: 'Member not found.' };
       }
-
       const member = memberResponse.data;
+      const event = this.calendarManager.getById(eventId);
+      const start = startIso ? new Date(startIso) : null;
+      if (!event || !start) return { success: false, error: 'Missing event or start time.' };
 
-      // Delegate the unregistration to the CalendarManager
-      this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
-
+      this.calendarManager.unregisterAttendee(event, member.emailAddress, start);
       this.invoiceManager.deleteInvoiceFor(member.id, eventId);
-
     } catch (err) {
       console.error('Failed to unregister from event:', err);
       return { success: false, message: 'Failed to unregister from event.', error: err.toString() };
