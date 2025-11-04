@@ -4,7 +4,6 @@
  * It also integrates with a calendar system to manage event scheduling.  
  */
 class EventManager {
-
   constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
@@ -164,7 +163,12 @@ class EventManager {
         const eventItemResponse = this.updateEventItem(eventItem);
         eventItem = eventItemResponse.data;
       } else {
-        eventItem = this.addEventItem(eventItem);
+        const existingEventItem = this.getEventItemByTitle(eventItem.title);
+        if (!existingEventItem) {
+          eventItem = this.addEventItem(eventItem);
+        } else {
+          eventItem = existingEventItem;
+        }
       }
       if (!eventItem) {
         throw new Error('Failed to create event item.');
@@ -256,8 +260,8 @@ class EventManager {
     this.deleteCalendarEvent(event);
   }
 
-  deleteCalendarEvent(eventId) {
-    this.calendarManager.delete(eventId);
+  deleteCalendarEvent(event) {
+    this.calendarManager.delete(event.id);
   }
 
   createEvent(data = {}) {
@@ -279,47 +283,37 @@ class EventManager {
   }
 
   /**
-   * Sign up a member to an event
-   * @param {*} eventId 
-   * @param {*} memberId 
-   * @returns Response(EventConfirmation) 
+   * Sign up a member to an event occurrence by its instance id
    */
-  signup(eventId, memberId, startIso) {
+  signup(eventId, memberId) {
     let invoice;
     const event = this.calendarManager.getById(eventId);
     if (!event) throw new Error('Event not found.');
-    const start = startIso ? new Date(startIso) : null;
-    if (!start) return { success: false, error: 'Missing event start time.' };
 
     const eventItemId = event.eventItem.id;
     const eventItemResponse = this.getEventItemById(eventItemId);
     if (!eventItemResponse || !eventItemResponse.success) {
-      return (new Response(false, "Failed to sign you up for the event - please contact system administrator"));
+      return new Response(false, 'Failed to sign you up for the event - please contact system administrator');
     }
     const eventItem = eventItemResponse.data;
     event.eventItem = eventItem;
 
     const memberResponse = this.membershipManager.getMember(memberId);
-    if (!(memberResponse && memberResponse.success)) {
-      throw new Error('Member not found');
-    }
+    if (!(memberResponse && memberResponse.success)) throw new Error('Member not found');
     const member = memberResponse.data;
 
-    // Capacity check (instance-level attendees list may be managed by Calendar API; still enforce sizeLimit here)
     const limit = Number(eventItem?.sizeLimit || 0);
     if (limit > 0 && Array.isArray(event.attendees) && event.attendees.length >= limit) {
       return { success: false, error: 'Event is full.' };
     }
 
-    // Add attendee to the single occurrence
-    this.calendarManager.addAttendee(event, member.emailAddress, start);
+    // Add attendee directly to the instance id
+    this.calendarManager.addAttendeeById(eventId, member.emailAddress);
 
     const price = Number(eventItem?.price || 0);
     if (price > 0) {
       const invoiceResponse = this.createInvoiceForEvent(member, event);
-      if (!invoiceResponse || invoiceResponse.success === false) {
-        return { ...invoiceResponse };
-      }
+      if (!invoiceResponse || invoiceResponse.success === false) return { ...invoiceResponse };
       invoice = invoiceResponse?.data || null;
     }
 
@@ -327,47 +321,43 @@ class EventManager {
       success: true,
       data: {
         message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`,
-        eventId: eventId,
+        eventId,
         invoice,
       }
     };
   }
 
   /**
-   * Creates an invoice for a specific event and member.
-   * @param {Member} member - The member for whom the invoice is created.
-   * @param {Event} event - The event for which the invoice is created.
-   * @returns {Object} The created invoice.
+   * Create an invoice for a member signing up for an event
    */
   createInvoiceForEvent(member, event) {
-
-    return this.invoiceManager.createInvoiceForEvent(member, event);
-  }
-
+    try {
+      return this.invoiceManager.createInvoiceForEvent(member, event);
+    } catch (err) {
+      console.error('Failed to create invoice for event signup:', err);
+      return { success: false, message: 'Failed to create invoice for event signup.', error: err.toString() };
+    }
+  }     
+   
   /**
-   * Unregister a member from an event
-   * @param {string} eventId - The ID of the event
-   * @param {string} memberId - The ID of the member
-   * @returns {Object} Response indicating success or failure
+   * Unregister a member from an event occurrence by its instance id
    */
-  unregister(eventId, memberId, startIso) {
+  unregister(eventId, memberId) {
     try {
       const memberResponse = this.membershipManager.getMember(memberId);
-      if (!(memberResponse && memberResponse.success)) {
-        return { success: false, error: 'Member not found.' };
-      }
+      if (!(memberResponse && memberResponse.success)) return { success: false, error: 'Member not found.' };
       const member = memberResponse.data;
-      const event = this.calendarManager.getById(eventId);
-      const start = startIso ? new Date(startIso) : null;
-      if (!event || !start) return { success: false, error: 'Missing event or start time.' };
 
-      this.calendarManager.unregisterAttendee(event, member.emailAddress, start);
+      const event = this.calendarManager.getById(eventId);
+      if (!event) return { success: false, error: 'Event not found.' };
+
+      this.calendarManager.unregisterAttendeeById(eventId, member.emailAddress);
       this.invoiceManager.deleteInvoiceFor(member.id, eventId);
     } catch (err) {
       console.error('Failed to unregister from event:', err);
       return { success: false, message: 'Failed to unregister from event.', error: err.toString() };
     }
-    return { success: true, data: { message: `You have been unregistered from event: ${eventId}`, eventId: eventId } };
+    return { success: true, data: { message: `You have been unregistered from event: ${eventId}`, eventId } };
   }
 
   enrichWithCalendarData(event) {
@@ -417,5 +407,69 @@ class EventManager {
       Logger.log(`getEventRooms failed: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Return the first occurrence (instance) of a recurring series.
+   * Accepts the seriesId (recurring event id or iCalUID).
+   * @param {string} seriesId
+   * @returns {CalendarEvent|null}
+   */
+  getFirstOccurrence(seriesId) {
+    if (!seriesId) throw new Error('seriesId is required');
+
+    // Resolve the series and a sensible window start
+    let series;
+    try {
+      series = this.calendarManager.getById(String(seriesId));
+    } catch (_) {
+      series = null;
+    }
+
+    // Prefer the series' start as the window anchor; otherwise now
+    const baseStart = (series && (series.date || series.start))
+      ? (series.date instanceof Date ? series.date : new Date(series.date || series.start))
+      : new Date();
+
+    const calId = this.calendarManager.calendarId;
+    // Try a tight one-week window around the base start
+    const timeMin = new Date(baseStart.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const timeMax = new Date(baseStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // First attempt: windowed instances
+    let res = Calendar.Events.instances(calId, String(seriesId), {
+      singleEvents: true,
+      maxResults: 50,
+      timeMin,
+      timeMax,
+    });
+
+    let items = (res && res.items) ? res.items.slice() : [];
+
+    // Fallback: fetch without window if nothing returned
+    if (!items.length) {
+      res = Calendar.Events.instances(calId, String(seriesId), {
+        singleEvents: true,
+        maxResults: 50,
+      });
+      items = (res && res.items) ? res.items.slice() : [];
+    }
+
+    if (!items.length) return null;
+
+    // Pick the earliest by originalStartTime/start
+    const pickTime = (inst) => {
+      const raw =
+        inst.originalStartTime?.dateTime ||
+        inst.originalStartTime?.date ||
+        inst.start?.dateTime ||
+        inst.start?.date;
+      return raw ? new Date(raw).getTime() : Number.MAX_SAFE_INTEGER;
+    };
+    items.sort((a, b) => pickTime(a) - pickTime(b));
+    const first = items[0];
+
+    // Parse to CalendarEvent with manager’s parser
+    return this.calendarManager.fromRecord(first);
   }
 }

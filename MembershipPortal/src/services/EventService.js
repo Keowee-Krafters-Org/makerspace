@@ -45,18 +45,15 @@ export class EventService {
     });
   }
 
-  async signup(eventId, memberId, start) {
+  async signup(eventId, memberId) {
     if (!eventId) throw new Error('Missing eventId');
     if (!memberId) throw new Error('Missing memberId');
-    if (!start) throw new Error('Missing event start');
-
-    const toIso = (v) => (v instanceof Date ? v.toISOString() : new Date(v).toISOString());
 
     return this.appService.withSpinner(async () => {
-      const raw = await this.connector.invoke('signup', String(eventId), String(memberId), toIso(start));
+      const raw = await this.connector.invoke('signup', String(eventId), String(memberId));
       const obj = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
       const success = !!obj?.success;
-      const defaultMsg = 'You have signed up for the class/event. You will receive an email from KeoweeKrafters Org. with your invoice shortly. Note that until you make the payment using the link in the email or post a check to us you may be subject to cancelation in favor of a member on the waitlist.';
+      const defaultMsg = 'You have signed up for the class/event. You will receive an email from KeoweeKrafters Org. with your invoice shortly.';
       const message = success
         ? (obj?.data?.message || obj?.message || defaultMsg)
         : (obj?.error || obj?.message || 'Failed to sign up for the event');
@@ -64,15 +61,13 @@ export class EventService {
     });
   }
 
-  unregister(eventId, memberId, start) {
+  unregister(eventId, memberId) {
     if (!eventId || !memberId) throw new Error('unregister requires eventId and memberId');
-    if (!start) throw new Error('unregister requires event start');
-
-    const toIso = (v) => (v instanceof Date ? v.toISOString() : new Date(v).toISOString());
 
     return this.appService.withSpinner(async () => {
-      const res = await this.connector.invoke('unregister', String(eventId), String(memberId), toIso(start));
-      return EventService.normalize(res);
+      const res = await this.connector.invoke('unregister', String(eventId), String(memberId));
+      const obj = typeof res === 'string' ? JSON.parse(res) : (res || {});
+      return { success: !!obj?.success, message: obj?.message || obj?.error, data: obj?.data || null };
     });
   }
 

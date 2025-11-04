@@ -9,6 +9,8 @@ class CalendarEvent extends Event {
       eventData.eventItem = {};
     }
     super(eventData);
+    // capture recurring series id when provided
+    this.seriesId = eventData.seriesId || eventData.recurringEventId || eventData.id || null;
   }
 
   get description() {
@@ -43,9 +45,119 @@ class CalendarEvent extends Event {
     this.eventItem.costDescription = value;
   }
 
+   // Convert simplified recurrence into Calendar API RRULE array
+  static normalizeRecurrenceToApi(recur, start) {
+    if (!recur) return undefined;
+
+    // Already RRULE array
+    if (Array.isArray(recur) && recur.every(x => typeof x === 'string' && x.toUpperCase().startsWith('RRULE'))) {
+      return recur.slice();
+    }
+
+    // If it's a single RRULE string
+    if (typeof recur === 'string' && recur.toUpperCase().startsWith('RRULE')) {
+      return [recur];
+    }
+
+    // Map day names/numbers to BYDAY codes
+    const dayMap = {
+      0: 'SU', 1: 'MO', 2: 'TU', 3: 'WE', 4: 'TH', 5: 'FR', 6: 'SA',
+      su: 'SU', sun: 'SU', sunday: 'SU',
+      mo: 'MO', mon: 'MO', monday: 'MO',
+      tu: 'TU', tue: 'TU', tuesday: 'TU',
+      we: 'WE', wed: 'WE', wednesday: 'WE',
+      th: 'TH', thu: 'TH', thursday: 'TH',
+      fr: 'FR', fri: 'FR', friday: 'FR',
+      sa: 'SA', sat: 'SA', saturday: 'SA',
+    };
+    const toByDay = (v) => {
+      const arr = Array.isArray(v) ? v : String(v).split(',').map(s => s.trim());
+      const codes = arr.map(x => {
+        if (typeof x === 'number') return dayMap[x] || null;
+        const key = String(x).toLowerCase();
+        return dayMap[key] || (key.length === 2 ? key.toUpperCase() : null);
+      }).filter(Boolean);
+      return codes.length ? codes.join(',') : undefined;
+    };
+    const toUtcUntil = (v, s) => {
+      // UNTIL must be in UTC as YYYYMMDDTHHmmssZ (use start's time for all-day clarity if available)
+      const d = v ? (v instanceof Date ? new Date(v) : new Date(String(v))) : null;
+      if (!d) return undefined;
+      const allDay = !!(s && typeof s === 'object' && !(s instanceof Date) && s.date && !s.dateTime);
+      const base = (d instanceof Date) ? d : new Date(d);
+      // If all-day, strip time to 00:00:00
+      const t = new Date(base.getTime());
+      if (allDay) {
+        t.setUTCHours(0, 0, 0, 0);
+      }
+      const pad = (n) => String(n).padStart(2, '0');
+      const yyyy = t.getUTCFullYear();
+      const mm = pad(t.getUTCMonth() + 1);
+      const dd = pad(t.getUTCDate());
+      const HH = pad(t.getUTCHours());
+      const MM = pad(t.getUTCMinutes());
+      const SS = pad(t.getUTCSeconds());
+      return `${yyyy}${mm}${dd}T${HH}${MM}${SS}Z`;
+    };
+
+    // Parse "WEEKLY:MO,WE" style strings
+    if (typeof recur === 'string') {
+      const m = recur.trim().match(/^(\w+)(?::([\w,]+))?$/i);
+      if (m) {
+        const freq = m[1].toUpperCase();
+        const byDay = m[2] ? toByDay(m[2]) : undefined;
+        let rule = `FREQ=${freq}`;
+        if (byDay && freq === 'WEEKLY') rule += `;BYDAY=${byDay}`;
+        return [`RRULE:${rule}`];
+      }
+    }
+
+    // Object shape
+    if (typeof recur === 'object') {
+      const freq = (recur.freq || recur.frequency || '').toString().toUpperCase();
+      if (!freq) return undefined;
+
+      const parts = [`FREQ=${freq}`];
+
+      const interval = Number(recur.interval || 0);
+      if (interval && interval > 0) parts.push(`INTERVAL=${interval}`);
+
+      const byDay = recur.byDay ?? recur.days ?? recur.byweekday;
+      const byDayStr = byDay ? toByDay(byDay) : undefined;
+      if (byDayStr && (freq === 'WEEKLY' || freq === 'MONTHLY' || freq === 'YEARLY')) {
+        parts.push(`BYDAY=${byDayStr}`);
+      }
+
+      const byMonthDay = recur.byMonthDay ?? recur.bymonthday;
+      if (byMonthDay !== undefined) {
+        const list = Array.isArray(byMonthDay) ? byMonthDay : [byMonthDay];
+        const norm = list.map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        if (norm.length) parts.push(`BYMONTHDAY=${norm.join(',')}`);
+      }
+
+      const byMonth = recur.byMonth ?? recur.bymonth;
+      if (byMonth !== undefined) {
+        const list = Array.isArray(byMonth) ? byMonth : [byMonth];
+        const norm = list.map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        if (norm.length) parts.push(`BYMONTH=${norm.join(',')}`);
+      }
+
+      const count = Number(recur.count || 0);
+      if (count && count > 0) parts.push(`COUNT=${count}`);
+
+      const until = recur.until ? toUtcUntil(recur.until, start) : undefined;
+      if (until) parts.push(`UNTIL=${until}`);
+
+      return parts.length ? [`RRULE:${parts.join(';')}`] : undefined;
+    }
+
+    return undefined;
+  }
+
   toObject() {
     return {
       id: this.id,
+      seriesId: this.seriesId, // include series id
       date: this.start,
       duration: this.duration,
       location: this.location,
@@ -54,6 +166,7 @@ class CalendarEvent extends Event {
       creator: this.creator,
       status: this.status,
       isRecurring: this.isRecurring,
+      recurrence: this.recurrence,
       eventItem: (typeof this.eventItem?.toObject === 'function')
         ? this.eventItem.toObject()
         : this.eventItem || {},
@@ -63,11 +176,11 @@ class CalendarEvent extends Event {
   static createNew(data = {}) {
     const event = super.createNew(data);
     if (data && data.eventItem) {
-      // Ensure eventItem is normalized in GAS environment
       event.eventItem = (typeof ZohoEvent?.createNew === 'function')
         ? ZohoEvent.createNew(data.eventItem)
         : data.eventItem;
     }
+    event.seriesId = data.seriesId || data.recurringEventId || data.id || null;
     return event;
   }
 
@@ -79,10 +192,12 @@ class CalendarEvent extends Event {
       date: 'start',
       _end: 'end',
       location: 'location',
-      attendees: 'guests',
+      // Renamed to attendees (Calendar API terminology)
+      attendees: 'attendees',
       creator: 'creator',
       status: 'status',
       isRecurring: 'isRecurring',
+      recurrence: 'recurrence',
       _eventItemId: 'eventItemId'
     };
   }
@@ -92,25 +207,44 @@ class CalendarEvent extends Event {
     return match ? match[1] : null;
   }
 
-  static fromRecord(googleEvent) {
+  // New: parse Advanced Calendar API event resource as fromRecord
+  static fromRecord(item) {
+    const start = item?.start ? (item.start.dateTime || item.start.date) : null;
+    const end = item?.end ? (item.end.dateTime || item.end.date) : null;
+
+    // Filter attendees:
+    // - Exclude room/resource attendees (a.resource === true)
+    // - Exclude the location email if it was stored in item.location
+    const locationEmail = String(item.location || '').toLowerCase();
+    const attendees = (item.attendees || [])
+      .filter(a => a && a.email)
+      .filter(a => !a.resource) // drop resource attendees (rooms)
+      .filter(a => String(a.email).toLowerCase() !== locationEmail)
+      .map(a => CalendarContact.fromRecord({ email: a.email }));
+
     const record = {
-      id: googleEvent.getId(),
-      title: googleEvent.getTitle(),
-      description: googleEvent.getDescription(),
-      start: googleEvent.getStartTime(),
-      end: googleEvent.getEndTime(),
-      location: googleEvent.getGuestList().filter(g => CalendarEvent.resourceFilter(g)).map(g => g.getEmail())[0] || '',
-      guests: googleEvent.getGuestList().filter(g => !CalendarEvent.resourceFilter(g)).map(g =>
-        CalendarContact.fromRecord({ email: g.getEmail() })),
-      creator: googleEvent.getCreators()?.[0] || '',
-      visibility: googleEvent.getVisibility(),
-      isRecurring: googleEvent.isRecurringEvent(),
+      id: item.id,
+      seriesId: item.recurringEventId || item.id,
+      title: item.summary || '',
+      description: item.description || '',
+      start: start ? new Date(start) : null,
+      end: end ? new Date(end) : null,
+      location: item.location || '',
+      // Use attendees (not guests)
+      attendees,
+      creator: item.creator?.email || item.organizer?.email || '',
+      status: item.status || '',
+      recurrence: Array.isArray(item.recurrence) ? item.recurrence.slice() : [],
+      isRecurring: !!item.recurringEventId || (Array.isArray(item.recurrence) && item.recurrence.length > 0),
     };
 
-    const data = { eventItem: {}, ...super.convertRecordToData(record, CalendarEvent.getFromRecordMap()) };
+    // Use convertRecordToData, then ensure attendees is set
+    const data = { eventItem: {}, ...super.convertRecordToData(record, CalendarEvent.getFromRecordMap?.()) };
+    data.attendees = attendees;
 
-    if (record.start) data.date = new Date(record.start);
-    if (data._end) data.duration = (new Date(data._end) - data.start) / (1000 * 60 * 60);
+    if (data._end && data.date) {
+      data.duration = (new Date(data._end) - new Date(data.date)) / (1000 * 60 * 60);
+    }
 
     if (data._description) {
       const match = data._description.match(/eventItemId=(\d*)/);
@@ -122,6 +256,7 @@ class CalendarEvent extends Event {
         data.eventItem.eventType = 'Meeting';
       }
     }
+
     return new CalendarEvent(data);
   }
 
@@ -134,9 +269,6 @@ class CalendarEvent extends Event {
     return super.convertDataToRecord(CalendarEvent.getToRecordMap());
   }
 
-  static resourceFilter(guest) {
-    return guest.getEmail().includes('resource.calendar.google.com');
-  }
 
   updateDescription() {
     return CalendarManager.updateDescription(this.id, this.eventItem.id);
