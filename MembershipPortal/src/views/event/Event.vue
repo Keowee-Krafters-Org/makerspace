@@ -20,13 +20,15 @@
     <div v-if="event" :class="bodyClass">
       <!-- Image -->
       <div :class="imageColClass">
-        <img
-          v-if="imageUrl"
-          :src="imageUrl"
-          alt="Event"
-          :class="imageClass"
-        />
-        <div v-else :class="placeholderClass">No image</div>
+        <div :class="imageWrapperClass" :style="portraitAspectStyle">
+          <img
+            v-if="imageUrl"
+            :src="imageUrl"
+            alt="Event"
+            :class="imageClass"
+          />
+          <div v-else :class="placeholderClass">No image</div>
+        </div>
       </div>
 
       <!-- Details -->
@@ -159,21 +161,30 @@ export default {
         : 'p-4 max-w-4xl mx-auto';
     },
     bodyClass() {
+      // Image on the left, text on the right
       return this.isCard
-        ? 'grid grid-cols-1 gap-3'
-        : 'grid grid-cols-1 md:grid-cols-3 gap-6';
+        ? 'grid grid-cols-1 sm:grid-cols-[minmax(160px,200px)_1fr] gap-3'
+        : 'grid grid-cols-1 md:grid-cols-[minmax(260px,320px)_1fr] gap-6';
     },
-    imageColClass() { return this.isCard ? '' : 'md:col-span-1'; },
-    detailsColClass() { return this.isCard ? '' : 'md:col-span-2 space-y-3'; },
-    imageClass() {
+    imageColClass() { return ''; },
+    detailsColClass() { return this.isCard ? '' : 'space-y-3'; },
+
+    // Image sizing
+    imageWrapperClass() {
       return this.isCard
-        ? 'w-full h-48 object-cover object-top rounded-md border border-gray-200'
-        : 'w-full h-56 object-cover object-top rounded-lg border border-gray-200';
+        ? 'w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50'
+        : 'w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50';
+    },
+    portraitAspectStyle() {
+      // Keep a portrait aspect ratio (3:4) without relying on Tailwind plugins
+      return { aspectRatio: '3 / 4' };
+    },
+    imageClass() {
+      // Avoid truncation by using object-contain; fills wrapper area
+      return 'w-full h-full object-contain';
     },
     placeholderClass() {
-      return this.isCard
-        ? 'w-full h-48 rounded-md border border-dashed border-gray-300 flex items-center justify-center text-gray-400'
-        : 'w-full h-56 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-400';
+      return 'w-full h-full flex items-center justify-center text-gray-400';
     },
 
     // Session-derived member info

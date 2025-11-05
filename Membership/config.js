@@ -76,9 +76,9 @@ var SharedConfig = {
     'Guest': {value: 0, discount: 0, description: 'Guest - Not a member', itemId: ''},
     'Interested Party': {value: 1, discount: 0  , description: 'Interested Party - Not a member', itemId: '5636475000001511102'    },
     'Active': {value: 2, discount: 10 , description: 'Active Member - Access to most tools and classes', itemId: '5636475000000148799'},
-    'Full Access': {value: 3, discount: 15 , description: 'Full Access Member - Access to all tools and workshops', itemId: '5636475000001511056'},
+    'Full Access': {value: 3, discount: 10 , description: 'Full Access Member - Access to all tools and workshops', itemId: '5636475000001511056'},
     'Lifetime': {value: 4, discount: 20, description: 'Lifetime Member - Full access for life', itemId: '' },
-    'Host': {value: 5, discount: 25, description: 'Host Member - Full access plus ability to host classes and events', itemId: ''  },
+    'Host': {value: 5, discount: 20, description: 'Host Member - Full access plus ability to host classes and events', itemId: ''  },
     'Instructor': {value: 6, discount: 20, description: 'Instructor Member - Full access plus ability to teach classes', itemId: ''    },
     'Board': {value: 10, discount: 20, description: 'Board Member - Full access plus ability to vote in board elections', itemId: ''      },
     'President': {value: 11, discount: 20, description: 'President - Full access plus ability to lead the board', itemId: ''          },
@@ -124,6 +124,6 @@ var SharedConfig = {
   }
 };
 
-function getConfig() {
+export function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }
