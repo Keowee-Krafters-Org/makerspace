@@ -8,6 +8,10 @@ export class NodeServiceConnector extends ServiceConnector {
     this.origin = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : '';
   }
 
+  getDeploymentEnvironment() {
+    return (typeof window === 'undefined') ? 'node' : 'web';
+  }
+
   async invoke(fnName, ...args) {
     switch (fnName) {
       case 'getEventList': {

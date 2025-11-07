@@ -1,6 +1,10 @@
 import { ServiceConnector } from './ServiceConnector.js';
 
 export class GoogleServiceConnector extends ServiceConnector {
+  getDeploymentEnvironment() {
+    return 'gas';
+  }
+
   invoke(fnName, ...args) {
     return new Promise((resolve, reject) => {
       const run = (typeof google !== 'undefined' && google?.script?.run) ? google.script.run : null;

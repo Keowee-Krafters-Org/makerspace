@@ -38,6 +38,7 @@
         <div class="text-gray-700 space-y-1">
           <div><span class="font-semibold">Date:</span> {{ formatDate(event.getDate()) }}</div>
           <div><span class="font-semibold">Duration:</span> {{ event.getDurationHours() }} hours</div>
+          <div><span class="font-semibold">Price:</span> ${{ price }}</div>
           <div v-if="hostName"><span class="font-semibold">Host:</span> {{ hostName }}</div>
           <div v-if="locationName"><span class="font-semibold">Location:</span> {{ locationName }}</div>
 
@@ -215,6 +216,10 @@ export default {
     hostName() { return this.event?.getHostName() || ''; },
     locationName() { return this.event?.getLocationName() || ''; },
     description() { return this.event?.eventItem?.description || this.event?.description || ''; },
+    price() {
+      const v = this.event?.eventItem?.price ?? this.event?.price;
+      return v == null ? 0 : v;
+    },
 
     // UI helpers
     showDescToggle() {

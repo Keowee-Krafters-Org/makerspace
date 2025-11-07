@@ -3,4 +3,9 @@ export class ServiceConnector {
   async invoke(_fnName, ..._args) {
     throw new Error('ServiceConnector.invoke not implemented');
   }
+
+  // Deployment environment hint: 'gas' | 'web' | 'node' | 'unknown'
+  getDeploymentEnvironment() {
+    return 'unknown';
+  }
 }

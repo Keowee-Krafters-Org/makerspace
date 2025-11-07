@@ -20,7 +20,12 @@ export class MemberService {
 
   // Detect GAS connector
   get isGAS() {
-    return this.connector?.constructor?.name === 'GoogleServiceConnector';
+    try {
+      const env = this.connector?.getDeploymentEnvironment?.() || 'unknown';
+      return env === 'gas';
+    } catch {
+      return false;
+    }
   }
 
   // --- helpers to normalize responses to Member/Member[] ---
@@ -65,7 +70,7 @@ export class MemberService {
   }
 
   // Map SPA method names to GAS function names
-  mapFn(name) {
+ mapFn(name) {
     if (!this.isGAS) return name;
     const gasMap = {
       requestToken: 'login',
