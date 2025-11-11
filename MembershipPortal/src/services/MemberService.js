@@ -6,7 +6,6 @@ export class MemberService {
     this.appService = appService || null;
   }
 
-  // Spinner-safe wrapper
   async withSpinner(fn) {
     const svc = this.appService;
     if (svc && typeof svc.withSpinner === 'function') return svc.withSpinner(fn);
@@ -18,7 +17,6 @@ export class MemberService {
     }
   }
 
-  // Detect GAS connector
   get isGAS() {
     try {
       const env = this.connector?.getDeploymentEnvironment?.() || 'unknown';
@@ -28,20 +26,13 @@ export class MemberService {
     }
   }
 
-  // --- helpers to normalize responses to Member/Member[] ---
-  toJson(obj) {
-    if (typeof obj === 'string') {
-      try { return JSON.parse(obj); } catch { return obj; }
-    }
-    return obj;
-  }
   toMember(obj) {
     if (!obj || typeof obj !== 'object') return null;
     return Member.ensure(obj);
   }
+
   fromResponseToMember(raw) {
-    const resp = this.toJson(raw) || {};
-    // common shapes
+    const resp = raw || {};
     const candidate =
       resp?.data?.member ??
       resp?.member ??
@@ -49,8 +40,9 @@ export class MemberService {
       (resp?.id || resp?.emailAddress || resp?.email ? resp : null);
     return candidate ? this.toMember(candidate) : null;
   }
+
   fromResponseToMembers(raw) {
-    const resp = this.toJson(raw) || {};
+    const resp = raw || {};
     const list =
       (Array.isArray(resp?.data?.members) && resp.data.members) ||
       (Array.isArray(resp?.members) && resp.members) ||
@@ -60,17 +52,7 @@ export class MemberService {
     return list.map(m => this.toMember(m)).filter(Boolean);
   }
 
-  normalizeResponse(res) {
-    // keep for non-member responses
-    if (!res) return {};
-    if (typeof res === 'string') {
-      try { return JSON.parse(res); } catch { return {}; }
-    }
-    return res;
-  }
-
-  // Map SPA method names to GAS function names
- mapFn(name) {
+  mapFn(name) {
     if (!this.isGAS) return name;
     const gasMap = {
       requestToken: 'login',
@@ -81,22 +63,18 @@ export class MemberService {
     return gasMap[name] || name;
   }
 
-  // ---- Auth methods ----
-
   async requestToken(email) {
     return this.withSpinner(async () => {
       const fn = this.mapFn('requestToken');
       const raw = await this.connector.invoke(fn, email);
-      const member = this.fromResponseToMember(raw);
-      return member || null;
+      return this.fromResponseToMember(raw) || null;
     });
   }
 
   async resendToken(email) {
     return this.withSpinner(async () => {
       const fn = this.mapFn('resendToken');
-      // resend usually doesn't return a member; keep original behavior
-      return this.normalizeResponse(await this.connector.invoke(fn, email));
+      return await this.connector.invoke(fn, email);
     });
   }
 
@@ -104,9 +82,7 @@ export class MemberService {
     return this.withSpinner(async () => {
       const fn = this.mapFn('verifyCode');
       const args = this.isGAS ? [email, token] : [{ email, token }];
-      const raw = await this.connector.invoke(fn, ...args);
-      const obj = this.toJson(raw) || {};
-      // Preserve non-member fields, but coerce any returned member to Member
+      const obj = await this.connector.invoke(fn, ...args) || {};
       const member = this.fromResponseToMember(obj);
       if (member) return { ...obj, member };
       return obj;
@@ -116,13 +92,12 @@ export class MemberService {
   async logout(email) {
     return this.withSpinner(async () => {
       const fn = this.mapFn('logout');
-      const resp = this.normalizeResponse(await this.connector.invoke(fn, email));
+      const resp = await this.connector.invoke(fn, email);
       if (this.appService?.session) this.appService.session.member = null;
       return resp;
     });
   }
 
-  // ---- Listing helpers ----
   unwrapList(resp) {
     const list =
       (Array.isArray(resp?.data?.members) && resp.data.members) ||
@@ -140,7 +115,7 @@ export class MemberService {
 
   async listMembers(params = {}) {
     const callParams = {
-      currentPage: params.currentPage ?? 1,
+      page: params.currentPage ?? 1,
       pageSize: params.pageSize ?? 10,
       search: params.search || '',
       filter: params.filter || '',
@@ -148,32 +123,16 @@ export class MemberService {
     if (params.pageToken) callParams.pageToken = params.pageToken;
 
     const raw = await this.connector.invoke('getAllMembers', callParams);
-    const resp = this.normalizeResponse(raw);
-    const { list, page, nextToken, hasMore } = this.unwrapList(resp);
-
+    const { list, page, nextToken, hasMore } = this.unwrapList(raw || {});
     const cursorMode = !!(nextToken || page?.prevToken || page?.nextPageToken);
     const inferredHasMore = cursorMode ? !!nextToken : (Array.isArray(list) && list.length >= (callParams.pageSize || 10));
-
-    // Map rows to Member instances
     const rows = (list || []).map(m => this.toMember(m)).filter(Boolean);
 
     return {
       rows,
-      page: { currentPage: page?.currentPage ?? callParams.currentPage, hasMore: hasMore ?? inferredHasMore, nextToken: nextToken || null },
+      page: { currentPage: page?.currentPage ?? callParams.page, hasMore: hasMore ?? inferredHasMore, nextToken: nextToken || null },
       cursorMode,
     };
-  }
-
-  // ---- Member fetch helpers ----
-  ensureMemberShape(data) {
-    if (!data || typeof data !== 'object') return null;
-    // Ensure registration subtree, then wrap as Member
-    const normalized = {
-      registration: { status: '', level: '', waiverSigned: false, waiverPdfLink: '' },
-      ...data,
-      registration: { status: '', level: '', waiverSigned: false, waiverPdfLink: '', ...(data.registration || {}) },
-    };
-    return this.toMember(normalized);
   }
 
   async getMemberById(id) {
@@ -182,12 +141,11 @@ export class MemberService {
       const raw = await this.connector.invoke('getMemberById', id);
       const member = this.fromResponseToMember(raw);
       if (member?.id) return member;
-    } catch { /* fall through */ }
-
+    } catch {}
     const { rows } = await this.listMembers({ currentPage: 1, pageSize: 10, search: String(id), filter: '' });
     const found = rows.find(m => String(m.id) === String(id)) || null;
     if (!found) throw new Error('Member not found');
-    return found; // already Member instance
+    return found;
   }
 
   async getMemberByEmail(email) {
@@ -196,13 +154,12 @@ export class MemberService {
       const raw = await this.connector.invoke('getMemberByEmail', email);
       const member = this.fromResponseToMember(raw);
       if (member && (member.emailAddress || member.id)) return member;
-    } catch { /* fall through */ }
-
+    } catch {}
     const { rows } = await this.listMembers({ currentPage: 1, pageSize: 10, search: email, filter: '' });
     const lower = String(email).toLowerCase();
     const found = rows.find(m => (m.emailAddress || '').toLowerCase() === lower) || rows[0] || null;
     if (!found) throw new Error('Member not found');
-    return found; // already Member instance
+    return found;
   }
 
   async getMemberForEditor({ id, email }) {
@@ -211,12 +168,10 @@ export class MemberService {
     throw new Error('No member id or email provided.');
   }
 
-  // Returns Member or null; never throws for "not found"
   async findMemberByEmail(email) {
     if (!email) return null;
     try {
-      const m = await this.getMemberByEmail(email);
-      return m || null;
+      return await this.getMemberByEmail(email);
     } catch (e) {
       const msg = (e?.message || '').toLowerCase();
       if (msg.includes('not found') || msg.includes('no member')) return null;
@@ -234,7 +189,9 @@ export class MemberService {
 
       let base = '';
       if (publicUrl) {
-        base = publicUrl.replace('/viewform?embedded=true', '/viewform').replace('/viewform?usp=sf_link', '/viewform');
+        base = publicUrl
+          .replace('/viewform?embedded=true', '/viewform')
+          .replace('/viewform?usp=sf_link', '/viewform');
       } else if (formId) {
         base = `https://docs.google.com/forms/d/e/${formId}/viewform`;
       } else {
@@ -281,25 +238,21 @@ export class MemberService {
   }
 
   async addMemberRegistration(payload) {
-    // Accept Member instance or plain object
     const obj = payload instanceof Member
       ? payload.toUpdateRequest({ registrationStatus: payload?.registration?.status || 'PENDING' })
       : (typeof payload === 'string' ? JSON.parse(payload) : { ...(payload || {}) });
 
-    // Do not send contacts; let backend/Zoho sync
     delete obj.contacts;
     delete obj.primaryContactId;
 
     return this.withSpinner(async () => {
-      const raw = await this.connector.invoke('addMemberRegistration', JSON.stringify(obj));
-      const resp = this.toJson(raw) || {};
-      const member = this.fromResponseToMember(resp);
-      if (member) return { ...resp, member };
-      // Fallback: refetch to pick up backend-side updates
+      const raw = await this.connector.invoke('addMemberRegistration', obj);
+      const member = this.fromResponseToMember(raw);
+      if (member) return { ...raw, member };
       if (obj.emailAddress) {
-        try { return { ...resp, member: await this.getMemberByEmail(obj.emailAddress) }; } catch {}
+        try { return { ...raw, member: await this.getMemberByEmail(obj.emailAddress) }; } catch {}
       }
-      return resp;
+      return raw;
     });
   }
 }
