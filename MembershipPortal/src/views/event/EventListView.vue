@@ -7,6 +7,7 @@
       :initial="ev"
       :mode="mode"
       variant="card"
+      @updated="onEventUpdated"
     />
   </div>
 </template>
@@ -17,9 +18,17 @@ import Event from '@/views/event/Event.vue';
 export default {
   name: 'EventListView',
   components: { Event },
+  emits: ['refresh', 'updated'],
   props: {
     events: { type: Array, default: () => [] },
     mode: { type: String, default: 'list' },
+  },
+  methods: {
+    onEventUpdated(ev) {
+      // Bubble up so the page can refetch list data
+      this.$emit('updated', ev);
+      this.$emit('refresh');
+    },
   },
 };
 </script>

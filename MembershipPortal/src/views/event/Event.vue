@@ -100,14 +100,15 @@
             <Button
               v-if="!isRegistered"
               icon="user-plus"
-              :disabled="soldOut"
-              :label="soldOut ? 'Sold Out' : 'Sign Me Up'"
+              :disabled="soldOut || pending"
+              :label="soldOut ? 'Sold Out' : (pending ? 'Working...' : 'Sign Me Up')"
               @click="onSignup"
             />
             <Button
               v-else
               icon="user-minus"
-              label="Cancel my Signup"
+              :disabled="pending"
+              :label="pending ? 'Working...' : 'Cancel my Signup'"
               @click="onUnregister"
             />
           </template>
@@ -134,6 +135,7 @@ import { Event as EventModel } from '@/model/Event.js';
 
 export default {
   name: 'EventView',
+  emits: ['updated'],
   components: { Button, Message },
   props: {
     id: { type: String, required: true },
@@ -148,6 +150,7 @@ export default {
       error: '',
       fromMode: this.mode === 'table' ? 'table' : 'list',
       descExpanded: false,
+      pending: false,
     };
   },
   computed: {
@@ -259,6 +262,10 @@ export default {
         this.logger?.error?.('getEventById failed', e);
       }
     },
+    async refreshAfterChange() {
+      await this.loadEvent();
+      if (this.event) this.$emit('updated', this.event);
+    },
     goBack() {
       this.$router.push({ path: '/event', query: { mode: this.fromMode } });
     },
@@ -285,36 +292,41 @@ export default {
     async onSignup() {
       this.error = '';
       this.message = '';
+      this.pending = true;
       try {
         const eventId = this.event?.id || this.$route?.query?.id;
         const memberId = this.session?.member?.id;
-        const start = this.event?.start || this.event?.date; // ensure this is the occurrence start
-        const res = await this.eventService.signup(eventId, memberId, start);
+        const res = await this.eventService.signup(eventId, memberId); // no start arg
         if (res.success) {
           this.message = res.message;
-          // optionally refresh event details
+          await this.refreshAfterChange();
         } else {
           this.error = res.message;
         }
       } catch (e) {
         this.error = e?.message || 'Failed to sign up for the event';
+      } finally {
+        this.pending = false;
       }
     },
     async onUnregister() {
       this.error = '';
       this.message = '';
+      this.pending = true;
       try {
         const eventId = this.event?.id || this.$route?.query?.id;
         const memberId = this.session?.member?.id;
-        const start = this.event?.start || this.event?.date;
-        const res = await this.eventService.unregister(eventId, memberId, start);
+        const res = await this.eventService.unregister(eventId, memberId); // no start arg
         if (res?.success) {
           this.message = res?.message || 'You have been unregistered.';
+          await this.refreshAfterChange();
         } else {
           this.error = res?.error || res?.message || 'Failed to unregister.';
         }
       } catch (e) {
         this.error = e?.message || 'Failed to unregister';
+      } finally {
+        this.pending = false;
       }
     },
 
