@@ -57,6 +57,22 @@ class GoogleDriveService {
     });
   }
 
+  getAll(folderId = null) {
+    const targetFolder = folderId ? DriveApp.getFolderById(folderId) : this.folder;
+    const files = [];
+    const fileIterator = targetFolder.getFiles();
+    while (fileIterator.hasNext()) {
+      const file = fileIterator.next();
+      files.push(new DriveFile({
+        id: file.getId(),
+        name: file.getName(),
+        mimeType: file.getMimeType(),
+        url: file.getUrl()
+      }));
+    }
+    return files;
+  }
+  
   /**
    * Deletes a file by ID.
    * @param {string} id

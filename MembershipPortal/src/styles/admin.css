@@ -1,0 +1,64 @@
+
+    .member-list {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .member-list th,
+    .member-list td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .member-list th {
+      background-color: #f2f2f2;
+    }
+
+    .member-editor {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      width: 400px;
+    }
+
+    .member-editor h3 {
+      margin-top: 0;
+    }
+
+    .member-editor label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+
+    .member-editor input[type="text"],
+    .member-editor select {
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    .member-editor button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .member-editor button:hover {
+      background-color: #45a049;
+    }
+
+
+    a.readonly-link {
+      display: inline-block;
+      margin-top: 5px;
+      color: #0645ad;
+      text-decoration: underline;
+    }

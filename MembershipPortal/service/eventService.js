@@ -95,9 +95,7 @@ function unregister(classId, memberId) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
 
-  // Call the eventManager's method to unregister the member
   const response = eventManager.unregister(classId, memberId);
-
   return JSON.stringify(response);
 }
 

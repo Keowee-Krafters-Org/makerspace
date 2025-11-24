@@ -1,0 +1,50 @@
+<div class="container" id="eventContainer">
+    <h3 style="text-align:center;">Welcome, <span id="memberName"></span></h3>
+    <h1>Classes and Events</h1>
+    <div id="eventTableContainer" style="display: block;"> <!-- Table layout -->
+        <table class="event-list" id="eventList">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Price</th>
+                    <th>Attendees</th>
+                    <th>
+                        Actions
+                        <!-- Placeholder for the Button class -->
+                        <button id="newClassButtonPlaceholder" class="signup-btn">New Event</button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="eventRows"></tbody>
+        </table>
+        <div id="paginationControls"></div>
+    </div>
+    <div id="classes" class="classes-grid"></div> <!-- Card layout -->
+
+    <!-- New container for class details -->
+    <div id="classDetailsContainer" style="display: none; margin-top: 20px;"></div>
+
+    <div id="confirmation-message" style="text-align: center; color: green; margin-top: 20px;"></div>
+
+    <!-- New container for attendees list -->
+    <div id="attendeesContainer" style="display: none; margin-top: 20px;">
+        <h3>Attendees</h3>
+        <table class="event-list" id="attendeesTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody id="attendeesRows"></tbody>
+        </table>
+        <button id="hideAttendeesBtn" class="signup-btn">Hide Attendees</button>
+    </div>
+
+    <h5>
+        <p id="version"></p>
+    </h5>
+</div>

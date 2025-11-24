@@ -59,7 +59,7 @@ class MembershipManager {
     
       if (member.login) {
         // Has a login 
-        expired = member.login.isExpired();;
+        expired = member.login.isExpired();
       }
 
       if (expired) {
@@ -68,12 +68,11 @@ class MembershipManager {
         member = this.storageManager.update(member.id, member).data;
       }
 
-      if (!expired && member.registration && member.registration.status === 'REGISTERED') {
-        member.login.status = 'VERIFIED';
-        member = this.storageManager.update(member.id, member).data;
-      }
 
       if (member.login && member.login.status === 'VERIFYING') {
+        
+        member.login.authentication = this.generateAuthentication();        
+        member = this.storageManager.update(member.id, member).data;
         this.sendEmail({
           emailAddress: emailAddress,
           title: 'Your MakeKeowee Login Code',
@@ -150,8 +149,12 @@ class MembershipManager {
 
   memberLookup(emailAddress) {
     const response = this.storageManager.getByKeyValue('emailAddress', emailAddress);
-    if (response.length === 0) return null;
-    const member = response.data[0];
+    if (response.success && response.data.length === 0) return null;
+    // Double check for matching email (case insensitive)
+    const data = response.data.filter(m => (m.emailAddress || '').toLowerCase() === (emailAddress || '').toLowerCase());
+    if (data.length === 0) return null;
+    // Return the first match
+    const member = data[0];
     if (!member) return null;
     return this.storageManager.getById(member.id).data;
   }
@@ -164,21 +167,46 @@ class MembershipManager {
     return newMember;
   }
 
-  getMember(memberId) {
-    return (this.storageManager.getById(memberId));
+  /**
+   * 
+   * @param {*} memberId 
+   * @param {*} options optionally include authentication data delete it by default
+   * @returns {Response} the member record
+   */
+  getMember(memberId, options = {}) {
+    if (options.includeAuthentication) {
+      return (this.storageManager.getById(memberId));
+    }
+    const memberResponse = this.storageManager.getById(memberId);
+    if (memberResponse && memberResponse.success && memberResponse.data) {
+      delete memberResponse.data.login.authentication;
+    }
+    return memberResponse;
   }
+  /**
+   * Update the member registration (for event or membership level).
+   * This incudes essential infomration like first and last name, email address, phone number, interests, and registration details. 
+   * @param {*} memberData 
+   * @returns 
+   */
   addMemberRegistration(memberData) {
     let registeredMember = this.storageManager.createNew(memberData);
-    let member = this.memberLookup(memberData.emailAddress);
-    if (!member) {
-      member = addMember(memberData);
+    let existingMember = null;
+    const existingMemberResponse = this.getMember(memberData.id);
+    if (existingMemberResponse && existingMemberResponse.success && existingMemberResponse.data) {
+      existingMember = existingMemberResponse.data;
+     
     }
-    registeredMember.id = member.id;
-    if (member && member.login.status === 'VERIFIED') {
+   
+    if (existingMember && existingMember.login.status === 'VERIFIED') {
+       // Update registration status 
       registeredMember.registration.status = 'APPLIED';
+      registeredMember.login = existingMember.login;
+    } else {
+      throw new Error('Member must be verified before registering.');
     }
-    member = this.storageManager.update(member.id, registeredMember);
-    return member;
+    registeredMember = this.storageManager.update(registeredMember.id, registeredMember);
+    return registeredMember;
   }
 
   setMemberStatus(id, status) {
@@ -296,5 +324,6 @@ class MembershipManager {
     // Filter out null values (emails without corresponding members)
     return members.filter(member => member !== null);
   }
+
 
 }

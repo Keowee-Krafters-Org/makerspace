@@ -4,7 +4,6 @@
  * It also integrates with a calendar system to manage event scheduling.  
  */
 class EventManager {
-
   constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
@@ -111,6 +110,16 @@ class EventManager {
     return this.enrichCalendarEvents(calendarEvents);
   }
 
+
+  getEventByTitle(title) {
+    const calendarEvent = this.calendarManager.getEventByTitle(title);
+    if (!calendarEvent) {
+      throw new Error(`Event Not Found for title: ${title}`);
+    }
+    const newEvent = this.enrichCalendarEvent(calendarEvent);
+    return newEvent;
+  }
+
   getEventById(eventId) {
     const event = this.calendarManager.getById(eventId);
     if (!event) {
@@ -154,7 +163,12 @@ class EventManager {
         const eventItemResponse = this.updateEventItem(eventItem);
         eventItem = eventItemResponse.data;
       } else {
-        eventItem = this.addEventItem(eventItem);
+        const existingEventItem = this.getEventItemByTitle(eventItem.title);
+        if (!existingEventItem) {
+          eventItem = this.addEventItem(eventItem);
+        } else {
+          eventItem = existingEventItem;
+        }
       }
       if (!eventItem) {
         throw new Error('Failed to create event item.');
@@ -246,8 +260,8 @@ class EventManager {
     this.deleteCalendarEvent(event);
   }
 
-  deleteCalendarEvent(eventId) {
-    this.calendarManager.delete(eventId);
+  deleteCalendarEvent(event) {
+    this.calendarManager.delete(event.id);
   }
 
   createEvent(data = {}) {
@@ -269,137 +283,81 @@ class EventManager {
   }
 
   /**
-   * Sign up a member to an event
-   * @param {*} eventId 
-   * @param {*} memberId 
-   * @returns Response(EventConfirmation) 
+   * Sign up a member to an event occurrence by its instance id
    */
   signup(eventId, memberId) {
     let invoice;
     const event = this.calendarManager.getById(eventId);
-    if (!event) {
-      throw new Error('Event not found.');
-    }
+    if (!event) throw new Error('Event not found.');
 
-    // Lookup the eventItem
     const eventItemId = event.eventItem.id;
     const eventItemResponse = this.getEventItemById(eventItemId);
     if (!eventItemResponse || !eventItemResponse.success) {
-      return (new Response(false, "Failed to sign you up for the event - please contact system administrator"));
+      return new Response(false, 'Failed to sign you up for the event - please contact system administrator');
     }
-    const eventItem = eventItemResponse.data
+    const eventItem = eventItemResponse.data;
     event.eventItem = eventItem;
 
-    // Prevent duplicate signups
-    if (Array.isArray(event.attendees) && event.attendees.includes(memberId)) {
-      return { success: false, error: 'Member already signed up for this event.' };
-    }
+    const memberResponse = this.membershipManager.getMember(memberId);
+    if (!(memberResponse && memberResponse.success)) throw new Error('Member not found');
+    const member = memberResponse.data;
 
-    // Check if event is full (if sizeLimit is set)
-    if (event.sizeLimit && event.attendees && event.attendees.length >= eventItem.sizeLimit) {
+    const limit = Number(eventItem?.sizeLimit || 0);
+    if (limit > 0 && Array.isArray(event.attendees) && event.attendees.length >= limit) {
       return { success: false, error: 'Event is full.' };
     }
 
-    const memberResponse = this.membershipManager.getMember(memberId);
-    if (!(memberResponse && memberResponse.success)) {
-      throw new Error('Member not found');
-    }
-    const member = memberResponse.data;
-    this.calendarManager.addAttendee(eventId, member.emailAddress);
+    // Add attendee directly to the instance id
+    this.calendarManager.addAttendeeById(eventId, member.emailAddress);
 
-    // Invoice member for event if cost is set
-    if (eventItem && eventItem.price && eventItem.price > 0) {
+    const price = Number(eventItem?.price || 0);
+    if (price > 0) {
       const invoiceResponse = this.createInvoiceForEvent(member, event);
-      if (!invoiceResponse.sucess) {
-        return {...invoiceResponse}; 
-      }
+      if (!invoiceResponse || invoiceResponse.success === false) return { ...invoiceResponse };
+      invoice = invoiceResponse?.data || null;
     }
-
 
     return {
-      success: true, data: { message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`, eventId: eventId }
-    }
+      success: true,
+      data: {
+        message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`,
+        eventId,
+        invoice,
+      }
+    };
   }
 
   /**
-   * Creates an invoice for a specific event and member.
-   * @param {Member} member - The member for whom the invoice is created.
-   * @param {Event} event - The event for which the invoice is created.
-   * @returns {Object} The created invoice.
+   * Create an invoice for a member signing up for an event
    */
   createInvoiceForEvent(member, event) {
-    const eventItem = event.eventItem;
-    if (!eventItem || !eventItem.id) {
-        throw new Error('Event item not found for invoicing.');
+    try {
+      return this.invoiceManager.createInvoiceForEvent(member, event);
+    } catch (err) {
+      console.error('Failed to create invoice for event signup:', err);
+      return { success: false, message: 'Failed to create invoice for event signup.', error: err.toString() };
     }
-
-    // Get the event start date
-    const eventStartDate = new Date(event.date);
-    if (isNaN(eventStartDate)) {
-        throw new Error('Invalid event start date.');
-    }
-
-    // Calculate the due date based on config.eventInvoiceLeadTime
-    const leadTime = this.config.eventInvoiceLeadTime || 7; // Default to 7 days if not configured
-    const dueDate = new Date(eventStartDate);
-    // limit due date to no earlier than today
-    if (dueDate < new Date()) {
-        dueDate.setTime(new Date().getTime());
-    } else {
-        dueDate.setDate(dueDate.getDate() - leadTime); // Subtract lead time from the event start date
-    }
-
-    const discountPercent = member.discount || 0;
-    const invoiceData = {
-        customerId: member.id,
-        eventId: event.id,
-        date: new Date(), // Invoice creation date
-        dueDate: dueDate, // Calculated due date
-        status: 'UNPAID',
-        discount: `${discountPercent}%`,
-        totalAmount: eventItem.price,
-        lineItems: [
-            {
-                itemId: eventItem.id,
-                description: eventItem.description,
-                quantity: 1,
-                rate: eventItem.price,
-            },
-        ],
-        contacts: [
-            { id: member.primaryContactId }
-        ]
-    };
-
-    return this.invoiceManager.createAndSendInvoice(invoiceData);
-  }
-
+  }     
+   
   /**
-   * Unregister a member from an event
-   * @param {string} eventId - The ID of the event
-   * @param {string} memberId - The ID of the member
-   * @returns {Object} Response indicating success or failure
+   * Unregister a member from an event occurrence by its instance id
    */
   unregister(eventId, memberId) {
     try {
-
       const memberResponse = this.membershipManager.getMember(memberId);
-      if (!(memberResponse && memberResponse.success)) {
-        return { success: false, error: 'Member not found.' };
-      }
-
+      if (!(memberResponse && memberResponse.success)) return { success: false, error: 'Member not found.' };
       const member = memberResponse.data;
 
-      // Delegate the unregistration to the CalendarManager
-      this.calendarManager.unregisterAttendee(eventId, member.emailAddress);
+      const event = this.calendarManager.getById(eventId);
+      if (!event) return { success: false, error: 'Event not found.' };
 
+      this.calendarManager.unregisterAttendeeById(eventId, member.emailAddress);
       this.invoiceManager.deleteInvoiceFor(member.id, eventId);
-
     } catch (err) {
       console.error('Failed to unregister from event:', err);
       return { success: false, message: 'Failed to unregister from event.', error: err.toString() };
     }
-    return { success: true, data: { message: `You have been unregistered from event: ${eventId}`, eventId: eventId } };
+    return { success: true, data: { message: `You have been unregistered from event: ${eventId}`, eventId } };
   }
 
   enrichWithCalendarData(event) {
@@ -434,20 +392,84 @@ class EventManager {
     }
   }
 
-getEventRooms() {
-  try {
-    const optionalArgs = {
-      
-    };
-    const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
-    return resources.items.map(resource => ({
-      id: resource.resourceId,
-      name: resource.resourceName,
-      email: resource.resourceEmail,
-    }));
-  } catch (error) {
-    Logger.log(`getEventRooms failed: ${error.message}`);
-    throw error;
+  getEventRooms() {
+    try {
+      const optionalArgs = {
+
+      };
+      const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
+      return resources.items.map(resource => ({
+        id: resource.resourceId,
+        name: resource.resourceName,
+        email: resource.resourceEmail,
+      }));
+    } catch (error) {
+      Logger.log(`getEventRooms failed: ${error.message}`);
+      throw error;
+    }
   }
-}
+
+  /**
+   * Return the first occurrence (instance) of a recurring series.
+   * Accepts the seriesId (recurring event id or iCalUID).
+   * @param {string} seriesId
+   * @returns {CalendarEvent|null}
+   */
+  getFirstOccurrence(seriesId) {
+    if (!seriesId) throw new Error('seriesId is required');
+
+    // Resolve the series and a sensible window start
+    let series;
+    try {
+      series = this.calendarManager.getById(String(seriesId));
+    } catch (_) {
+      series = null;
+    }
+
+    // Prefer the series' start as the window anchor; otherwise now
+    const baseStart = (series && (series.date || series.start))
+      ? (series.date instanceof Date ? series.date : new Date(series.date || series.start))
+      : new Date();
+
+    const calId = this.calendarManager.calendarId;
+    // Try a tight one-week window around the base start
+    const timeMin = new Date(baseStart.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const timeMax = new Date(baseStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // First attempt: windowed instances
+    let res = Calendar.Events.instances(calId, String(seriesId), {
+      singleEvents: true,
+      maxResults: 50,
+      timeMin,
+      timeMax,
+    });
+
+    let items = (res && res.items) ? res.items.slice() : [];
+
+    // Fallback: fetch without window if nothing returned
+    if (!items.length) {
+      res = Calendar.Events.instances(calId, String(seriesId), {
+        singleEvents: true,
+        maxResults: 50,
+      });
+      items = (res && res.items) ? res.items.slice() : [];
+    }
+
+    if (!items.length) return null;
+
+    // Pick the earliest by originalStartTime/start
+    const pickTime = (inst) => {
+      const raw =
+        inst.originalStartTime?.dateTime ||
+        inst.originalStartTime?.date ||
+        inst.start?.dateTime ||
+        inst.start?.date;
+      return raw ? new Date(raw).getTime() : Number.MAX_SAFE_INTEGER;
+    };
+    items.sort((a, b) => pickTime(a) - pickTime(b));
+    const first = items[0];
+
+    // Parse to CalendarEvent with manager’s parser
+    return this.calendarManager.fromRecord(first);
+  }
 }

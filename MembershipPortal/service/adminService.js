@@ -23,10 +23,10 @@ function getAllMembers(params) {
  * Retrieves a member by their email address.
  */
 function getMemberByEmail(email) {
-  const member = memberLookup(email);
-  if (!member) throw new Error('Member not found');
+  const memberResponse = memberLookup(email);
+  if (!memberResponse) throw new Error('Member not found');
 
-  return JSON.stringify({success:true, data:member.toObjectNoAuthentication()});
+  return JSON.stringify(memberResponse);
 }
 
 /**
@@ -43,6 +43,12 @@ function updateMember(updatedMemberJson) {
   return JSON.stringify({success:true, data:savedMember.toObjectNoAuthentication()});
 }
 
+function getMemberById(id) {
 
+  const memberResponse = membershipManager().getMember(id);
+  if (!memberResponse) throw new Error('Member not found');
+
+  return JSON.stringify(memberResponse);
+}
 
 

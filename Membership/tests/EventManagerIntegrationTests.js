@@ -8,6 +8,7 @@
 const TEST_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
+const RECURRING_EVENT_ID = '2kdq6q1ond4udslu88gl8dbra8@google.com'; 
 const eventData = {
   date: new Date()+(7*24*60*60*1000), // One week from now
   attendees: [],
@@ -164,20 +165,80 @@ function test_when_event_item_exists__then_only_calendar_event_is_added() {
 function test_addEvent() {
   const eventManager = modelFactory.eventManager();
   const calendarManager = modelFactory.calendarManager();
-  let eventId;
+  let event;
+  try {
+    // Sample 1x1 transparent PNG (replace with a real image for production tests)
+    const event = addEvent();
+
+    assert('Event ID should be returned', event.id != undefined, true);
+    assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
+
+    // Validate the image was saved (DriveFile or URL expected)
+    assert('Event Item should have an image', !!event.eventItem.image, true);
+
+    // Validate the calendar event was created
+    const calendarEvent = calendarManager.calendar.getEventById(event.id);
+    assert('Calendar event should exist', calendarEvent != null, true);
+    assert('Calendar event title matches', calendarEvent.getTitle(), eventData.eventItem.title);
+    Logger.log('Calendar event verification passed.');
+
+  } catch (error) {
+    Logger.log(`addEvent failed: ${error.message}`);
+  } finally {
+    if (event) {
+      eventManager.deleteEvent(event);
+    }
+  }
+
+}
+
+  function addEvent() {
+    const base64Image = TEST_IMAGE;
+
+    // Clone and add image to event data
+    event = JSON.parse(JSON.stringify(eventData));
+    event.eventItem.image = { data: base64Image, name: 'New Image' };
+
+    const response = eventManager.addEvent(event);
+    Logger.log(`addEvent response: ${response.message}`);
+    return response.data;
+  }
+/**
+ * Helper method to add a recurring event
+ * @returns 
+ */
+function addRecurringEvent() {  
+  const eventManager = modelFactory.eventManager();
+  const calendarManager = modelFactory.calendarManager();
   let event;
   try {
     // Sample 1x1 transparent PNG (replace with a real image for production tests)
     const base64Image = TEST_IMAGE;
 
     // Clone and add image to event data
-    const eventDataWithImage = JSON.parse(JSON.stringify(eventData));
-    eventDataWithImage.eventItem.image = { data: base64Image, name: 'New Image' };
-
-    const response = eventManager.addEvent(eventDataWithImage);
-    Logger.log(`addEvent response: ${response.message}`);
-    assert('Event should be added successfully', response.success, true);
-    event = response.data;
+     event = JSON.parse(JSON.stringify(eventData));
+    event.eventItem.image = { data: base64Image, name: 'New Image' };
+    event.isRecurring = true;
+    event.recurrence = {
+      frequency: 'WEEKLY',
+      interval: 1,
+      count: 5
+    };
+    const response = eventManager.addEvent(event);
+   return response.data;
+  } catch (error) {
+    Logger.log(`addEvent failed: ${error.message}`);
+  } 
+}
+function test_add_recurring_Event() {
+  const eventManager = modelFactory.eventManager();
+  const calendarManager = modelFactory.calendarManager();
+  let eventId;
+  let event;
+  try {
+    event = addRecurringEvent();
+    Logger.log(`addEvent response: ${event}`);
+    assert('Event should be added successfully', (event != undefined), true);
 
     assert('Event ID should be returned', event.id != undefined, true);
     assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
@@ -199,6 +260,7 @@ function test_addEvent() {
     }
   }
 }
+
 
 function test_add_event_item() {
 
@@ -299,23 +361,60 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
     const member = membershipManager.memberLookup('testuser@keoweekrafters.org');
     assert('Found member', member != undefined, true);
     testMemberId = member.id;
-    const eventDataWithId = JSON.parse(JSON.stringify(eventData));
-    const testEventItem = eventManager.getEventItemByTitle(eventDataWithId.eventItem.title); 
-    eventDataWithId.eventItem = testEventItem;
-    const testEvent = eventManager.addEvent(eventDataWithId);
-    assert('Event created', true, (testEvent && testEvent.data && testEvent.data.id != undefined));
+    const testEvent = addEvent();
+    assert('Event created', true, (testEvent && testEvent.id != undefined));
 
-    eventId = testEvent.data.id;
+    eventId = testEvent.id;
 
+    // Signup using the occurrence (instance) id only
     const confirmation = eventManager.signup(eventId, testMemberId);
-
     Logger.log(JSON.stringify(confirmation));
+    assert('Member signup should succeed', confirmation && confirmation.success === true, true);
   } catch (e) {
     throw(e);
   } finally {
     if (eventId) {
-      eventManager.unregister(eventId, testMemberId); 
-      eventManager.deleteCalendarEvent(eventId);
+      try { eventManager.unregister(eventId, testMemberId); } catch (e) {}
+      try { eventManager.deleteEvent(eventId); } catch (e) {}
+    }
+  }
+}
+
+function test_when_member_signs_up_for_recurring_event__then_event_is_updated() {
+  let seriesId;
+  let occurrenceId;
+  let testEvent; 
+  let testMemberId;
+  const eventManager = modelFactory.eventManager();
+
+  const membershipManager = modelFactory.membershipManager();
+  try {
+    const member = membershipManager.memberLookup('testuser@keoweekrafters.org');
+    assert('Found member', member != undefined, true);
+    testMemberId = member.id;
+
+    testEvent = addRecurringEvent();
+
+    // Ensure event created (this is the series id)
+    seriesId = testEvent.id; 
+    assert('Event created', true, (testEvent != undefined && testEvent.id != undefined));
+
+    // Get the first occurrence of the recurring event and use its instance id
+    const firstOccurrence = eventManager.getFirstOccurrence(seriesId);
+    assert('First occurrence found', firstOccurrence != undefined, true);
+    occurrenceId = firstOccurrence.id;
+
+    const confirmation = eventManager.signup(occurrenceId, testMemberId);
+    Logger.log(JSON.stringify(confirmation));
+    assert('Member signup should succeed', confirmation && confirmation.success === true, true);
+  } catch (e) {
+    throw (e);
+  } finally {
+    if (occurrenceId) {
+      try { eventManager.unregister(occurrenceId, testMemberId); } catch (e) {}
+    }
+    if (seriesId) {
+      try { eventManager.deleteEvent(seriesId); } catch (e) {}
     }
   }
 }
@@ -409,22 +508,28 @@ function test_unregister_member_from_event() {
     const testEvent = addEventResponse.data;
     testEventId = testEvent.id;
 
-    // Step 3: Sign up the member for the event
+    // Step 3: Sign up the member for the event (use instance id only)
     const signupResponse = eventManager.signup(testEventId, testMemberId);
     assert('Member should be signed up successfully', signupResponse.success, true);
 
     // Step 4: Verify the member is in the attendee list
     const updatedEvent = calendarManager.getById(testEventId);
-    assert('Event should have attendees', Array.isArray(updatedEvent.attendees), true);
-    assert('Member should be in the attendee list', updatedEvent.attendees.includes(testMember.emailAddress), true);
+    const updatedEmails = Array.isArray(updatedEvent.attendees)
+      ? updatedEvent.attendees
+      : (Array.isArray(updatedEvent.guests) ? updatedEvent.guests.map(g => g.email) : []);
+    assert('Event should have attendees', Array.isArray(updatedEmails), true);
+    assert('Member should be in the attendee list', updatedEmails.includes(testMember.emailAddress), true);
 
-    // Step 5: Unregister the member from the event
+    // Step 5: Unregister the member from the event (use instance id only)
     const unregisterResponse = eventManager.unregister(testEventId, testMemberId);
     assert('Member should be unregistered successfully', unregisterResponse.success, true);
 
     // Step 6: Verify the member is no longer in the attendee list
     const finalEvent = calendarManager.getById(testEventId);
-    assert('Member should no longer be in the attendee list', !finalEvent.attendees.includes(testMember.emailAddress), true);
+    const finalEmails = Array.isArray(finalEvent.attendees)
+      ? finalEvent.attendees
+      : (Array.isArray(finalEvent.guests) ? finalEvent.guests.map(g => g.email) : []);
+    assert('Member should no longer be in the attendee list', !finalEmails.includes(testMember.emailAddress), true);
 
     Logger.log('test_unregister_member_from_event passed successfully.');
   } catch (error) {

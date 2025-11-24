@@ -1,0 +1,27 @@
+/* Member Portal CSS */
+.dashboard {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+input[type="email"],
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="datetime-local"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+login-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+}

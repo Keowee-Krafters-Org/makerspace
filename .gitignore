@@ -95,3 +95,7 @@ __pycache__/
 .vscode/
 # clasp files
 .clasp.json
+
+# dist folder
+dist/
+index.html

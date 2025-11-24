@@ -60,7 +60,7 @@ class ZohoStorageManager extends StorageManager {
     let entity = entityData; 
     if(!entityData.toRecord) {
       // Create the entity from raw data
-      entity = this.create(entityData) 
+      entity = this.createNew(entityData) 
     }
     // Should not have an id
     delete entity.id;
