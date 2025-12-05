@@ -4,28 +4,33 @@
  * It also integrates with a calendar system to manage event scheduling.  
  */
 class EventManager {
-  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
     this.invoiceManager = invoiceManager;
-    this.fileManager = fileManager;
+    this.fileManager = fileManager;      // legacy single-image handling
+    this.driveService = driveService;    // new multiple image handling
     this.config = getConfig();
   }
 
   getEventItemList(params = {}) {
-    const result = this.storageManager.getAll(params);
-    return result;
+    // Expect storageManager.getAll to return { success, data, page? }
+    return this.storageManager.getAll(params);
   }
 
   getEventItemById(id) {
-    const result = this.storageManager.getById(id);
-    return result;
+    return this.storageManager.getById(id);
   }
 
   getEventList(params = {}) {
-    const calendarEvents = this.calendarManager.getAll(params);
-    return this.enrichCalendarEvents(calendarEvents);
+    // calendarManager.getAll should accept normalized pagination params
+    const res = this.calendarManager.getAll(params);
+    // If calendarManager returns an array, enrich and return array
+    if (Array.isArray(res)) return this.enrichCalendarEvents(res);
+    // If it returns { success, data, page }, enrich data and preserve page
+    const data = Array.isArray(res?.data) ? this.enrichCalendarEvents(res.data) : [];
+    return { success: !!res?.success, data, page: res?.page || null };
   }
 
   /**
@@ -97,6 +102,18 @@ class EventManager {
       }
       calendarEvent.eventItem = eventItem;
     }
+
+    // Ensure calendarEvent.location is a CalendarLocation object
+    if (calendarEvent.location && typeof calendarEvent.location === 'string') {
+      const loc = this.calendarManager.getLocationByEmail(calendarEvent.location);
+      if (loc) {
+        calendarEvent.location = loc; // { id, name, email }
+      } else {
+        // Fallback object to carry id for Dropdown sync
+        calendarEvent.location = { id: calendarEvent.location, name: calendarEvent.location, email: calendarEvent.location };
+      }
+    }
+
     return calendarEvent;
 
   }
@@ -154,28 +171,29 @@ class EventManager {
     try {
       const event = this.createEvent(eventData);
       let eventItem = event.eventItem;
-
-      // Handle image upload if image is a base64 string
       this.saveEventImage(eventItem);
-      // If eventItem already exists, update it; otherwise, create a new one
 
       if (eventItem && eventItem.id && eventItem.id !== 'null') {
         const eventItemResponse = this.updateEventItem(eventItem);
         eventItem = eventItemResponse.data;
       } else {
         const existingEventItem = this.getEventItemByTitle(eventItem.title);
-        if (!existingEventItem) {
-          eventItem = this.addEventItem(eventItem);
-        } else {
-          eventItem = existingEventItem;
-        }
+        eventItem = existingEventItem || this.addEventItem(eventItem);
       }
-      if (!eventItem) {
-        throw new Error('Failed to create event item.');
-      }
-      // Add the event to the calendar
+      if (!eventItem) throw new Error('Failed to create event item.');
+
       const newCalendarEvent = this.addCalendarEvent(event, eventItem);
       newCalendarEvent.eventItem = eventItem;
+
+      // Ensure event folder (defer to drive service)
+      if (this.driveService) {
+        try {
+          this.driveService.ensureEventFolder(this.calendarManager.calendarId, newCalendarEvent.id, newCalendarEvent.title);
+        } catch (e) {
+          Logger.log('ensureEventFolder failed: ' + e);
+        }
+      }
+
       return { success: true, data: newCalendarEvent };
     } catch (err) {
       console.error('Failed to create event:', err);
@@ -183,103 +201,49 @@ class EventManager {
     }
   }
 
-  saveEventImage(eventItem) {
-    if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
-      // Upload the image and get the DriveFile object
-      const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
-
-      // Modify the URL to use the thumbnail format
-      if (file && file.id) {
-        file.url = `https://drive.google.com/thumbnail?id=${file.id}`;
-      }
-
-      // Store the updated DriveFile object in the eventItem
-      eventItem.image = file;
-    }
-    return eventItem;
-  }
-  /**
-   * Adds a new event item to the storage.
-   * @param {*} eventItem 
-   * @returns 
-   */
-
-  addEventItem(eventItem) {
-
-    return this.storageManager.add(eventItem);
+  // Image gallery mediation
+  getEventImages(eventId) {
+    if (!this.driveService) return [];
+    return this.driveService.listEventImages(this.calendarManager.calendarId, eventId);
   }
 
-  /**
-   * Adds a new event item to the storage.
-   * @param {*} eventItem 
-   * @returns 
-   */
-
-  addEventItemFromData(eventItemData) {
-    const eventItem = this.storageManager.createNew(eventItemData);
-    return this.addEventItem(eventItem);
-  }
-  addCalendarEvent(calendarEvent, eventItem) {
-    return this.calendarManager.add(calendarEvent, eventItem);
-  }
-
-
-  updateEvent(calendarEvent) {
+  addEventImage(eventId, imageMeta) {
+    if (!this.driveService) return { success: false, message: 'Drive service unavailable.' };
+    let images;
     try {
-      const updatedEvent = this.calendarManager.update(calendarEvent.id, calendarEvent);
-      if (calendarEvent.eventItem) {
-        const eventItem = calendarEvent.eventItem;
-        this.saveEventImage(eventItem);
-        let response = this.storageManager.update(eventItem.id, eventItem);
-        updatedEvent.eventItem = response.data;
-      }
-      return new Response(true, updatedEvent, 'Event updated successfully.');
-    } catch (err) {
-      console.error('Failed to update calendar event:', err);
-      return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
+      // imageMeta may be { base64, name, mimeType, caption }
+      images = this.driveService.addEventImage(
+        this.calendarManager.calendarId,
+        eventId,
+        imageMeta,
+        imageMeta.caption
+      );
+    } catch (e) {
+      return { success: false, message: 'Failed to add image.', error: e.toString() };
     }
+    return { success: true, data: images };
   }
 
-  updateEventItem(eventItemData) {
-    const eventItem = this.storageManager.createNew(eventItemData);
-    return this.storageManager.update(eventItem.id, eventItem);
+  removeEventImage(eventId, fileId) {
+    if (!this.driveService) return { success: false, message: 'Drive service unavailable.' };
+    let images;
+    try {
+      images = this.driveService.removeEventImage(this.calendarManager.calendarId, eventId, fileId);
+    } catch (e) {
+      return { success: false, message: 'Failed to remove image.', error: e.toString() };
+    }
+    return { success: true, data: images };
   }
 
-  deleteEventItem(eventItemId) {
-    const event = this.storageManager.getById(eventItemId);
-    if (!event) {
-      return { success: false, message: 'Event not found.' };
+  reorderEventImages(eventId, orderedIds = []) {
+    if (!this.driveService) return { success: false, message: 'Drive service unavailable.' };
+    let images;
+    try {
+      images = this.driveService.reorderEventImages(this.calendarManager.calendarId, eventId, orderedIds);
+    } catch (e) {
+      return { success: false, message: 'Failed to reorder images.', error: e.toString() };
     }
-    const response = this.storageManager.delete(eventItemId);
-    return { success: true, message: 'Event deleted successfully!' };
-  }
-
-  deleteEvent(event) {
-    const eventItemId = event.eventItem.id;
-    eventManager.deleteEventItem(eventItemId);
-    this.deleteCalendarEvent(event);
-  }
-
-  deleteCalendarEvent(event) {
-    this.calendarManager.delete(event.id);
-  }
-
-  createEvent(data = {}) {
-    const calendarEvent = this.calendarManager.create(data);
-    if (!calendarEvent) {
-      throw new Error('Failed to create calendar event.');
-    }
-    const eventItem = this.storageManager.createNew(data.eventItem || {});
-    if (!eventItem) {
-      throw new Error('Failed to create event item.');
-    }
-    const host = this.membershipManager.createNew(data.host || {});
-    if (!host) {
-      throw new Error('Failed to create host.');
-    }
-    eventItem.host = host;
-    calendarEvent.eventItem = eventItem;
-    return calendarEvent;
+    return { success: true, data: images };
   }
 
   /**
@@ -378,7 +342,17 @@ class EventManager {
   }
 
   getEventRooms() {
-    return this.calendarManager.getCalendarResources();
+    // Use CalendarManager resources (normalized to { id, name, email })
+    try {
+      return (this.calendarManager.getCalendarResources() || []).map(r => ({
+        id: r.id || r.email || r.name,
+        name: r.name || r.resourceName || r.title || r.email || r.id,
+        email: r.email || r.resourceEmail || '',
+      }));
+    } catch (error) {
+      Logger.log(`getEventRooms failed: ${error.message}`);
+      throw error;
+    }
   }
 
   getEventLocations() {
@@ -389,23 +363,6 @@ class EventManager {
     const eventItemListResponse = this.storageManager.getAll({ title: title });
     if (eventItemListResponse && eventItemListResponse.success && eventItemListResponse.data.length > 0) {
       return eventItemListResponse.data[0];
-    }
-  }
-
-  getEventRooms() {
-    try {
-      const optionalArgs = {
-
-      };
-      const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
-      return resources.items.map(resource => ({
-        id: resource.resourceId,
-        name: resource.resourceName,
-        email: resource.resourceEmail,
-      }));
-    } catch (error) {
-      Logger.log(`getEventRooms failed: ${error.message}`);
-      throw error;
     }
   }
 

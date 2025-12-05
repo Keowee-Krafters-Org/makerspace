@@ -229,7 +229,7 @@ class CalendarEvent extends Event {
       description: item.description || '',
       start: start ? new Date(start) : null,
       end: end ? new Date(end) : null,
-      location: item.location || '',
+      location: CalendarLocation.fromRecord(item.location),
       // Use attendees (not guests)
       attendees,
       creator: item.creator?.email || item.organizer?.email || '',

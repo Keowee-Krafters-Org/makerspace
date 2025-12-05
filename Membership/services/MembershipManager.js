@@ -10,6 +10,8 @@ class MembershipManager {
   }
 
   getAllMembers(params = {}) {
+    // Accept normalized pagination params (currentPageMarker, pageSize)
+    // Rely on storageManager to map them to store-specific params
     return this.storageManager.getAll(params);
   }
 
@@ -262,17 +264,16 @@ class MembershipManager {
   }
 
   getInstructors() {
-    // Use ZohoStorageManager's getFiltered to find members with level > Instructor
     const instructorLevel = SharedConfig.levels.Instructor.value;
+    // Use normalized pageSize instead of per_page; allow currentPageMarker if provided
     const response = this.storageManager.getFiltered(
       member => {
         const memberLevel = SharedConfig.levels[member.registration.level].value;
-        // Ensure level is a number for comparison
         return memberLevel >= instructorLevel;
-      }, { contactType: 'vendor', per_page: 200 }
+      },
+      { contactType: 'vendor', pageSize: 200 } // normalized pagination
     );
-    // Return only the data array (list of instructors)
-    return response.data;
+    return response;
   }
 
   createNew(data = {}) {

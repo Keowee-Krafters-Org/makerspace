@@ -5,7 +5,7 @@
  * 
  */
 
-class Entity {
+ class Entity {
     constructor(data = {}) {
         Object.keys(data).forEach(key => {
             let value = data[key]; 
@@ -55,7 +55,10 @@ class Entity {
     convertDataToRecord(toRecordMap) {
         const record = {};
         Object.keys(toRecordMap).forEach(key => {
-            if (this[key]) record[toRecordMap[key]] = this[key];
+            // Map even falsey values; only skip if property truly absent/undefined
+            if (Object.prototype.hasOwnProperty.call(this, key) && this[key] !== undefined) {
+                record[toRecordMap[key]] = this[key];
+            }
         });
         return record;
     }

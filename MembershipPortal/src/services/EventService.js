@@ -1,4 +1,5 @@
 import { AppService } from './AppService.js';
+import { Logger } from '../services/Logger.js';
 
 export class EventService {
   constructor(connector, appService) {
@@ -6,12 +7,17 @@ export class EventService {
     this.appService = appService || null;
   }
 
-  listEvents(options = { pageSize: 100 }) {
+  // Keep listEvents (paged)
+  listEvents(options = { pageSize: 10  }) {
     return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventList', options);
-      // Return res.data if success wrapper present
       return (res && res.success && 'data' in res) ? res.data : res;
     });
+  }
+
+  // Retain getAllEvents (alias for listEvents with explicit params)
+  getAllEvents(options = { pageSize: 100 }) {
+    return this.listEvents(options);
   }
 
   getEventById(id) {
@@ -63,6 +69,7 @@ export class EventService {
     });
   }
 
+  // Attendees remain intact
   async getEventAttendees(eventId) {
     if (!eventId) throw new Error('getEventAttendees requires eventId');
     return this.appService.withSpinner(async () => {
@@ -70,7 +77,7 @@ export class EventService {
         const direct = await this.connector.invoke('getEventAttendees', eventId);
         const arr = (direct && direct.success && Array.isArray(direct.data)) ? direct.data : (Array.isArray(direct) ? direct : null);
         if (arr) return arr;
-      } catch {}
+      } catch { }
       const event = await this.connector.invoke('getEventById', eventId);
       const evt = (event && event.success && 'data' in event) ? event.data : event;
       let attendees = evt?.attendees || [];
@@ -78,43 +85,99 @@ export class EventService {
         try {
           const resolved = await this.connector.invoke('getMembersFromContacts', attendees);
           attendees = (resolved && resolved.success && Array.isArray(resolved.data)) ? resolved.data : attendees;
-        } catch {}
+        } catch { }
       }
       return attendees;
     });
   }
 
-  getEventItemList(options = { pageSize: 100 }) {
+  // Dropdown list endpoints with parameter support
+  getEventItemList(options = { pageSize: 100, pageToken: null, search: '' }) {
     return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventItemList', options);
+
+      Logger.debug(`getEventItemList response: ${JSON.stringify(res)}`);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
 
-  getEventRooms() {
+  getEventRooms(options = { pageSize: 100, pageToken: null }) {
     return this.appService.withSpinner(async () => {
-      const res = await this.connector.invoke('getEventRooms');
+      Logger.debug(`getEventRooms response: ${JSON.stringify(options)}`);
+      const res = await this.connector.invoke('getEventRooms', options);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
 
-  async getEventHosts() {
-    const raw = await this.connector.invoke('getInstructors');
-    const obj = (raw && raw.success && 'data' in raw) ? raw.data : raw;
-    const list = Array.isArray(obj) ? obj
-      : (Array.isArray(obj?.data) ? obj.data
-      : (Array.isArray(obj?.rows) ? obj.rows
-      : (Array.isArray(obj?.list) ? obj.list : [])));
-    return list.map(h => {
-      const id = h.id || h.memberId || h.contactId || h.emailAddress || h.email || h.name || h.fullName || '';
-      const name =
-        h.name ||
-        h.fullName ||
-        [h.firstName, h.lastName].filter(Boolean).join(' ') ||
-        h.emailAddress ||
-        String(id);
-      const emailAddress = h.emailAddress || h.email || '';
-      return { id: String(id), name, emailAddress };
-    }).filter(h => !!h.id);
+  async getEventHosts(options = { pageSize: 100, pageToken: null, role: 'instructor' }) {
+    // Prefer event hosts endpoint if available, otherwise instructors
+    const endpoint = 'getInstructors';
+    return this.appService.withSpinner(async () => {
+      const raw = await this.connector.invoke(endpoint, options);
+      Logger.debug(`getEventHosts via ${endpoint} response: ${JSON.stringify(raw)}`);
+      const list = (raw && raw.success && 'data' in raw) ? raw.data : raw;
+      return list.map(h => {
+        const id = h.id ;
+        const name =
+          h.name ||
+          [h.firstName, h.lastName].filter(Boolean).join(' ') || '';
+        const emailAddress = h.emailAddress || '';
+        return { id: String(id || ''), name, emailAddress };
+      }).filter(h => !!h.id);
+    });
+  }
+
+  // Images (multi-image)
+  async getImages(eventId) {
+    const res = await this.connector.invoke('getEventImages', eventId);
+    return (res && res.success && res.data) ? res.data : [];
+  }
+
+  async addImage(eventId, imageMeta) {
+    const res = await this.connector.invoke('addEventImage', eventId, imageMeta);
+    return (res && res.success && res.data) ? res.data : [];
+  }
+
+  async removeImage(eventId, fileId) {
+    const res = await this.connector.invoke('removeEventImage', eventId, fileId);
+    return (res && res.success && res.data) ? res.data : [];
+  }
+
+  async reorderImages(eventId, orderedIds) {
+    const res = await this.connector.invoke('reorderEventImages', eventId, orderedIds);
+    return (res && res.success && res.data) ? res.data : [];
+  }
+
+  // Generic “fetch all pages” helper retained
+  async fetchAll(getPageFn, { pageSize = 100 } = {}) {
+    const acc = [];
+    let pageToken = null;
+    /* eslint-disable no-await-in-loop */
+    for (; ;) {
+      const result = await getPageFn({ pageSize, pageToken });
+      const items = result.data || [];
+      const page = result.page || null;
+      pageToken = page.pageToken || null;
+      acc.push(...items);
+      if (!pageToken) break;
+    }
+    return acc;
+  }
+
+  // Convenience “All” methods retained
+  async getEventItemListAll(opts = {}) {
+    return this.fetchAll((p) => this.getEventItemList({ ...opts, ...p }), { pageSize: opts.pageSize || 100 });
+  }
+  async getEventRoomsAll(opts = {}) {
+    return this.fetchAll((p) => this.getEventRooms({ ...opts, ...p }), { pageSize: opts.pageSize || 100 });
+  }
+  async getEventHostsAll(opts = {}) {
+    return this.fetchAll((p) => this.getEventHosts({ ...opts, ...p }), { pageSize: opts.pageSize || 100 });
+  }
+
+  // Retain getMembersFromContacts for attendee resolution
+  async getMembersFromContacts(contacts, options = {}) {
+    const res = await this.connector.invoke('getMembersFromContacts', contacts, options);
+    return (res && res.success && 'data' in res) ? res.data : res;
   }
 }

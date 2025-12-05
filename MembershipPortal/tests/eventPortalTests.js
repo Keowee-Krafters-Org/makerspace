@@ -1,35 +1,30 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { EventService } from '../src/services/EventService.js';
 
-const eventId = '2kdq6q1ond4udslu88gl8dbra8@google.com';
-const memberId = '5636475000000620039';
+describe('EventService', () => {
+  let svc, connector, appService;
 
-function test_when_classes_are_retrieved__then_can_be_rendered() {
+  beforeEach(() => {
+    connector = { invoke: vi.fn() };
+    appService = { withSpinner: (fn) => fn() };
+    svc = new EventService(connector, appService);
+  });
 
-    const classes = getEventList();
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
-    // Act
-    logger.log('Retrieved classes:', classes);
+  it('listEvents unwraps data when success wrapper present', async () => {
+    connector.invoke.mockResolvedValue({ success: true, data: [{ id: 'e1' }] });
+    const rows = await svc.listEvents();
+    expect(rows).toEqual([{ id: 'e1' }]);
+  });
 
-    // Assert
-    assert('Classes are found', true, classes.length > 0);
-}
-
-
-function test_when_member_signsup__then_invoice_is_generated() {
-    const modelFactory = Membership.newModelFactory();
-    const eventManager = modelFactory.eventManager();
-    const memberManager = modelFactory.membershipManager();
-    const invoiceManager = modelFactory.invoiceManager();
-
-    // Arrange
-    const event = eventManager.getEventById(eventId);
-    const memberResponse = memberManager.getMember(memberId);
-    const member = memberResponse.data;
-
-    // Act
-    const signupResponseJson = signup(event.id, member.id);
-    const signupResponse = JSON.parse(signupResponseJson);
- 
-    // Assert
-    assert('Invoice is generated sucessfully', true, signupResponse.success);
-
-}
+  it('signup returns success and message', async () => {
+    connector.invoke.mockResolvedValue({ success: true, data: { message: 'ok' } });
+    const res = await svc.signup('e1', 'm1');
+    expect(res.success).toBe(true);
+    expect(res.message).toBe('ok');
+  });
+});

@@ -1,16 +1,11 @@
 <template>
   <div
     :id="id"
-    :class="[
-      'p-4 rounded-lg text-sm',
-      className,
-      type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : '',
-      type === 'warn' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : '',
-      type === 'info' ? 'bg-blue-100 text-blue-800 border border-blue-300' : ''
-    ]"
+    :class="computedClasses"
+    role="alert"
     @click="handleClick"
   >
-    {{ message }}
+    <slot>{{ message }}</slot>
   </div>
 </template>
 
@@ -18,38 +13,31 @@
 export default {
   name: 'Message',
   props: {
-    id: {
-      type: String,
-      required: false,
-    },
-    message: {
-      type: String,
-      required: true,
-    },
-    className: {
-      type: String,
-      default: '',
-    },
-    type: {
-      type: String,
-      default: 'info', // Default type is 'info'
-      validator: (value) => ['info', 'error', 'warn'].includes(value),
-    },
-    onClick: {
-      type: Function,
-      default: null,
-    },
+    id: { type: String, default: '' },
+    message: { type: String, default: '' },
+    type: { type: String, default: 'info' }, // info | error | warn
+    className: { type: String, default: '' },
+    onClick: { type: Function, default: null }
+  },
+  emits: ['click'],
+  computed: {
+    computedClasses() {
+      const base = ['p-4','rounded-lg','text-sm','border','cursor-pointer','transition'];
+      const map = {
+        info: ['bg-blue-100','text-blue-800','border-blue-300'],
+        error: ['bg-red-100','text-red-800','border-red-300'],
+        warn: ['bg-yellow-100','text-yellow-800','border-yellow-300']
+      };
+      const variant = map[this.type] || map.info;
+      if (this.className) variant.push(this.className);
+      return [...base, ...variant].join(' ');
+    }
   },
   methods: {
-    handleClick() {
-      if (this.onClick) {
-        this.onClick();
-      }
-    },
-  },
+    handleClick(e) {
+      if (this.onClick) this.onClick(e);
+      this.$emit('click', e);
+    }
+  }
 };
 </script>
-
-<style scoped>
-
-</style>

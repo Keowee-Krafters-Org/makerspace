@@ -15,16 +15,12 @@
       <!-- Event Item -->
       <div>
         <label class="block font-medium mb-1">Event Item</label>
-        <select
+        <DropdownList
           v-model="selectedEventItemId"
+          :list-items="eventItems"
+          empty-message="Select Event Item"
           @change="applyEventItem"
-          class="block w-full border border-gray-300 rounded-md px-3 py-2"
-        >
-          <option :value="''">Select Event Item</option>
-          <option v-for="it in eventItems" :key="it.id" :value="it.id">
-            {{ it.title }}
-          </option>
-        </select>
+        />
       </div>
 
       <!-- Title -->
@@ -96,30 +92,22 @@
       <!-- Location -->
       <div>
         <label class="block font-medium mb-1">Location</label>
-        <select
+        <DropdownList
           v-model="form.location.id"
-          class="block w-full border border-gray-300 rounded-md px-3 py-2"
-        >
-          <option :value="''">Select Location</option>
-          <option v-for="r in rooms" :key="r.id" :value="r.id">
-            {{ r.name || r.title || r.id }}
-          </option>
-        </select>
+          :list-items="rooms"
+          empty-message="Select Location"
+        />
       </div>
 
       <!-- Host -->
       <div>
         <label class="block font-medium mb-1">Host</label>
-        <select
+        <DropdownList
           v-model="selectedHostId"
+          :list-items="hosts"
+          empty-message="Select Host"
           @change="applyHost"
-          class="block w-full border border-gray-300 rounded-md px-3 py-2"
-        >
-          <option :value="''">Select Host</option>
-          <option v-for="h in hosts" :key="h.id" :value="h.id">
-            {{ h.name || h.fullName || h.emailAddress || h.id }}
-          </option>
-        </select>
+        />
       </div>
 
       <!-- Image -->
@@ -138,10 +126,11 @@
 import { inject } from 'vue';
 import Button from '@/components/Button.vue';
 import Message from '@/components/Message.vue';
+import DropdownList from '@/components/DropdownList.vue';
 
 export default {
   name: 'EventEditor',
-  components: { Button, Message },
+  components: { Button, Message, DropdownList },
   props: {
     id: { type: String, default: '' }, // optional route param for edit
   },
@@ -177,19 +166,24 @@ export default {
     this.loadAll();
   },
   watch: {
-    // When hosts list loads (async), try to resolve current form host to an id
-    hosts(newHosts, oldHosts) {
-      if (Array.isArray(newHosts) && newHosts.length && !this.selectedHostId) {
-        const id = this.resolveHostId(this.form?.eventItem?.host);
-        if (id) this.selectedHostId = id;
-      }
+    // Normalize and sync when hosts list loads
+    hosts(newHosts) {
+      this.syncSelections();
     },
-    // Keep form.eventItem.host in sync with selectedHostId
-    selectedHostId() {
-      this.applyHost();
+    // Ensure selection sync when rooms load
+    rooms() {
+      this.syncSelections();
+    },
+    // Ensure selection sync when event items load
+    eventItems() {
+      this.syncSelections();
     },
   },
   methods: {
+    toId(v) {
+      if (v == null) return '';
+      return String(v);
+    },
     emptyForm() {
       return {
         id: null,
@@ -202,7 +196,7 @@ export default {
           sizeLimit: 0,
           enabled: false,
           duration: 0,
-          host: '', // string or { id, name }
+          host: '',
           image: { data: '' },
         },
         date: null,
@@ -266,47 +260,29 @@ export default {
     async loadAll() {
       this.error = '';
       try {
-        const [itemsRes, roomsRes, hostsRes] = await Promise.allSettled([
-          this.eventService.getEventItemList?.({ pageSize: 100 }),
-          this.eventService.getEventRooms?.(),
-          this.eventService.getEventHosts?.(), // now implemented in EventService
+        const [items, rooms, hosts] = await Promise.all([
+          this.eventService.getEventItemListAll?.({ pageSize: 100 }),
+          this.eventService.getEventRoomsAll?.({ pageSize: 100 }),
+          this.eventService.getEventHostsAll?.({ pageSize: 100 }),
         ]);
 
-        const itemsVal = itemsRes.status === 'fulfilled' ? itemsRes.value : [];
-        const roomsVal = roomsRes.status === 'fulfilled' ? roomsRes.value : [];
-        const hostsVal = hostsRes.status === 'fulfilled' ? hostsRes.value : [];
+        // Normalize IDs for dropdowns
+        this.eventItems = (items || []).map(it => ({ ...it, id: String(it.id || it.itemId || it.key || '') })).filter(i => i.id);
+        this.rooms = (rooms || []).map(r => ({ ...r, id: String(r.id || r.email || r.name || '') })).filter(r => r.id);
+        this.hosts = (hosts || []).map(h => {
+          const id = String(h.id || h.memberId || h.contactId || h.emailAddress || h.email || h.name || '');
+          const name = h.name || h.fullName || [h.firstName, h.lastName].filter(Boolean).join(' ') || h.emailAddress || id;
+          return id ? { ...h, id, name } : null;
+        }).filter(Boolean);
 
-        // Unwrap items/rooms (these may be JSON from GAS)
-        this.eventItems = this.unwrapList(itemsVal, ['eventItems', 'items']);
-        this.rooms = this.unwrapList(roomsVal, ['rooms']);
-
-        // Hosts are already normalized by EventService.getEventHosts
-        this.hosts = Array.isArray(hostsVal) ? hostsVal : this.unwrapList(hostsVal, ['hosts', 'members', 'contacts']);
-
+        // Continue with hydrateForm + syncSelections as you already do
         if (!this.isNew) {
           const ev = await this.eventService.getEventById(this.id);
           this.hydrateForm(ev);
-          this.selectedEventItemId = ev?.eventItem?.id || '';
-          this.previewUrl = ev?.eventItem?.image?.url || '';
-          const resolved = this.resolveHostId(ev?.eventItem?.host);
-          if (resolved) this.selectedHostId = resolved;
-
-          // Ensure current host appears even if not in the list
-          if (this.form?.eventItem?.host && !this.hosts.find(h => h.id === resolved)) {
-            const hObj = this.form.eventItem.host || {};
-            const fallback = {
-              id: resolved || hObj.id || hObj.emailAddress || hObj.name || '',
-              name: hObj.name || hObj.fullName || [hObj.firstName, hObj.lastName].filter(Boolean).join(' ') || hObj.emailAddress || hObj.id || '',
-              emailAddress: hObj.emailAddress || '',
-            };
-            if (fallback.id) this.hosts.unshift(fallback);
-          }
         } else {
           this.form = this.emptyForm();
-          this.selectedEventItemId = '';
-          this.selectedHostId = '';
-          this.previewUrl = '';
         }
+        this.syncSelections();
       } catch (e) {
         this.error = e?.message || 'Failed to load editor data';
         this.logger?.error?.('EventEditor loadAll failed', e);
@@ -317,7 +293,7 @@ export default {
       this.form = {
         id: ev?.id || null,
         eventItem: {
-          id: ev?.eventItem?.id || '',
+          id: this.toId(ev?.eventItem?.id || ''),
           type: 'event',
           title: ev?.eventItem?.title || ev?.title || '',
           description: ev?.eventItem?.description || ev?.description || '',
@@ -329,45 +305,69 @@ export default {
           image: { data: '' },
         },
         date: ev?.date ? new Date(ev.date) : null,
-        location: { id: ev?.location?.id || '' },
+        location: { id: this.toId(ev?.location?.id || '') },
       };
     },
 
+    // remove legacy select parsing; keep applyEventItem/applyHost
     applyEventItem() {
-      const item = this.eventItems.find(i => i.id === this.selectedEventItemId);
+      const id = this.toId(this.selectedEventItemId);
+      const item = this.eventItems.find(i => this.toId(i.id) === id);
       if (!item) return;
-      this.form.eventItem.id = item.id;
-      this.form.eventItem.title = item.title || '';
-      this.form.eventItem.description = item.description || '';
-      this.form.eventItem.price = Number(item.price ?? 0);
-      this.form.eventItem.sizeLimit = Number(item.sizeLimit ?? 0);
-      this.form.eventItem.enabled = !!item.enabled;
-      this.form.eventItem.duration = Number(item.duration ?? 0);
-      this.previewUrl = item?.image?.url || '';
-
-      // Resolve and set host from the item (object or string)
-      this.selectedHostId = this.resolveHostId(item.host);
+      Object.assign(this.form.eventItem, {
+        id,
+        title: item.title || '',
+        description: item.description || '',
+        price: Number(item.price ?? 0),
+        sizeLimit: Number(item.sizeLimit ?? 0),
+        enabled: !!item.enabled,
+        duration: Number(item.duration ?? 0)
+      });
+      // host from item
+      const hostId = this.resolveHostId(item.host);
+      if (hostId) {
+        this.selectedHostId = hostId;
+        this.applyHost();
+      }
+      // location
+      const locId = this.toId(item.locationId || item.location?.id || '');
+      if (locId) this.form.location.id = locId;
     },
-
     applyHost() {
-      const sel = this.hosts.find(h => h.id === this.selectedHostId);
-      this.form.eventItem.host = sel ? { id: sel.id, name: sel.name } : '';
+      const id = this.toId(this.selectedHostId);
+      const sel = this.hosts.find(h => this.toId(h.id) === id);
+      this.form.eventItem.host = sel ? { id: this.toId(sel.id), name: sel.name } : '';
     },
+    syncSelections() {
+      // Event Item selection: ensure current form.eventItem.id matches an option
+      if (this.form?.eventItem?.id && !this.selectedEventItemId) {
+        const id = this.toId(this.form.eventItem.id);
+        const exists = this.eventItems.some(i => this.toId(i.id) === id);
+        if (exists) this.selectedEventItemId = id;
+      }
 
-    onImageChange(e) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = String(reader.result || ''); // keep full data URL (data:image/...;base64,xxx)
-        this.form.eventItem.image = {
-          data: dataUrl,
-          name: file.name || 'event-image',
-          contentType: file.type || 'image/png',
-        };
-        this.previewUrl = URL.createObjectURL(file);
-      };
-      reader.readAsDataURL(file);
+      // Host selection: resolve from current host and match options
+      const currentHostId = this.resolveHostId(this.form?.eventItem?.host);
+      if (currentHostId) this.selectedHostId = this.toId(currentHostId);
+
+      // Location selection: ensure id matches an option; if not try by name
+      if (this.form?.location) {
+        const locId = this.toId(this.form.location.id);
+        if (locId) {
+          const exists = this.rooms.some(r => this.toId(r.id) === locId);
+          if (!exists) this.form.location.id = '';
+        } else {
+          // try to match by name from form/event
+          const names = [
+            this.form?.location?.name,
+            this.form?.location?.title,
+          ].filter(Boolean).map(s => s.toString().trim().toLowerCase());
+          if (names.length) {
+            const match = this.rooms.find(r => names.includes((r.name || r.title || '').toString().trim().toLowerCase()));
+            if (match) this.form.location.id = this.toId(match.id);
+          }
+        }
+      }
     },
 
     async onSave() {

@@ -42,14 +42,30 @@ class CalendarManager extends StorageManager {
    */
   fromRecord(item) {
     const ev = CalendarEvent.fromRecord(item); // API parser
-    // Map location email to resource object if available
-    const locationEmail = ev.location || '';
-    if (locationEmail) {
-      const calendarLocation = this.getLocationByEmail(locationEmail);
+
+    // Normalize location to CalendarLocation object
+    const rawLoc =
+      ev.location?.email ||
+      ev.location?.resourceEmail ||
+      (typeof ev.location === 'string' ? ev.location : '');
+
+    if (rawLoc) {
+      const calendarLocation = this.getLocationByEmail(rawLoc);
       if (calendarLocation) {
-        ev.location = calendarLocation;
+        ev.location = calendarLocation; // { id, name, email }
+      } else {
+        // Fallback: construct a minimal location object from the email string
+        ev.location = { id: rawLoc, name: rawLoc, email: rawLoc };
+      }
+    } else if (Array.isArray(item.attendees)) {
+      // Try to infer location from resource attendees
+      const room = item.attendees.find(a => a.resource && a.email);
+      if (room) {
+        const calendarLocation = this.getLocationByEmail(room.email);
+        ev.location = calendarLocation || { id: room.email, name: room.email, email: room.email };
       }
     }
+
     return ev;
   }
 
@@ -62,7 +78,13 @@ class CalendarManager extends StorageManager {
     const start = rec.start || calendarEvent.start || calendarEvent.date;
     const durationHrs = Number(calendarEvent.eventItem?.duration ?? calendarEvent.duration ?? 2) || 2;
     const end = rec.end || (start ? new Date((start instanceof Date ? start : new Date(start)).getTime() + durationHrs * 60 * 60 * 1000) : null);
-    const roomEmail = calendarEvent.location?.email || rec.location?.email || '';
+
+    // Accept CalendarLocation object and extract email
+    const roomEmail =
+      calendarEvent.location?.email ||
+      rec.location?.email ||
+      (typeof rec.location === 'string' ? rec.location : '') ||
+      '';
 
     const attendees = [];
     if (roomEmail) attendees.push({ email: roomEmail, resource: true, responseStatus: 'accepted' });
@@ -73,10 +95,10 @@ class CalendarManager extends StorageManager {
       start: this.toDateTime_(start),
       end: this.toDateTime_(end),
       attendees,
+      // Store email string as API expects; fromRecord will remap to CalendarLocation object
       location: roomEmail || '',
     };
 
-    // Convert simplified recurrence to RRULEs if provided
     const rrules = CalendarEvent.normalizeRecurrenceToApi(calendarEvent.recurrence, start);
     if (Array.isArray(rrules) && rrules.length > 0) {
       resource.recurrence = rrules;
@@ -119,12 +141,19 @@ class CalendarManager extends StorageManager {
 
     const currentAttendees = Array.isArray(current.attendees) ? current.attendees.slice() : [];
     const roomEmails = (this.getCalendarResources() || []).map(r => r.email);
-    const newRoom = calendarEvent.location?.email || '';
+
+    // Accept CalendarLocation object and extract email
+    const newRoomEmail =
+      calendarEvent.location?.email ||
+      rec.location?.email ||
+      (typeof rec.location === 'string' ? rec.location : '') ||
+      '';
+
     let attendees = currentAttendees;
-    if (newRoom) {
-      attendees = currentAttendees.filter(a => !roomEmails.includes(a.email) || a.email === newRoom);
-      if (!attendees.some(a => a.email === newRoom)) {
-        attendees.push({ email: newRoom, resource: true, responseStatus: 'accepted' });
+    if (newRoomEmail) {
+      attendees = currentAttendees.filter(a => !roomEmails.includes(a.email) || a.email === newRoomEmail);
+      if (!attendees.some(a => a.email === newRoomEmail)) {
+        attendees.push({ email: newRoomEmail, resource: true, responseStatus: 'accepted' });
       }
     }
 
@@ -134,12 +163,11 @@ class CalendarManager extends StorageManager {
       start: this.toDateTime_(start),
       end: this.toDateTime_(end),
       attendees,
-      location: newRoom || current.location || '',
+      location: newRoomEmail || current.location || '',
     };
 
-    // Apply recurrence (convert simplified to RRULEs). If explicitly null, clear recurrence.
     if (calendarEvent.recurrence === null) {
-      patch.recurrence = []; // clearing recurrence removes series
+      patch.recurrence = [];
     } else {
       const rrules = CalendarEvent.normalizeRecurrenceToApi(calendarEvent.recurrence, start);
       if (Array.isArray(rrules)) {
@@ -352,7 +380,7 @@ class CalendarManager extends StorageManager {
     if (!ev) return { success: false, error: 'Event not found.' };
 
     const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
-    const next = attendees.filter(a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
+    const next = attendees.filter( a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
 
     Calendar.Events.patch({ attendees: next }, this.calendarId, ev.id);
     return {

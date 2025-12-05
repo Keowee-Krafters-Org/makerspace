@@ -43,6 +43,7 @@ class ZohoStorageManager extends StorageManager {
   convertParams(clazz, params) {
     const toRecordMap = clazz.getToRecordMap();
     const zohoParams = {};
+    // Convert pageToken to page if present
     Object.entries(params).forEach(([key, value]) => {
       const zohoKey = toRecordMap[key]
       zohoParams[zohoKey?zohoKey:key] = value;

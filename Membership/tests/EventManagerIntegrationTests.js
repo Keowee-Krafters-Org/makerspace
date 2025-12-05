@@ -54,7 +54,7 @@ function test_get_event_by_title() {
 function test_getEventList() {
   const eventManager = modelFactory.eventManager();
   try {
-    const events = eventManager.getEventList();
+    const events = eventManager.getEventList({pageSize: 5});
     Logger.log('getEventList response: ' + JSON.stringify(events));
     assert('Event list should not be null or undefined', events != undefined, true);
     assert('Event list should be an array', Array.isArray(events), true);
@@ -552,4 +552,44 @@ function test_when_rooms_are_retrieved__then_at_least_one_room_is_returned() {
   const eventManager = newModelFactory().eventManager();
   const rooms = eventManager.getEventRooms();
   assert("At least one room is returned", true, (rooms && rooms.length > 0));
+}
+
+function test_get_event_items() {
+  const eventManager = newModelFactory().eventManager();
+  const response = eventManager.getEventItemList({ pageSize: 5 });
+  Logger.log('getEventItemList response: ' + JSON.stringify(response));
+  assert('Event items should not be null or undefined', response != undefined, true);
+  assert('Event items should be an array', Array.isArray(response.data), true);
+  assert('Event items should have at least one item', response.data.length > 0, true);
+}
+
+/**
+ * Pagination test for event items using normalized markers:
+ * - pageSize
+ * - currentPageMarker
+ * Asserts presence of page info and ability to fetch next page.
+ */
+function test_pagination_on_event_items() {
+  const eventManager = newModelFactory().eventManager();
+
+  const resp1 = eventManager.getEventItemList({ pageSize: 2 });
+  assert('Event items response present', true, !!resp1);
+  assert('Page object present', true, !!resp1.page);
+  assert('currentPageMarker present', true, resp1.page.currentPageMarker != null);
+  assert('pageSize honored', 2, Number(resp1.page.pageSize));
+  const items1 = resp1.data;
+  assert('Page 1 has items', true, Array.isArray(items1) && items1.length > 0);
+
+  // Use nextPageMarker if available, fallback to pageToken for compatibility
+  const nextMarker = resp1.page.nextPageMarker ?? resp1.page.pageToken;
+  if (nextMarker != null) {
+    const resp2 = eventManager.getEventItemList({ pageSize: 2, currentPageMarker: nextMarker });
+    assert('Next page object present', true, !!resp2.page);
+    const items2 = resp2.data;
+    assert('Page 2 has items', true, Array.isArray(items2) && items2.length > 0);
+    // Basic difference check across pages (best-effort)
+    assert('Different first items across pages', true, items1[0]?.id !== items2[0]?.id);
+  } else {
+    Logger.log('No next page available; pagination test completed on a single page.');
+  }
 }
