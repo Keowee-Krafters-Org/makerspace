@@ -26,11 +26,9 @@ class EventManager {
   getEventList(params = {}) {
     // calendarManager.getAll should accept normalized pagination params
     const res = this.calendarManager.getAll(params);
-    // If calendarManager returns an array, enrich and return array
-    if (Array.isArray(res)) return this.enrichCalendarEvents(res);
-    // If it returns { success, data, page }, enrich data and preserve page
     const data = Array.isArray(res?.data) ? this.enrichCalendarEvents(res.data) : [];
-    return new ZohoResponse({ success: !!res?.success, page: res?.page || null }, data);
+    res.data = data;
+    return res;
   }
 
   /**
@@ -48,7 +46,7 @@ class EventManager {
     const calendarEventsResponse = this.calendarManager.getUpcomingEvents(eventHorizon);
     const calendarEvents = calendarEventsResponse.data ?? [];
     calendarEventsResponse.data = this.enrichCalendarEvents(calendarEvents);
-    return calendarEventsResponse; 
+    return calendarEventsResponse;
   }
 
   /**
@@ -64,13 +62,12 @@ class EventManager {
    *  @throws {Error} If there is an issue retrieving the events from the calendar
    */
   getUpcomingClasses(params = {}) {
-    const events = this.getUpcomingEvents(params);
-    if (!events || events.length === 0) {
-      return [];
-    }
-    return events.filter(event => {
+    const eventsResponse = this.getUpcomingEvents(params);
+    const events = (eventsResponse.data || []).filter(event => {
       return event.eventItem && event.eventItem.type === 'Event' && event.eventItem.eventType === 'Class';
     });
+    eventsResponse.data = events; 
+    return eventsResponse;
   }
   /**
    * Merges calendar events with event items from storage.

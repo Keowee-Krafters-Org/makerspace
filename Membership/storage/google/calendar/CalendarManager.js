@@ -28,7 +28,7 @@ class CalendarManager extends StorageManager {
     return dt && new Date(dt).getTime() === s.getTime();
   }
 
-  
+
 
   // ---- Utilities ----
   toDateTime_(d) {
@@ -211,7 +211,7 @@ class CalendarManager extends StorageManager {
     };
     if (req.pageToken) query.pageToken = req.pageToken;
     if (params.q) query.q = String(params.q);
-    if (params.timeMin) query.timeMin = new Date(params.timeMin).toISOString();
+    if (params.timeMin) query.timeMin = new Date(params.timeMin).toISOString() ?? new Date();
     if (params.timeMax) query.timeMax = new Date(params.timeMax).toISOString();
 
     const res = Calendar.Events.list(this.calendarId, query);
