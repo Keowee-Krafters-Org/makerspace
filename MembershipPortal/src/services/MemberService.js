@@ -106,32 +106,35 @@ export class MemberService {
       (Array.isArray(resp?.list) && resp.list) ||
       [];
     const page = resp?.page || resp?.data?.page || resp?.pagination || {};
-    const nextToken = page?.nextToken || page?.nextPageToken || resp?.nextPageToken || resp?.data?.nextPageToken || null;
+    const nextMarker = page?.nextPageMarker ?? page?.pageToken ?? null;
     const hasMore =
-      (typeof page?.hasMore === 'boolean' && page.hasMore) ||
-      (nextToken ? true : undefined);
-    return { list, page, nextToken, hasMore };
+      (typeof page?.hasMore === 'boolean' ? page.hasMore : undefined) ??
+      (nextMarker ? true : false);
+    return { list, page, nextMarker, hasMore };
   }
 
-  async listMembers(params = {}) {
-    const callParams = {
-      page: params.currentPage ?? 1,
-      pageSize: params.pageSize ?? 10,
-      search: params.search || '',
-      filter: params.filter || '',
-    };
-    if (params.pageToken) callParams.pageToken = params.pageToken;
+  // Refactored to use Page exclusively
+  async listMembers(options = { page: { currentPageMarker: '1', pageSize: 10 } }) {
+    const page = options?.page || { currentPageMarker: '1', pageSize: 10 };
+    const search = options?.search || '';
+    const filter = options?.filter || '';
 
-    const raw = await this.connector.invoke('getAllMembers', callParams);
-    const { list, page, nextToken, hasMore } = this.unwrapList(raw || {});
-    const cursorMode = !!(nextToken || page?.prevToken || page?.nextPageToken);
-    const inferredHasMore = cursorMode ? !!nextToken : (Array.isArray(list) && list.length >= (callParams.pageSize || 10));
+    const raw = await this.connector.invoke('getAllMembers', { page, search, filter });
+    const { list, page: respPage, nextMarker, hasMore } = this.unwrapList(raw || {});
     const rows = (list || []).map(m => this.toMember(m)).filter(Boolean);
 
+    const current = respPage?.currentPageMarker ?? page.currentPageMarker ?? '1';
     return {
       rows,
-      page: { currentPage: page?.currentPage ?? callParams.page, hasMore: hasMore ?? inferredHasMore, nextToken: nextToken || null },
-      cursorMode,
+      page: {
+        currentPageMarker: String(current),
+        pageSize: Number(respPage?.pageSize ?? page.pageSize ?? (rows.length || 0)),
+        hasMore: !!hasMore,
+        nextPageMarker: nextMarker || respPage?.nextPageMarker || null,
+        previousPageMarker: respPage?.previousPageMarker ?? null,
+        pageToken: respPage?.pageToken ?? null, // present for token-based stores
+      },
+      cursorMode: typeof (respPage?.pageToken ?? respPage?.nextPageMarker) === 'string',
     };
   }
 
@@ -142,7 +145,7 @@ export class MemberService {
       const member = this.fromResponseToMember(raw);
       if (member?.id) return member;
     } catch {}
-    const { rows } = await this.listMembers({ currentPage: 1, pageSize: 10, search: String(id), filter: '' });
+    const { rows } = await this.listMembers({ page: { currentPageMarker: '1', pageSize: 10 }, search: String(id), filter: '' });
     const found = rows.find(m => String(m.id) === String(id)) || null;
     if (!found) throw new Error('Member not found');
     return found;
@@ -155,7 +158,7 @@ export class MemberService {
       const member = this.fromResponseToMember(raw);
       if (member && (member.emailAddress || member.id)) return member;
     } catch {}
-    const { rows } = await this.listMembers({ currentPage: 1, pageSize: 10, search: email, filter: '' });
+    const { rows } = await this.listMembers({ page: { currentPageMarker: '1', pageSize: 10 }, search: email, filter: '' });
     const lower = String(email).toLowerCase();
     const found = rows.find(m => (m.emailAddress || '').toLowerCase() === lower) || rows[0] || null;
     if (!found) throw new Error('Member not found');

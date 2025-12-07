@@ -81,9 +81,10 @@ export default {
     return {
       events: [],
       error: '',
-      page: { currentPage: 1, pageSize: 10, hasMore: false },
+      // Page now uses normalized markers
+      page: { currentPageMarker: '1', pageSize: 10, hasMore: false, nextPageMarker: null, previousPageMarker: null, pageToken: null },
       viewMode: this.$route.query.mode === 'table' ? 'table' : 'list',
-      loading: false, // NEW: track loading for UI/child
+      loading: false,
     };
   },
   created() {
@@ -95,37 +96,24 @@ export default {
     if (this.session && !this.$route.query.mode) {
       this.viewMode = this.session.viewMode || this.viewMode;
     }
-
-    // Enforce permissions on initial load
     this.enforceModePermissions(true);
-
     this.loadEvents();
   },
   watch: {
     viewMode(newMode) {
       if (this.session) this.session.viewMode = newMode;
-      // Keep URL in sync
       this.$router.replace({ path: '/event', query: { mode: newMode } });
-      // If user switched to table but is not allowed, bounce to list
       this.enforceModePermissions();
     },
   },
   computed: {
-    member() {
-      return this.session?.member || null;
-    },
+    member() { return this.session?.member || null; },
     isMemberRegisteredLogin() {
       const status = (this.member?.login?.status || '').toString().toUpperCase();
-      // Not allowed if explicitly UNREGISTERED or EXPIRED
       return status && status !== 'UNREGISTERED' && status !== 'EXPIRED';
     },
     memberLevel() {
-      return (
-        this.member?.registration?.level ||
-        this.member?.level ||
-        this.member?.role ||
-        ''
-      );
+      return this.member?.registration?.level || this.member?.level || this.member?.role || '';
     },
     isTableAllowed() {
       const hostRank = this.getLevelValue('Host');
@@ -138,21 +126,37 @@ export default {
       this.error = '';
       this.loading = true;
       try {
-        const res = await this.eventService.listEvents({
-          currentPage: this.page.currentPage,
-          pageSize: this.page.pageSize,
-        });
+        // Pass Page object exclusively
+        const res = await this.eventService.listEvents({ page: { ...this.page } });
+
+        // If service returns array only, keep basic pagination via list length
         if (Array.isArray(res)) {
           this.events = res;
-          this.page.hasMore = res.length >= this.page.pageSize;
-        } else if (res && typeof res === 'object') {
-          this.events = res.data ?? [];
-          this.page.hasMore = !!res.page?.hasMore || this.events.length >= this.page.pageSize;
-          if (res.page?.currentPage) this.page.currentPage = res.page.currentPage;
-        } else {
-          this.events = [];
-          this.page.hasMore = false;
+          const hasMoreGuess = this.events.length >= Number(this.page.pageSize || 0);
+          this.page = { ...this.page, hasMore: hasMoreGuess, nextPageMarker: hasMoreGuess ? String(Number(this.page.currentPageMarker || 1) + 1) : null, previousPageMarker: Number(this.page.currentPageMarker) > 1 ? String(Number(this.page.currentPageMarker) - 1) : null };
+          return;
         }
+
+        // Expect { success, data, page }
+        const data = res?.data ?? [];
+        const p = res?.page ?? {};
+        this.events = data;
+
+        // Normalize page fields; prefer server markers
+        const current = String(p.currentPageMarker ?? this.page.currentPageMarker ?? '1');
+        const size = Number(p.pageSize ?? this.page.pageSize ?? (data.length || 0));
+        const hasMore = Boolean(p.hasMore ?? (!!p.nextPageMarker || data.length >= size));
+        const next = p.nextPageMarker ?? (hasMore ? String(Number(current) + 1) : null);
+        const prev = p.previousPageMarker ?? (Number(current) > 1 ? String(Number(current) - 1) : null);
+
+        this.page = {
+          currentPageMarker: current,
+          pageSize: size,
+          hasMore,
+          nextPageMarker: next,
+          previousPageMarker: prev,
+          pageToken: p.pageToken ?? null,
+        };
       } catch (e) {
         this.error = e?.message || 'Failed to load events';
         this.logger?.error?.('loadEvents failed', e);
@@ -160,54 +164,37 @@ export default {
         this.loading = false;
       }
     },
-    onRefresh() {
+    onRefresh() { this.loadEvents(); },
+    addEvent() { this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode } }); },
+
+    prevPage() {
+      const prev = this.page.previousPageMarker;
+      if (!prev) return;
+      this.page.currentPageMarker = String(prev);
       this.loadEvents();
     },
-    addEvent() {
-      // Always use the explicit "new" route
-      this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode } });
-    },
-    prevPage() {
-      if (this.page.currentPage > 1) {
-        this.page.currentPage -= 1;
-        this.loadEvents();
-      }
-    },
     nextPage() {
-      if (this.page.hasMore) {
-        this.page.currentPage += 1;
-        this.loadEvents();
-      }
+      const next = this.page.nextPageMarker ?? this.page.pageToken;
+      if (!next) return;
+      this.page.currentPageMarker = String(next);
+      this.loadEvents();
     },
-    handleSelect(ev) {
-      this.$router.push({ name: 'EventView', query: { id: ev?.id, mode: this.viewMode } });
-    },
+
+    handleSelect(ev) { this.$router.push({ name: 'EventView', query: { id: ev?.id, mode: this.viewMode } }); },
     async handleDelete(ev) {
-      try {
-        await this.eventService.deleteEvent(ev.id);
-        await this.loadEvents();
-      } catch (e) {
-        this.error = e?.message || 'Failed to delete event';
-      }
+      try { await this.eventService.deleteEvent(ev.id); await this.loadEvents(); }
+      catch (e) { this.error = e?.message || 'Failed to delete event'; }
     },
     handleEdit(ev) {
-      this.$router.push({
-        name: 'EventEditor',
-        params: { id: String(ev?.id || '') },
-        query: { mode: this.viewMode },
-      });
+      this.$router.push({ name: 'EventEditor', params: { id: String(ev?.id || '') }, query: { mode: this.viewMode } });
     },
-    openAttendees(ev) {
-      this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode } });
-    },
+    openAttendees(ev) { this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode } }); },
+
     enforceModePermissions(initial = false) {
-      // If user is not allowed to view table, force list and fix URL
       if (this.viewMode === 'table' && !this.isTableAllowed) {
         this.viewMode = 'list';
-        // Avoid extra replace at very first created() when we might not have had a query
         this.$router.replace({ path: '/event', query: { mode: 'list' } });
       } else if (initial && !this.$route.query.mode) {
-        // Ensure URL has mode on first load
         this.$router.replace({ path: '/event', query: { mode: this.viewMode } });
       }
     },

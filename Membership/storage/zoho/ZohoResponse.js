@@ -1,13 +1,10 @@
 
 class ZohoResponse extends Entity{
   constructor(responseData = {}) {
-    super(responseData.success, responseData.data, responseData.message, responseData.error, page);
+    super(responseData);
   }
 
-  toObject() {
-    return this; 
-  }
-
+  
   static getToRecordMap() {
     return {
       message: 'message',
@@ -16,7 +13,8 @@ class ZohoResponse extends Entity{
   }
 
   static fromRecord(record, entities = []) {
-    const response = this.convertRecordToData(record, this.getToRecordMap());
+    const data = this.convertRecordToData(record, this.getToRecordMap());
+    const response = new ZohoResponse(data);
     response.success = record.code === 0 || false;
     if (record.page_context) {
       response.page = ZohoPage.fromRecord(record.page_context);

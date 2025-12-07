@@ -27,14 +27,22 @@ class ZohoStorageManager extends StorageManager {
    * @example
    */
   getAll(params = {}) {
+    // Build request parameters with filters and optional Page
+    const requestParams = new ZohoRequestParameters(
+      this.clazz,
+      { ...params, ...this.filter } // fix: spread params instead of {params,...}
+    );
 
-    let zohoParams = this.convertParams(this.clazz, {...this.filter , ...params }); 
-    // Convert the pagination parameters
-    zohoParams = this.convertParams(ZohoPage, zohoParams); 
+    // Get flat Zoho request params from DTO (includes page if provided)
+    const zohoParams = requestParams.toRecord();
+
+    // Execute request
     const response = this.zohoAPI.getEntities(this.resourceName, zohoParams);
     if (!response || !response[this.resourceName]) {
       throw new Error(`No data found for resource: ${this.resourceName}`);
     }
+
+    // Map rows -> entities
     const entities = response[this.resourceName].map(row => this.clazz.fromRecord(row));
 
     return ZohoResponse.fromRecord(response, entities);
@@ -43,7 +51,6 @@ class ZohoStorageManager extends StorageManager {
   convertParams(clazz, params) {
     const toRecordMap = clazz.getToRecordMap();
     const zohoParams = {};
-    // Convert pageToken to page if present
     Object.entries(params).forEach(([key, value]) => {
       const zohoKey = toRecordMap[key]
       zohoParams[zohoKey?zohoKey:key] = value;

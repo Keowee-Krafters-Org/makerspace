@@ -13,9 +13,10 @@ function membershipManager() {
 /**
  * Returns all members for admin listing.
  */
-function getAllMembers(params) {
+function getAllMembers(paramsString) {
+  const params = JSON.parse(paramsString);
   const response = membershipManager().getAllMembers(params); 
-  const responseString=JSON.stringify(response); 
+  const responseString=response.toString(); 
   return responseString; 
 }
 
@@ -35,12 +36,7 @@ function getMemberByEmail(email) {
  */
 function updateMember(updatedMemberJson) {
   const response = membershipManager().updateMemberFromObject(JSON.parse( updatedMemberJson));
-  if (!response) {
-    throw new Error('Failed to update member');
-  }
-  const savedMember = response.data;
-
-  return JSON.stringify({success:true, data:savedMember.toObjectNoAuthentication()});
+  return response.toString();
 }
 
 function getMemberById(id) {
@@ -48,7 +44,7 @@ function getMemberById(id) {
   const memberResponse = membershipManager().getMember(id);
   if (!memberResponse) throw new Error('Member not found');
 
-  return JSON.stringify(memberResponse);
+  return memberResponse.toString();
 }
 
 

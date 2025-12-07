@@ -121,6 +121,6 @@ var SharedConfig = {
   }
 };
 
-function getConfig() {
+ function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }

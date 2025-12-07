@@ -361,11 +361,12 @@ function test_when_get_config__then_key_parameters_are_set() {
 // Legacy page token test retained with normalized params
 
 function test_when_a_page_is_requested__then_page_token_is_returned() {
-  const response = membershipManager.getAllMembers({ pageSize: 2 });
-  assert("Page token is returned", true, response.page.pageToken != null);
+  const response = membershipManager.getAllMembers({ page: { pageSize: 2 } });
+  const nextPageMarker = response.page.nextPageMarker;
+  assert("Page token is returned", true, nextPageMarker != null);
 
-  const nextResponse = membershipManager.getAllMembers({ pageSize: 2, currentPageMarker: response.page.nextPageMarker ?? response.page.pageToken });
-  assert("Next page token is returned when hasMore", response.page.hasMore === true, nextResponse.page.pageToken != null);
+  const nextResponse = membershipManager.getAllMembers({ page: { pageSize: 2, currentPageMarker: nextPageMarker} });
+  assert("Next page token is returned when hasMore", response.page.hasMore === true, nextResponse.page.nextPageMarker != null);
 
   const firstPageFirstMember = response.data[0];
   const secondPageFirstMember = nextResponse.data[0];

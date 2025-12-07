@@ -7,16 +7,16 @@ export class EventService {
     this.appService = appService || null;
   }
 
-  // Keep listEvents (paged)
-  listEvents(options = { pageSize: 10  }) {
+  // Keep listEvents (paged) - expects options.page
+  listEvents(options = { page: { pageSize: 10 } }) {
     return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventList', options);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
 
-  // Retain getAllEvents (alias for listEvents with explicit params)
-  getAllEvents(options = { pageSize: 100 }) {
+  // Retain getAllEvents (alias for listEvents with explicit page)
+  getAllEvents(options = { page: { pageSize: 100 } }) {
     return this.listEvents(options);
   }
 
@@ -91,36 +91,32 @@ export class EventService {
     });
   }
 
-  // Dropdown list endpoints with parameter support
-  getEventItemList(options = { pageSize: 100, pageToken: null, search: '' }) {
+  // Dropdown list endpoints with Page parameter
+  getEventItemList(options = { page: { pageSize: 100 }, search: '' }) {
     return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventItemList', options);
-
       Logger.debug(`getEventItemList response: ${JSON.stringify(res)}`);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
 
-  getEventRooms(options = { pageSize: 100, pageToken: null }) {
+  getEventRooms(options = { page: { pageSize: 100 } }) {
     return this.appService.withSpinner(async () => {
-      Logger.debug(`getEventRooms response: ${JSON.stringify(options)}`);
+      Logger.debug(`getEventRooms options: ${JSON.stringify(options)}`);
       const res = await this.connector.invoke('getEventRooms', options);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
 
-  async getEventHosts(options = { pageSize: 100, pageToken: null, role: 'instructor' }) {
-    // Prefer event hosts endpoint if available, otherwise instructors
+  async getEventHosts(options = { page: { pageSize: 100 }, role: 'instructor' }) {
     const endpoint = 'getInstructors';
     return this.appService.withSpinner(async () => {
       const raw = await this.connector.invoke(endpoint, options);
       Logger.debug(`getEventHosts via ${endpoint} response: ${JSON.stringify(raw)}`);
       const list = (raw && raw.success && 'data' in raw) ? raw.data : raw;
       return list.map(h => {
-        const id = h.id ;
-        const name =
-          h.name ||
-          [h.firstName, h.lastName].filter(Boolean).join(' ') || '';
+        const id = h.id;
+        const name = h.name || [h.firstName, h.lastName].filter(Boolean).join(' ') || '';
         const emailAddress = h.emailAddress || '';
         return { id: String(id || ''), name, emailAddress };
       }).filter(h => !!h.id);
@@ -148,31 +144,38 @@ export class EventService {
     return (res && res.success && res.data) ? res.data : [];
   }
 
-  // Generic “fetch all pages” helper retained
+  // Generic “fetch all pages” helper using Page exclusively
   async fetchAll(getPageFn, { pageSize = 100 } = {}) {
     const acc = [];
-    let pageToken = null;
+    let page = { pageSize, currentPageMarker: '1', pageToken: null };
     /* eslint-disable no-await-in-loop */
     for (; ;) {
-      const result = await getPageFn({ pageSize, pageToken });
-      const items = result.data || [];
-      const page = result.page || null;
-      pageToken = page.pageToken || null;
+      const result = await getPageFn({ page }); // pass Page object
+      const items = result?.data || [];
+      const respPage = result?.page || null;
       acc.push(...items);
-      if (!pageToken) break;
+
+      const nextMarker = respPage?.nextPageMarker ?? respPage?.pageToken ?? null;
+      if (!nextMarker) break;
+
+      // advance Page
+      page = { ...page, currentPageMarker: nextMarker, pageToken: nextMarker };
     }
     return acc;
   }
 
-  // Convenience “All” methods retained
+  // Convenience “All” methods now accept Page
   async getEventItemListAll(opts = {}) {
-    return this.fetchAll((p) => this.getEventItemList({ ...opts, ...p }), { pageSize: opts.pageSize || 100 });
+    const pageSize = opts.page?.pageSize ?? 100;
+    return this.fetchAll((p) => this.getEventItemList({ ...opts, ...p }), { pageSize });
   }
   async getEventRoomsAll(opts = {}) {
-    return this.fetchAll((p) => this.getEventRooms({ ...opts, ...p }), { pageSize: opts.pageSize || 100 });
+    const pageSize = opts.page?.pageSize ?? 100;
+    return this.fetchAll((p) => this.getEventRooms({ ...opts, ...p }), { pageSize });
   }
   async getEventHostsAll(opts = {}) {
-    return this.fetchAll((p) => this.getEventHosts({ ...opts, ...p }), { pageSize: opts.pageSize || 100 });
+    const pageSize = opts.page?.pageSize ?? 100;
+    return this.fetchAll((p) => this.getEventHosts({ ...opts, ...p }), { pageSize });
   }
 
   // Retain getMembersFromContacts for attendee resolution

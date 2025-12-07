@@ -30,7 +30,7 @@ class EventManager {
     if (Array.isArray(res)) return this.enrichCalendarEvents(res);
     // If it returns { success, data, page }, enrich data and preserve page
     const data = Array.isArray(res?.data) ? this.enrichCalendarEvents(res.data) : [];
-    return { success: !!res?.success, data, page: res?.page || null };
+    return new ZohoResponse({ success: !!res?.success, page: res?.page || null }, data);
   }
 
   /**

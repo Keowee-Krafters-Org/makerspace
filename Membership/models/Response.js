@@ -6,11 +6,8 @@ class Response extends Entity{
     this.data = data || {};
     this.message = message || '';
     this.error = error || '';
+    this.page = data.page || null;  
   }
 
-  toObject() {
-    return this; 
-  }
-
-
+  
 }

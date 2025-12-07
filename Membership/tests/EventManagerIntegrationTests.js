@@ -54,7 +54,7 @@ function test_get_event_by_title() {
 function test_getEventList() {
   const eventManager = modelFactory.eventManager();
   try {
-    const events = eventManager.getEventList({pageSize: 5});
+    const events = eventManager.getEventList( {page: { pageSize: 5 }});
     Logger.log('getEventList response: ' + JSON.stringify(events));
     assert('Event list should not be null or undefined', events != undefined, true);
     assert('Event list should be an array', Array.isArray(events), true);
@@ -556,7 +556,7 @@ function test_when_rooms_are_retrieved__then_at_least_one_room_is_returned() {
 
 function test_get_event_items() {
   const eventManager = newModelFactory().eventManager();
-  const response = eventManager.getEventItemList({ pageSize: 5 });
+  const response = eventManager.getEventItemList({  page: { pageSize: 5 } });
   Logger.log('getEventItemList response: ' + JSON.stringify(response));
   assert('Event items should not be null or undefined', response != undefined, true);
   assert('Event items should be an array', Array.isArray(response.data), true);
@@ -572,7 +572,7 @@ function test_get_event_items() {
 function test_pagination_on_event_items() {
   const eventManager = newModelFactory().eventManager();
 
-  const resp1 = eventManager.getEventItemList({ pageSize: 2 });
+  const resp1 = eventManager.getEventItemList({ page: { pageSize: 2 } });
   assert('Event items response present', true, !!resp1);
   assert('Page object present', true, !!resp1.page);
   assert('currentPageMarker present', true, resp1.page.currentPageMarker != null);
@@ -583,7 +583,7 @@ function test_pagination_on_event_items() {
   // Use nextPageMarker if available, fallback to pageToken for compatibility
   const nextMarker = resp1.page.nextPageMarker ?? resp1.page.pageToken;
   if (nextMarker != null) {
-    const resp2 = eventManager.getEventItemList({ pageSize: 2, currentPageMarker: nextMarker });
+    const resp2 = eventManager.getEventItemList({ page: { pageSize: 2, currentPageMarker: nextMarker }  });
     assert('Next page object present', true, !!resp2.page);
     const items2 = resp2.data;
     assert('Page 2 has items', true, Array.isArray(items2) && items2.length > 0);

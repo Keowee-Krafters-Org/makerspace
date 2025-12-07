@@ -8,43 +8,43 @@
 class ZohoPage extends Page{
     constructor(data = {}) {
         super(data);
-        // Initialize normalized backing fields to safe defaults
-        this._currentPage = Number(data.page ?? data.currentPageMarker ?? 1);
-        this._pageSize = Number(data.per_page ?? data.pageSize ?? 50);
-        this._hasMore = Boolean(data.has_more_page ?? data.hasMore ?? false);
+        this._currentPageMarker = data.currentPageMarker || 1;
+        this._pageSize = data.pageSize || 20;
+        this._hasMore = data.hasMore || false;
     }
+   
     static getToRecordMap() {
         return {
-            _currentPage: 'page',
-            _pageSize: 'per_page',
-            _hasMore: 'has_more_page',
+            currentPageMarker: 'page',
+            pageSize: 'per_page',
+            hasMore: 'has_more_page',
         };
     }
 
     get nextPageMarker() {
-        return this.hasMore ? this._currentPage + 1 : null;
+        return this.hasMore ? this._currentPageMarker + 1 : null;
     }
 
     set nextPageMarker(value) {
         if (value !== null && value !== undefined) {
-            this._currentPage = parseInt(value, 10);
+            this._currentPageMarker = parseInt(value, 10);
         }
     }
 
     get currentPageMarker() {
-        return this._currentPage;
+        return this._currentPageMarker;
     }
 
     set currentPageMarker(value) {
-        this._currentPage = parseInt(value, 10);
+        this._currentPageMarker = parseInt(value, 10);
     }
     get previousPageMarker() {
-        return this._currentPage > 1 ? this._currentPage - 1 : null;
+        return this._currentPageMarker > 1 ? this._currentPageMarker - 1 : null;
     }
 
     set previousPageMarker(value) {
         if (value !== null && value !== undefined) {
-            this._currentPage = parseInt(value, 10);
+            this._currentPageMarker = parseInt(value, 10);
         }
     }
 
@@ -62,5 +62,10 @@ class ZohoPage extends Page{
     set pageSize(value) {
         this._pageSize = parseInt(value, 10);
     }   
+
+    static fromRecord(record) {
+        const data = this.convertRecordToData(record, this.getFromRecordMap());
+       return new ZohoPage(data);
+    }
 
 }
