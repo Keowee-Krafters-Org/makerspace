@@ -215,11 +215,14 @@ class CalendarEvent extends Event {
     // Filter attendees:
     // - Exclude room/resource attendees (a.resource === true)
     // - Exclude the location email if it was stored in item.location
-    const locationEmail = String(item.location || '').toLowerCase();
+    var location = item.location? { displayName: item.location } : null;
+    const filteredForLocation  = item.attendees.filter(a => a && a.resource && a.email); 
+    if (filteredForLocation.length > 0) {
+      location = filteredForLocation[0];
+    }
     const attendees = (item.attendees || [])
       .filter(a => a && a.email)
-      .filter(a => !a.resource) // drop resource attendees (rooms)
-      .filter(a => String(a.email).toLowerCase() !== locationEmail)
+      .filter(a => !a.resource) 
       .map(a => CalendarContact.fromRecord({ email: a.email }));
 
     const record = {
@@ -229,7 +232,7 @@ class CalendarEvent extends Event {
       description: item.description || '',
       start: start ? new Date(start) : null,
       end: end ? new Date(end) : null,
-      location: CalendarLocation.fromRecord(item.location),
+      location: CalendarLocation.fromRecord(location),
       // Use attendees (not guests)
       attendees,
       creator: item.creator?.email || item.organizer?.email || '',

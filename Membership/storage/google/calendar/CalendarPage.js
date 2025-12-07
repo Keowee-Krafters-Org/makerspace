@@ -19,7 +19,7 @@
       // hasMore will be derived; ignore incoming hasMore here
     });
     // Track the calendar token
-    this.pageToken = data.nextPageMarker ?? data.nextPageToken ?? null;
+    this.nextPageMarker = data.nextPageMarker ?? data.nextPageToken ?? null;
   }
 
   // Common markers based on Calendar semantics
@@ -63,7 +63,7 @@
    * params:   { pageToken?: string, maxResults?: number }
    */
   static fromRecord(response = {}, sentParams = {}) {
-    const nextToken = response.nextPageToken ?? null;
+    const nextToken = response.getNextPageToken ?? null;
     const currToken = sentParams.pageToken ?? sentParams.currentPageMarker ?? '1';
     const size = sentParams.maxResults ?? sentParams.pageSize ?? 50;
 

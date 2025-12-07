@@ -18,6 +18,18 @@ class CalendarManager extends StorageManager {
       'UTC';
   }
 
+  static matchInstanceByStart_(inst, start) {
+    const s = (start instanceof Date) ? start : new Date(start);
+    const dt =
+      inst.originalStartTime?.dateTime ||
+      inst.originalStartTime?.date ||
+      inst.start?.dateTime ||
+      inst.start?.date;
+    return dt && new Date(dt).getTime() === s.getTime();
+  }
+
+  
+
   // ---- Utilities ----
   toDateTime_(d) {
     const dt = d instanceof Date ? d : new Date(d);
@@ -42,30 +54,6 @@ class CalendarManager extends StorageManager {
    */
   fromRecord(item) {
     const ev = CalendarEvent.fromRecord(item); // API parser
-
-    // Normalize location to CalendarLocation object
-    const rawLoc =
-      ev.location?.email ||
-      ev.location?.resourceEmail ||
-      (typeof ev.location === 'string' ? ev.location : '');
-
-    if (rawLoc) {
-      const calendarLocation = this.getLocationByEmail(rawLoc);
-      if (calendarLocation) {
-        ev.location = calendarLocation; // { id, name, email }
-      } else {
-        // Fallback: construct a minimal location object from the email string
-        ev.location = { id: rawLoc, name: rawLoc, email: rawLoc };
-      }
-    } else if (Array.isArray(item.attendees)) {
-      // Try to infer location from resource attendees
-      const room = item.attendees.find(a => a.resource && a.email);
-      if (room) {
-        const calendarLocation = this.getLocationByEmail(room.email);
-        ev.location = calendarLocation || { id: room.email, name: room.email, email: room.email };
-      }
-    }
-
     return ev;
   }
 
@@ -210,29 +198,56 @@ class CalendarManager extends StorageManager {
     return item ? this.fromRecord(item) : null;
   }
 
-  getUpcomingEvents(daysAhead = 14) {
-    const now = new Date();
-    const end = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-    return this.getEventsInRange(now, end);
+  // Page-aware list
+  list(params = {}) {
+    const page = params.page instanceof Page ? params.page : new CalendarPage(params.page || {});
+    const req = page.toRecord(); // { pageToken?, maxResults }
+
+    // Baseline query; add optional q/timeMin/timeMax if provided
+    const query = {
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: req.maxResults,
+    };
+    if (req.pageToken) query.pageToken = req.pageToken;
+    if (params.q) query.q = String(params.q);
+    if (params.timeMin) query.timeMin = new Date(params.timeMin).toISOString();
+    if (params.timeMax) query.timeMax = new Date(params.timeMax).toISOString();
+
+    const res = Calendar.Events.list(this.calendarId, query);
+    const items = (res.items || []).map(item => this.fromRecord(item));
+    const pageOut = CalendarPage.fromRecord(res, query).toObject();
+    return { success: true, data: items, page: pageOut };
   }
 
-  /**
-   * Retrieve events in a range (flattened instances)
-   */
-  getEventsInRange(start, end) {
+  // Paged “All” with options.page
+  getAll(params = {}) {
+    return this.list(params);
+  }
+
+  // Filtered still paged: caller decides to fetch-all or page
+  getFiltered(filterFn, params = {}) {
+    const resp = this.list(params);
+    resp.data = (resp.data || []).filter(filterFn);
+    // page markers remain intact
+    return resp;
+  }
+
+  // Upcoming via range; optionally paged
+  getUpcomingEvents(daysAhead = 14, params = {}) {
+    const now = new Date();
+    const end = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    return this.list({ ...params, timeMin: now, timeMax: end });
+  }
+
+  // Range via API list (paged)
+  getEventsInRange(start, end, params = {}) {
     if (!(start instanceof Date) || !(end instanceof Date)) {
       throw new Error('Start and end must be Date objects.');
     }
     if (start >= end) throw new Error('Start date must be before end date.');
 
-    const res = Calendar.Events.list(this.calendarId, {
-      singleEvents: true,
-      timeMin: start.toISOString(),
-      timeMax: end.toISOString(),
-      orderBy: 'startTime',
-      maxResults: 250,
-    });
-    return (res.items || []).map(item => this.fromRecord(item));
+    return this.list({ ...params, timeMin: start, timeMax: end });
   }
 
   /**
@@ -256,23 +271,133 @@ class CalendarManager extends StorageManager {
     return this.fromRecord(item);
   }
 
-  getAll(params = {}) {
-    return this.getUpcomingEvents(365);
-  }
+  /**
+   * Update an existing event via API
+   */
+  update(id, calendarEvent) {
+    const current = this.get(id);
 
-  getFiltered(filterFn) {
-    const all = this.getAll();
-    return all.filter(filterFn);
-  }
+    const rec = calendarEvent.toRecord();
+    const start = rec.start || new Date(current.start.dateTime || current.start.date);
+    const end = rec.end || new Date(current.end.dateTime || current.end.date);
+    const summary = calendarEvent.title || current.summary || 'Untitled Class';
+    const description = CalendarManager.updateDescription(current.id, calendarEvent.eventItem.id);
 
-  updateById(id, calendarEvent) {
-    if (!calendarEvent || id !== calendarEvent.id) {
-      throw new Error('Invalid calendar event or mismatched ID');
+    const currentAttendees = Array.isArray(current.attendees) ? current.attendees.slice() : [];
+    const roomEmails = (this.getCalendarResources() || []).map(r => r.email);
+
+    // Accept CalendarLocation object and extract email
+    const newRoomEmail =
+      calendarEvent.location?.email ||
+      rec.location?.email ||
+      (typeof rec.location === 'string' ? rec.location : '') ||
+      '';
+
+    let attendees = currentAttendees;
+    if (newRoomEmail) {
+      attendees = currentAttendees.filter(a => !roomEmails.includes(a.email) || a.email === newRoomEmail);
+      if (!attendees.some(a => a.email === newRoomEmail)) {
+        attendees.push({ email: newRoomEmail, resource: true, responseStatus: 'accepted' });
+      }
     }
-    return this.update(id, calendarEvent);
+
+    const patch = {
+      summary,
+      description,
+      start: this.toDateTime_(start),
+      end: this.toDateTime_(end),
+      attendees,
+      location: newRoomEmail || current.location || '',
+    };
+
+    if (calendarEvent.recurrence === null) {
+      patch.recurrence = [];
+    } else {
+      const rrules = CalendarEvent.normalizeRecurrenceToApi(calendarEvent.recurrence, start);
+      if (Array.isArray(rrules)) {
+        patch.recurrence = rrules;
+      }
+    }
+
+    Calendar.Events.patch(patch, this.calendarId, current.id);
+    const updated = Calendar.Events.get(this.calendarId, current.id);
+    return this.fromRecord(updated);
   }
 
-  // Calendar resources (rooms)
+  /**
+   * Delete an event via API.
+   * By default deletes just the specified event/occurrence.
+   * Pass { series: true } to delete the entire recurring series.
+   * Accepts either API event id or iCalUID.
+   * @param {string} eventId
+   * @param {{series?: boolean}} [options]
+   */
+  delete(eventId, options = {}) {
+    const { series = false } = options;
+    const current = this.get(eventId);
+    if (!current) throw new Error(`Event not found: ${eventId}`);
+
+    const idToDelete = series && current.recurringEventId
+      ? current.recurringEventId
+      : current.id;
+
+    // FIX: use remove(), not delete()
+    Calendar.Events.remove(this.calendarId, String(idToDelete));
+    return true;
+  }
+
+  /**
+   * Retrieve a single event via API (accepts API id or iCalUID)
+   */
+  getEvent(eventId) {
+    const item = this.get(eventId);
+    return item ? this.fromRecord(item) : null;
+  }
+
+  // Page-aware list
+  list(params = {}) {
+    const page = params.page instanceof Page ? params.page : new CalendarPage(params.page || {});
+    const req = page.toRecord(); // { pageToken?, maxResults }
+
+    // Baseline query; add optional q/timeMin/timeMax if provided
+    const query = {
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: req.maxResults,
+    };
+    if (req.pageToken) query.pageToken = req.pageToken;
+    if (params.q) query.q = String(params.q);
+    if (params.timeMin) query.timeMin = new Date(params.timeMin).toISOString();
+    if (params.timeMax) query.timeMax = new Date(params.timeMax).toISOString();
+
+    const res = Calendar.Events.list(this.calendarId, query);
+    const items = (res.items || []).map(item => this.fromRecord(item));
+    const pageOut = CalendarPage.fromRecord(res, query);
+    return new Response(true, items, '', '', pageOut );
+  }
+
+  // Paged “All” with options.page
+  getAll(params = {}) {
+    return this.list(params);
+  }
+
+  // Filtered still paged: caller decides to fetch-all or page
+  getFiltered(filterFn, params = {}) {
+    const resp = this.list(params);
+    resp.data = (resp.data || []).filter(filterFn);
+    // page markers remain intact
+    return resp;
+  }
+
+  // Upcoming via range; optionally paged
+  getUpcomingEvents(daysAhead = 14, params = {}) {
+    const now = new Date();
+    const end = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    return this.list({ ...params, timeMin: now, timeMax: end });
+  }
+
+
+   // Calendar resources (rooms)
   getCalendarResources() {
     const customerId = 'my_customer';
     try {
@@ -284,14 +409,35 @@ class CalendarManager extends StorageManager {
     }
   }
 
-  static matchInstanceByStart_(inst, start) {
-    const s = (start instanceof Date) ? start : new Date(start);
-    const dt =
-      inst.originalStartTime?.dateTime ||
-      inst.originalStartTime?.date ||
-      inst.start?.dateTime ||
-      inst.start?.date;
-    return dt && new Date(dt).getTime() === s.getTime();
+  // Range via API list (paged)
+  getEventsInRange(start, end, params = {}) {
+    if (!(start instanceof Date) || !(end instanceof Date)) {
+      throw new Error('Start and end must be Date objects.');
+    }
+    if (start >= end) throw new Error('Start date must be before end date.');
+
+    return this.list({ ...params, timeMin: start, timeMax: end });
+  }
+
+  /**
+   * Complies with StorageManager.getById
+   */
+  getById(id) {
+    return this.getEvent(id);
+  }
+
+  getEventByTitle(title, timeMin = new Date(), timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)) {
+    const res = Calendar.Events.list(this.calendarId, {
+      q: String(title),
+      singleEvents: true,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      maxResults: 25,
+      orderBy: 'startTime',
+    });
+    const item = (res.items || []).find(i => String(i.summary || '').trim() === String(title).trim());
+    if (!item) throw new Error(`Event Not Found for title: ${title}`);
+    return this.fromRecord(item);
   }
 
   /**
@@ -404,4 +550,6 @@ class CalendarManager extends StorageManager {
   getLocationById(id) {
     return this.getCalendarResources().find(r => r.id === id);
   }
+
+
 }

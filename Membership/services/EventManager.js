@@ -45,11 +45,10 @@ class EventManager {
    */
   getUpcomingEvents(params = {}) {
     const eventHorizon = params.horizon || getConfig().eventHorizon;
-    const calendarEvents = this.calendarManager.getUpcomingEvents(eventHorizon);
-    if (!calendarEvents || calendarEvents.length === 0) {
-      return [];
-    }
-    return this.enrichCalendarEvents(calendarEvents);
+    const calendarEventsResponse = this.calendarManager.getUpcomingEvents(eventHorizon);
+    const calendarEvents = calendarEventsResponse.data ?? [];
+    calendarEventsResponse.data = this.enrichCalendarEvents(calendarEvents);
+    return calendarEventsResponse; 
   }
 
   /**

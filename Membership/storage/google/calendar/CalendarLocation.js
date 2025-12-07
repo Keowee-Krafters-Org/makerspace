@@ -18,12 +18,13 @@ class CalendarLocation extends Location {
     return location;
   }
 
+  get id() {
+    return this._id ?? this.email ?? ''; 
+  }
   static getToRecordMap() {
     return {
-      id: 'resourceId',
-      name: 'resourceName',
-      email: 'resourceEmail',
-      description: 'generatedResourceName',
+      name: 'displayName',
+      email: 'email',
       capacity: 'capacity'
     };
   }

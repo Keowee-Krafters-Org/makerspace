@@ -54,12 +54,12 @@ function test_get_event_by_title() {
 function test_getEventList() {
   const eventManager = modelFactory.eventManager();
   try {
-    const events = eventManager.getEventList( {page: { pageSize: 5 }});
-    Logger.log('getEventList response: ' + JSON.stringify(events));
-    assert('Event list should not be null or undefined', events != undefined, true);
-    assert('Event list should be an array', Array.isArray(events), true);
-    assert('Event list should have at least one event', events.length > 0, true);
-    events.forEach((event, idx) => {
+    const eventsResponse = eventManager.getUpcomingEvents(365,  { page: { pageSize: 5 }});
+    Logger.log('getEventList response: ' + JSON.stringify(eventsResponse));
+    assert('Event list should not be null or undefined', eventsResponse != undefined, true);
+    assert('Event list should be an array', Array.isArray(eventsResponse.data), true);
+    assert('Event list should have at least one event', eventsResponse.data.length > 0, true);
+    eventsResponse.data.forEach((event, idx) => {
       assert(`Event ${idx} has id`, typeof event.id !== 'undefined', true);
       assert(`Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
       assert(`Event ${idx} has date`, event.date instanceof Date, true);
@@ -83,7 +83,8 @@ function test_get_event_by_id() {
 function test_getUpcomingEvents() {
   const eventManager = modelFactory.eventManager();
   try {
-    const events = eventManager.getUpcomingEvents();
+    const eventsResponse = eventManager.getUpcomingEvents();
+    const events = eventsResponse.data; 
     Logger.log(`Retrieved ${events.length} upcoming events.`);
     Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
     assert('Upcoming events should be an array', Array.isArray(events), true);
@@ -103,12 +104,12 @@ function test_getUpcomingEvents() {
 function test_getUpcomingClasses() {
   const eventManager = modelFactory.eventManager();
   try {
-    const events = eventManager.getUpcomingClasses();
-    Logger.log(`Retrieved ${events.length} upcoming classes.`);
-    Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
-    assert('Upcoming events should be an array', Array.isArray(events), true);
-    assert('Upcoming events should not be empty', events.length > 0, true);
-    events.forEach((event, idx) => {
+    const eventsResponse = eventManager.getUpcomingClasses();
+    Logger.log(`Retrieved ${eventsResponse.data.length} upcoming classes.`);
+    Logger.log('getUpcomingEvents response: ' + JSON.stringify(eventsResponse.data));
+    assert('Upcoming events should be an array', Array.isArray(eventsResponse.data), true);
+    assert('Upcoming events should not be empty', eventsResponse.data.length > 0, true);
+    eventsResponse.data.forEach((event, idx) => {
       assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
       assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
       assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);

@@ -33,12 +33,10 @@ class Page extends Entity {
     throw new Error('Implemented in subclass');
   } 
   get nextPageMarker() {
-    // advance by one page
-    return this.hasMore ? this.currentPageMarker + 1 : null;
+    throw new Error('Implemented in subclass');
   } 
   get previousPageMarker() {
-    // go back by one page
-    return this.currentPageMarker > 1 ? this.currentPageMarker - 1 : null;
+    throw new Error('Implemented in subclass');
   }
 
   set currentPageMarker(value) {

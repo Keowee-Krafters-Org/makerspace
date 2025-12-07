@@ -3,20 +3,20 @@
 function getEventList(params = {}) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const events = eventManager.getUpcomingClasses(params);
-  return JSON.stringify({ success: true, data: events });
+  const eventsResponse = eventManager.getUpcomingClasses(params);
+  return JSON.stringify(eventsResponse.toObject());
 }
 
 function signup(classId, memberId) {
   const eventManager = Membership.newModelFactory().eventManager();
   const response = eventManager.signup(classId, memberId);
-  return JSON.stringify(response);
+  return JSON.stringify(response.toObject());
 }
 
 function getAllEvents(params = {}) {
   const eventManager = Membership.newModelFactory().eventManager();
-  const events = eventManager.getUpcomingClasses(params);
-  return JSON.stringify({ success: true, data: events });
+  const eventsResponse = eventManager.getUpcomingClasses(params);
+  return JSON.stringify(eventsResponse.toObject());
 }
 
 function getSharedConfig() {
@@ -34,7 +34,7 @@ function createEvent(eventData) {
   const eventManager = modelFactory.eventManager();
   const event = JSON.parse(eventData);
   const response = eventManager.addEvent(event);
-  return JSON.stringify(response);
+  return JSON.stringify(response.toObject());
 }
 
 function updateEvent(eventData) {
@@ -43,7 +43,7 @@ function updateEvent(eventData) {
     const event = JSON.parse(eventData);
     const eventInstance = eventManager.createEvent(event);
     const response = eventManager.updateEvent(eventInstance);
-    return JSON.stringify(response);
+    return JSON.stringify(response.toObject());
   } catch (e) {
     throw new Error('Failed to parse event JSON: ' + e.message);
   }
@@ -54,7 +54,7 @@ function getInstructors(params = {}) {
   const modelFactory = Membership.newModelFactory();
   const membershipManager = modelFactory.membershipManager();
   const instructorsResponse = membershipManager.getInstructors(params);
-  return JSON.stringify(instructorsResponse);
+  return JSON.stringify(instructorsResponse.toObject());
 }
 
 function getEventHosts(params = {}) {
