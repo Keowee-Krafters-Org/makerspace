@@ -1,9 +1,10 @@
 /* global Membership */
 
-function getEventList(params = {}) {
+function getEventList(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const eventsResponse = eventManager.getUpcomingClasses(params);
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
+  const eventsResponse = eventManager.getUpcomingEvents(params);
   return JSON.stringify(eventsResponse.toObject());
 }
 
@@ -13,8 +14,9 @@ function signup(classId, memberId) {
   return JSON.stringify(response.toObject());
 }
 
-function getAllEvents(params = {}) {
+function getAllEvents(paramsString = {}) { 
   const eventManager = Membership.newModelFactory().eventManager();
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
   const eventsResponse = eventManager.getUpcomingClasses(params);
   return JSON.stringify(eventsResponse.toObject());
 }
@@ -49,42 +51,54 @@ function updateEvent(eventData) {
   }
 }
 
+function deleteEvent(eventId) {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  const response = eventManager.deleteEvent({id: eventId});
+  return JSON.stringify(response.toObject());
+}
+
 // FIX: accept params (pageSize, pageToken, search, role filters, etc.)
-function getInstructors(params = {}) {
+function getInstructors(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();
   const membershipManager = modelFactory.membershipManager();
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
   const instructorsResponse = membershipManager.getInstructors(params);
   return JSON.stringify(instructorsResponse.toObject());
 }
 
-function getEventHosts(params = {}) {
+function getEventHosts(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();
-  const eventManager = modelFactory.eventManager();
+  const membershipManager = modelFactory.membershipManager();
   // If your EventManager reuses membershipManager, forward params similarly
-  const hosts = eventManager.getEventHosts ? eventManager.getEventHosts(params) : modelFactory.membershipManager().getInstructors(params);
-  return JSON.stringify({ success: true, data: hosts });
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
+  const hostsResponse = membershipManager.getHosts(params);
+  return JSON.stringify(hostsResponse.toObject());
 }
 
 // FIX: propagate params for pagination/filtering
-function getEventRooms(params = {}) {
+function getEventRooms(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const resources = eventManager.getEventRooms(params);
-  return JSON.stringify({ success: true, data: resources });
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
+  const resourcesResponse = eventManager.getEventRooms(params);
+  return JSON.stringify(resourcesResponse.toObject());
+}
+  
+function getEventLocations(paramsString = {}) {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
+  const locationsResponse = eventManager.getEventLocations(params);
+  return JSON.stringify(locationsResponse.toObject());
 }
 
-function getEventLocations(params = {}) {
+function getEventItemList(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
-  const locations = eventManager.getEventLocations(params);
-  return JSON.stringify({ success: true, data: locations });
-}
-
-function getEventItemList(params = {}) {
-  const modelFactory = Membership.newModelFactory();
-  const eventManager = modelFactory.eventManager();
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
   const itemsResponse = eventManager.getEventItemList(params);
-  return JSON.stringify(itemsResponse);
+  return JSON.stringify(itemsResponse.toObject());
 }
 
 function getEventItemById(eventItemId) {

@@ -1,9 +1,9 @@
 <template>
   <tr class="hover:bg-gray-50">
     <td class="p-2 border">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
-    <td class="p-2 border">{{ formatDate(ev.startDate || ev.date) }}</td>
-    <td class="p-2 border">{{ formatDate(ev.endDate || ev._end) }}</td>
-    <td class="p-2 border">{{ ev.location?.name || ev.location }}</td>
+    <td class="p-2 border">{{ formatDate(ev.date) }}</td>
+    <td class="p-2 border">{{ ev.eventItem?.duration }}</td>
+    <td class="p-2 border">{{ ev.location?.name }}</td>
     <td class="p-2 border">
       <EventButtonPanel
         :event="ev"

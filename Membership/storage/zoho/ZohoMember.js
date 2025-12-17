@@ -64,7 +64,9 @@ class ZohoMember extends Member {
       contactType: 'contact_type',
       isMember: 'cf_is_member',
       interests: 'cf_interests',
-      outstandingBalance: 'outstanding_receivable_amount'
+      outstandingBalance: 'outstanding_receivable_amount', 
+      host: 'cf_host',
+      instructor: 'cf_instructor',
 //      address: 'billing_address'
     };
   }

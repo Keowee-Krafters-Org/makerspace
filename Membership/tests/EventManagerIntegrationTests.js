@@ -169,7 +169,7 @@ function test_addEvent() {
   let event;
   try {
     // Sample 1x1 transparent PNG (replace with a real image for production tests)
-    const event = addEvent();
+    event = addEvent();
 
     assert('Event ID should be returned', event.id != undefined, true);
     assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
@@ -178,9 +178,9 @@ function test_addEvent() {
     assert('Event Item should have an image', !!event.eventItem.image, true);
 
     // Validate the calendar event was created
-    const calendarEvent = calendarManager.calendar.getEventById(event.id);
+    const calendarEvent = calendarManager.getById(event.id);
     assert('Calendar event should exist', calendarEvent != null, true);
-    assert('Calendar event title matches', calendarEvent.getTitle(), eventData.eventItem.title);
+    assert('Calendar event title matches', calendarEvent.title, eventData.eventItem.title);
     Logger.log('Calendar event verification passed.');
 
   } catch (error) {
@@ -197,7 +197,7 @@ function test_addEvent() {
     const base64Image = TEST_IMAGE;
 
     // Clone and add image to event data
-    event = JSON.parse(JSON.stringify(eventData));
+    const event = JSON.parse(JSON.stringify(eventData));
     event.eventItem.image = { data: base64Image, name: 'New Image' };
 
     const response = eventManager.addEvent(event);
@@ -423,7 +423,10 @@ function test_when_member_signs_up_for_recurring_event__then_event_is_updated() 
 function test_getEventRooms() {
   const eventManager = modelFactory.eventManager();
   try {
-    const rooms = eventManager.getEventRooms();
+    const roomsresponse = eventManager.getEventRooms();
+    assert('getEventRooms response should not be null or undefined', roomsresponse != undefined, true);   
+    assert('getEventRooms response should have data property', 'data' in roomsresponse, true);  
+    const rooms = roomsresponse.data;
     Logger.log('getEventRooms returned: ' + JSON.stringify(rooms));
     assert('Event rooms should be an array', Array.isArray(rooms), true);
     assert('At least one event room returned', rooms.length > 0, true);
@@ -594,3 +597,33 @@ function test_pagination_on_event_items() {
     Logger.log('No next page available; pagination test completed on a single page.');
   }
 }
+
+function test_get_event_rooms__returns_rooms  () {  
+  const eventManager = newModelFactory().eventManager();
+  const roomsResponse = eventManager.getEventRooms();
+  const rooms = roomsResponse.data; 
+  assert("At least one room is returned", true, (rooms && rooms.length > 0));
+}
+
+function test_get_event_rooms__returns_rooms_with_details() {
+  const eventManager = newModelFactory().eventManager();
+  const roomsResponse = eventManager.getEventRooms();
+  const rooms = roomsResponse.data;   
+  assert("At least one room is returned", true, (rooms && rooms.length > 0));
+  rooms.forEach((room, idx) => {
+    assert(`Room ${idx} has id`, typeof room.id !== 'undefined', true);
+    assert(`Room ${idx} has name`, typeof room.name !== 'undefined', true);
+    assert(`Room ${idx} has email`, typeof room.email !== 'undefined', true);
+  });
+}
+
+function test_get_event_rooms__returns_rooms_with_capacity() {
+  const eventManager = newModelFactory().eventManager();
+  const roomsResponse = eventManager.getEventRooms();
+  const rooms = roomsResponse.data;   
+  assert("At least one room is returned", true, (rooms && rooms.length > 0));
+  rooms.forEach((room, idx) => {
+    assert(`Room ${idx} has capacity`, typeof room.capacity !== 'undefined', true);
+  });
+}
+

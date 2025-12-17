@@ -1,11 +1,23 @@
 <template>
   <div class="overflow-x-auto bg-white border rounded">
+    <!-- Add Event button -->
+    <div class="flex items-center justify-end p-2 border-b bg-gray-50">
+      <button
+        type="button"
+        class="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+        :disabled="loading || !allowAdd"
+        @click="$emit('add')"
+      >
+        Add Event
+      </button>
+    </div>
+
     <table class="min-w-full text-sm border-collapse">
       <thead>
         <tr class="bg-gray-50 text-gray-700">
           <th class="px-3 py-2 text-left border">Title</th>
           <th class="px-3 py-2 text-left border">Start</th>
-          <th class="px-3 py-2 text-left border">End</th>
+          <th class="px-3 py-2 text-left border">Duration</th>
           <th class="px-3 py-2 text-left border">Location</th>
           <th class="px-3 py-2 text-left border">Actions</th>
         </tr>

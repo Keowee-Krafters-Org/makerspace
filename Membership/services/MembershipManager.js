@@ -161,6 +161,17 @@ class MembershipManager {
     return this.storageManager.getById(member.id).data;
   }
 
+  /**
+   * Find the member and rreturn wrapped in a Response object.
+   * @param {*} emailAddress 
+   * @returns 
+   */
+  getMemberByEmail(emailAddress) {
+    const member = this.memberLookup(emailAddress);
+    if (!member) return new Response(false, null, 'Member not found');
+    return new Response(true, member);
+  }
+
   addMember(memberData) {
     let member = this.memberLookup(memberData.emailAddress);
     if (member) return member;
@@ -260,18 +271,13 @@ class MembershipManager {
   }
 
   getHosts() {
-    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.Host.value);
+    return this.storageManager.getAll(
+      { host: 'true', page: { pageSize: 200 } });
   }
-
-  getInstructors() {
+  getInstructors(params) {
     const instructorLevel = SharedConfig.levels.Instructor.value;
-    // Use normalized pageSize instead of per_page; allow currentPageMarker if provided
-    const response = this.storageManager.getFiltered(
-      member => {
-        const memberLevel = SharedConfig.levels[member.registration.level].value;
-        return memberLevel >= instructorLevel;
-      },
-      { contactType: 'vendor', pageSize: 200 } // normalized pagination
+    const response = this.storageManager.getAll(    
+      { instructor: 'true', params } // normalized pagination
     );
     return response;
   }

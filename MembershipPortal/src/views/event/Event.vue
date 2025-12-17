@@ -83,7 +83,7 @@
             class="relative"
             :class="descExpanded ? '' : 'leading-6 max-h-[4.5rem] overflow-hidden'"
           >
-            <p class="text-gray-800 whitespace-pre-line">
+            <p class="text-gray-800 whitespace-pre-line break-words wrap-anywhere">
               {{ description }}
             </p>
             <div
@@ -167,7 +167,7 @@ export default {
         : 'grid grid-cols-1 md:grid-cols-[minmax(260px,320px)_1fr] gap-6';
     },
     imageColClass() { return ''; },
-    detailsColClass() { return this.variant === 'card' ? '' : 'space-y-3'; },
+    detailsColClass() { return this.variant === 'card' ? 'min-w-0' : 'space-y-3 min-w-0'; },
     imageWrapperClass() {
       return this.variant === 'card'
         ? 'w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50'

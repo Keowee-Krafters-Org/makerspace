@@ -24,10 +24,8 @@ function getAllMembers(paramsString) {
  * Retrieves a member by their email address.
  */
 function getMemberByEmail(email) {
-  const memberResponse = memberLookup(email);
-  if (!memberResponse) throw new Error('Member not found');
-
-  return JSON.stringify(memberResponse);
+  const memberResponse = membershipManager().getMemberByEmail(email);
+  return JSON.stringify( memberResponse.toObject() );
 }
 
 /**

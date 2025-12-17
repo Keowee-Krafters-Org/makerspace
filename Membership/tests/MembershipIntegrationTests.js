@@ -281,7 +281,7 @@ function test_whenMemberIsCreatedFromData_thenAllFieldsAreThere() {
 }
 
 function test_getInstructors_returns_instructors() {
-  const instructorsResponse = membershipManager.getInstructors();
+  const instructorsResponse = membershipManager.getInstructors({page: { pageSize: 5 } });
   const instructors = instructorsResponse.data;
   Logger.log('Instructors:', instructors);
   assert('Instructors is array', true, Array.isArray(instructors));
@@ -289,6 +289,18 @@ function test_getInstructors_returns_instructors() {
   instructors.forEach((inst, idx) => {
     assert(`Instructor ${idx} has level`, true, typeof inst.registration.level !== 'undefined');
     assert(`Instructor ${idx} has emailAddress`, true, typeof inst.emailAddress !== 'undefined');
+  });
+}
+
+function test_getHosts_returns_hosts() {
+  const hostsResponse = membershipManager.getHosts({page: { pageSize: 5 } });
+  const hosts = hostsResponse.data;
+  Logger.log('Hosts:', hosts);
+  assert('Hosts is array', true, Array.isArray(hosts));
+  assert('At least one host found', true, hosts.length > 0);
+  hosts.forEach((inst, idx) => {
+    assert(`Host ${idx} has level`, true, typeof inst.registration.level !== 'undefined');
+    assert(`Host ${idx} has emailAddress`, true, typeof inst.emailAddress !== 'undefined');
   });
 }
 
@@ -372,6 +384,7 @@ function test_when_a_page_is_requested__then_page_token_is_returned() {
   const secondPageFirstMember = nextResponse.data[0];
   assert("Different members on different pages", true, firstPageFirstMember.id !== secondPageFirstMember.id);
 }
+
 
 // Add to runAllTests
 function runAllTests() {

@@ -1,201 +1,215 @@
+.classes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+}
 
-       .classes-grid {
-           display: grid;
-           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-           gap: 24px;
-           margin-top: 32px;
-       }
+/* Allow grid children to shrink so text can wrap */
+.classes-grid > * {
+    min-width: 0;
+}
 
-       .class-card {
-           background: #fff;
-           border-radius: 8px;
-           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-           padding: 24px;
-           display: flex;
-           flex-direction: column;
-           justify-content: space-between;
-       }
+.class-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
 
-       .class-title {
-           font-size: 1.3em;
-           margin-bottom: 8px;
-           color: #1a4d2e;
-       }
+.class-title {
+    font-size: 1.3em;
+    margin-bottom: 8px;
+    color: #1a4d2e;
+}
 
-       .class-desc {
-           margin-bottom: 12px;
-           color: #444;
-       }
+.class-desc {
+    margin-bottom: 12px;
+    color: #444;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+}
 
-       .class-info {
-           margin-bottom: 16px;
-           color: #555;
-       }
+.class-info {
+    margin-bottom: 16px;
+    color: #555;
+}
 
-       .signup-btn {
-           background: #1a4d2e;
-           color: #fff;
-           border: none;
-           border-radius: 4px;
-           padding: 10px 18px;
-           font-size: 1em;
-           cursor: pointer;
-           transition: background 0.2s;
-       }
+.signup-btn {
+    background: #1a4d2e;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 18px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s;
+}
 
-       .signup-btn:hover {
-           background: #26734d;
-       }
+.signup-btn:hover {
+    background: #26734d;
+}
 
 
 
-       .class-card form {
-           display: grid;
-           grid-template-columns: 150px 1fr;
-           gap: 12px 16px;
-           align-items: center;
-           padding: 16px 0;
-       }
+.class-card form {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 12px 16px;
+    align-items: center;
+    padding: 16px 0;
+}
 
-       .class-card label {
-           font-weight: bold;
-           color: #333;
-           margin-bottom: 4px;
-           display: block;
-       }
+.class-card label {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+    display: block;
+}
 
-       .class-card select,
-       .class-card input,
-       .class-card textarea {
-           margin-bottom: 16px;
-       }
+.class-card select,
+.class-card input,
+.class-card textarea {
+    margin-bottom: 16px;
+}
 
-       .class-card input[type="text"],
-       .class-card input[type="number"],
-       .class-card input[type="datetime-local"],
-       .class-card textarea {
-           padding: 8px;
-           border: 1px solid #ccc;
-           border-radius: 6px;
-           font-size: 1em;
-           width: 100%;
-       }
+.class-card input[type="text"],
+.class-card input[type="number"],
+.class-card input[type="datetime-local"],
+.class-card textarea {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+    width: 100%;
+}
 
-       .class-card select {
-           padding: 8px;
-           border: 1px solid #ccc;
-           border-radius: 6px;
-           font-size: 1em;
-           width: 100%;
-           box-sizing: border-box;
-           margin-bottom: 0;
-           /* Remove extra spacing if needed */
-       }
+.class-card select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0;
+    /* Remove extra spacing if needed */
+}
 
-       .class-card textarea {
-           resize: vertical;
-           min-height: 80px;
-       }
+.class-card textarea {
+    resize: vertical;
+    min-height: 80px;
+}
 
-       .class-card .signup-btn {
-           grid-column: span 2;
-           margin-top: 12px;
-       }
+.class-card .signup-btn {
+    grid-column: span 2;
+    margin-top: 12px;
+}
 
-       .class-image {
-           max-width: 400px;
-           max-height: 400px;
-           overflow: scroll;
-           border-radius: 4px;
-           margin-bottom: 12px;
-       }
+.class-image {
+    max-width: 400px;
+    max-height: 400px;
+    overflow: scroll;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
 
-       .class-image img {
-           width: 100%;
-           height: auto;
-           object-fit: contain;
-       }
+.class-image img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
 
-       .class-desc.truncate {
-           display: -webkit-box;
-           -webkit-line-clamp: 3;
-           line-clamp: 3;
-           -webkit-box-orient: vertical;
-           overflow: hidden;
-           cursor: pointer;
-       }
+.class-desc.truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    cursor: pointer;
+}
 
-       .class-desc.truncate.expanded {
-           -webkit-line-clamp: unset;
-           line-clamp: unset;
-           white-space: normal;
-       }
+.class-desc.truncate.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: normal;
+}
 
-       /* Event table styles (copied from member.html) */
-       .event-list {
-           width: 100%;
-           border-collapse: collapse;
-           margin-top: 20px;
-       }
+/* Event table styles (copied from member.html) */
+.event-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
 
-       .event-list th,
-       .event-list td {
-           border: 1px solid #ddd;
-           padding: 8px;
-           text-align: left;
-       }
+.event-list th,
+.event-list td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
 
-       .event-list th {
-           background-color: #f4f4f4;
-           font-weight: bold;
-       }
+.event-list th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
 
-       .event-list tr:nth-child(even) {
-           background-color: #f9f9f9;
-       }
+.event-list tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
 
-       .event-list tr:hover {
-           background-color: #f1f1f1;
-       }
+.event-list tr:hover {
+    background-color: #f1f1f1;
+}
 
-       .event-list button {
-           padding: 6px 12px;
-           border: none;
-           background-color: #3367d6;
-           color: white;
-           border-radius: 4px;
-           cursor: pointer;
-           font-size: 14px;
-       }
+.event-list button {
+    padding: 6px 12px;
+    border: none;
+    background-color: #3367d6;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
 
-       .event-list button:hover {
-           background-color: #254a9e;
-       }
+.event-list button:hover {
+    background-color: #254a9e;
+}
 
-       .pagination button {
-           margin: 0 5px;
-           padding: 8px 12px;
-           border: none;
-           background-color: #3367d6;
-           color: white;
-           border-radius: 4px;
-           cursor: pointer;
-           font-size: 14px;
-       }
+.pagination button {
+    margin: 0 5px;
+    padding: 8px 12px;
+    border: none;
+    background-color: #3367d6;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
 
-       .pagination button:disabled {
-           background-color: #ccc;
-           cursor: not-allowed;
-       }
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
 
-       .event-past-message {
-           color: gray;
-           text-align: center;
-           margin: 16px 0;
-       }
+.event-past-message {
+    color: gray;
+    text-align: center;
+    margin: 16px 0;
+}
 
-         .confirmation-message {
-              text-align: center;
-              color: green;
-              margin-top: 20px;
-         }  
+.confirmation-message {
+    text-align: center;
+    color: green;
+    margin-top: 20px;
+}
+
+/* Fallback utility if used in templates */
+.wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+}

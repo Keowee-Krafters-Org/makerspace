@@ -94,34 +94,34 @@ export class EventService {
   // Dropdown list endpoints with Page parameter
   getEventItemList(options = { page: { pageSize: 100 }, search: '' }) {
     return this.appService.withSpinner(async () => {
-      const res = await this.connector.invoke('getEventItemList', options);
-      Logger.debug(`getEventItemList response: ${JSON.stringify(res)}`);
-      return (res && res.success && 'data' in res) ? res.data : res;
+      const responseString = await this.connector.invoke('getEventItemList', options);
+      const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
+      Logger.debug(`getEventItemList received: ${JSON.stringify(response)}`);
+      return  response;
     });
   }
 
   getEventRooms(options = { page: { pageSize: 100 } }) {
     return this.appService.withSpinner(async () => {
-      Logger.debug(`getEventRooms options: ${JSON.stringify(options)}`);
-      const res = await this.connector.invoke('getEventRooms', options);
-      return (res && res.success && 'data' in res) ? res.data : res;
+     const responseString = await this.connector.invoke('getEventRooms', options);
+     const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
+      Logger.debug(`getEventRooms received: ${JSON.stringify(response)}`);
+      return response;
     });
   }
 
   async getEventHosts(options = { page: { pageSize: 100 }, role: 'instructor' }) {
-    const endpoint = 'getInstructors';
+    const endpoint = 'getEventHosts';
     return this.appService.withSpinner(async () => {
-      const raw = await this.connector.invoke(endpoint, options);
-      Logger.debug(`getEventHosts via ${endpoint} response: ${JSON.stringify(raw)}`);
-      const list = (raw && raw.success && 'data' in raw) ? raw.data : raw;
-      return list.map(h => {
-        const id = h.id;
-        const name = h.name || [h.firstName, h.lastName].filter(Boolean).join(' ') || '';
-        const emailAddress = h.emailAddress || '';
-        return { id: String(id || ''), name, emailAddress };
-      }).filter(h => !!h.id);
-    });
+      const responseString = await this.connector.invoke(endpoint, options);
+      const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
+      response.data = (response && response.success && Array.isArray(response.data)) ? response.data : [].map((member) =>
+         ({ id: member.id, name: `${member.firstName} ${member.lastName}` })); ;
+      Logger.debug(`getEventHosts received: ${JSON.stringify(response)}`);
+      return response;
+    })
   }
+
 
   // Images (multi-image)
   async getImages(eventId) {
@@ -151,6 +151,7 @@ export class EventService {
     /* eslint-disable no-await-in-loop */
     for (; ;) {
       const result = await getPageFn({ page }); // pass Page object
+      Logger.debug(`fetchAll received page: ${JSON.stringify(result?.page)}`);
       const items = result?.data || [];
       const respPage = result?.page || null;
       acc.push(...items);

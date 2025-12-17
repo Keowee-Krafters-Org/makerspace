@@ -31,7 +31,7 @@ class InvoiceManager {
     if (!result || !result.data) {
       throw new Error(`Invoice not found for ID: ${id}`);
     }
-    return result.data;
+    return result;
   }
 
   /**
@@ -46,10 +46,10 @@ class InvoiceManager {
       if (!result || !result.id) {
         throw new Error('Failed to create invoice.');
       }
-      return { success: true, data: result };
+      return new Response ( true, result, 'Invoice created successfully' );
     } catch (err) {
       console.error('Failed to create invoice:', err);
-      return { success: false, message: 'Failed to create invoice.', error: err.toString() };
+      return new Response ( false, null, 'Failed to create invoice.', err.toString() );
     }
   }
 
@@ -64,7 +64,7 @@ class InvoiceManager {
       return createResponse;
     }
     const createdInvoice = createResponse.data;
-    return { success: true, data: createdInvoice };
+    return  new Response ( true, createdInvoice, 'Invoice created and sent successfully' );
   } 
   /**
    * 
@@ -79,10 +79,10 @@ class InvoiceManager {
       if (!result || !result.data) {
         throw new Error('Failed to update invoice.');
       }
-      return { success: true, data: result.data };
+      return new Response ( true, result.data, 'Invoice updated successfully' );
     } catch (err) {
       console.error('Failed to update invoice:', err);
-      return { success: false, message: 'Failed to update invoice.', error: err.toString() };
+      return new Response ( false, null, 'Failed to update invoice.', err.toString() );
     }
   }
 
@@ -96,17 +96,17 @@ class InvoiceManager {
     try {
       const invoicesResponse = this.getInvoicesByMember(memberId);
       if (!invoicesResponse || !invoicesResponse.success) {
-        return {sucess:false, error: invoicesResponse.err} ; 
+        return new Response ( false, null, 'Failed to get invoices for member.', invoicesResponse.err) ; 
       }
       const invoices = invoicesResponse.data; 
       const invoice = invoices.find(inv => inv.eventId === eventId);
       if (!invoice) {
-        return { success: false, message: 'Invoice not found for the specified event.' };
+        return new Response ( false, null, 'Invoice not found for the specified event.' );
       }
       return this.deleteInvoice(invoice.id);
     } catch (err) {
       console.error('Failed to delete invoice for event:', err);
-      return { success: false, message: 'Failed to delete invoice for event.', error: err.toString() };
+      return new Response ( false, null, 'Failed to delete invoice for event.', err.toString() );
     }
   }
 
@@ -119,13 +119,13 @@ class InvoiceManager {
     try {
       const invoice = this.storageManager.getById(invoiceId);
       if (!invoice) {
-        return { success: false, message: 'Invoice not found.' };
+        return new Response ( false, null, 'Invoice not found.' );
       }
       this.storageManager.delete(invoiceId);
-      return { success: true, message: 'Invoice deleted successfully!' };
+      return new Response ( true, null, 'Invoice deleted successfully!' );
     } catch (err) {
       console.error('Failed to delete invoice:', err);
-      return { success: false, message: 'Failed to delete invoice.', error: err.toString() };
+      return new Response ( false, null, 'Failed to delete invoice.', err.toString() );
     }
   }
 
@@ -150,7 +150,7 @@ class InvoiceManager {
       return this.updateInvoice(invoice);
     } catch (err) {
       console.error('Failed to mark invoice as paid:', err);
-      return { success: false, message: 'Failed to mark invoice as paid.', error: err.toString() };
+      return new Response ( false, null, 'Failed to mark invoice as paid.', err.toString() );
     }
   }
 
@@ -164,10 +164,10 @@ class InvoiceManager {
     try {
       // Logic to send the invoice via email (e.g., using Zoho API)
       console.log(`Sending invoice ${invoiceId} to ${email}`);
-      return { success: true, message: `Invoice sent to ${email}` };
+      return new Response ( true, null, `Invoice sent to ${email}` );
     } catch (err) {
       console.error('Failed to send invoice:', err);
-      return { success: false, message: 'Failed to send invoice.', error: err.toString() };
+      return new Response ( false, null, 'Failed to send invoice.', err.toString() );
     }
   }
 

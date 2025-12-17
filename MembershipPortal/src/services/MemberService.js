@@ -1,5 +1,5 @@
 import { Member } from '../model/Member.js';
-
+import { Logger } from './Logger.js';
 export class MemberService {
   constructor(connector, appService) {
     this.connector = connector;
@@ -33,11 +33,7 @@ export class MemberService {
 
   fromResponseToMember(raw) {
     const resp = raw || {};
-    const candidate =
-      resp?.data?.member ??
-      resp?.member ??
-      resp?.data ??
-      (resp?.id || resp?.emailAddress || resp?.email ? resp : null);
+    const candidate = resp?.data ?? null;
     return candidate ? this.toMember(candidate) : null;
   }
 
@@ -140,29 +136,21 @@ export class MemberService {
 
   async getMemberById(id) {
     if (!id) throw new Error('Missing member id');
-    try {
-      const raw = await this.connector.invoke('getMemberById', id);
-      const member = this.fromResponseToMember(raw);
-      if (member?.id) return member;
-    } catch {}
-    const { rows } = await this.listMembers({ page: { currentPageMarker: '1', pageSize: 10 }, search: String(id), filter: '' });
-    const found = rows.find(m => String(m.id) === String(id)) || null;
-    if (!found) throw new Error('Member not found');
-    return found;
+    const raw = await this.connector.invoke('getMemberById', id);
+    const member = this.fromResponseToMember(raw);
+    if (member?.id) return member;
+    throw new Error('Member not found');
   }
-
   async getMemberByEmail(email) {
     if (!email) throw new Error('Missing member email');
-    try {
-      const raw = await this.connector.invoke('getMemberByEmail', email);
-      const member = this.fromResponseToMember(raw);
-      if (member && (member.emailAddress || member.id)) return member;
-    } catch {}
-    const { rows } = await this.listMembers({ page: { currentPageMarker: '1', pageSize: 10 }, search: email, filter: '' });
-    const lower = String(email).toLowerCase();
-    const found = rows.find(m => (m.emailAddress || '').toLowerCase() === lower) || rows[0] || null;
-    if (!found) throw new Error('Member not found');
-    return found;
+    const raw = await this.connector.invoke('getMemberByEmail', email);
+    const member = this.fromResponseToMember(raw);
+    if (member && (member.emailAddress || member.id)) {
+      Logger.debug(`Found member by email: ${email}`);
+      return member;
+    }
+    Logger.debug(`Member not found by email: ${email}`);
+    throw new Error('Member not found');
   }
 
   async getMemberForEditor({ id, email }) {

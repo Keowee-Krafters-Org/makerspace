@@ -18,14 +18,22 @@ class CalendarLocation extends Location {
     return location;
   }
 
-  get id() {
-    return this._id ?? this.email ?? ''; 
-  }
   static getToRecordMap() {
     return {
-      name: 'displayName',
-      email: 'email',
+      id: 'resourceId',
+      name: 'resourceName',
+      email: 'resourceEmail',
       capacity: 'capacity'
     };
   }
-}
+
+
+  static fromRecord(record) {
+    const data = {
+      email: record.resourceEmail || record.email || '',
+      name: record.resourceName || record.displayName || '',
+      id: record.resourceId || record.id || record.email || ''
+    };
+    return new CalendarLocation(data);
+    }
+  }
