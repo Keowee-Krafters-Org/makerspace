@@ -1,25 +1,47 @@
 <template>
-  <div class="overflow-x-auto bg-white border rounded">
-    <!-- Add Event button -->
-    <div class="flex items-center justify-end p-2 border-b bg-gray-50">
-      <button
-        type="button"
-        class="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-        :disabled="loading || !allowAdd"
-        @click="$emit('add')"
-      >
-        Add Event
-      </button>
+  <div class="panel">
+    <div class="toolbar">
+      <div class="text-muted">
+        Page: {{ page?.currentPageMarker || '1' }} • Size: {{ page?.pageSize || 0 }}
+      </div>
+      <div class="toolbar-actions">
+        <button
+          type="button"
+          class="btn btn-icon"
+          :disabled="loading || !allowAdd"
+          @click="$emit('add')"
+        >
+          <Icon name="pencil" :size="18" />
+          <span class="leading-none">Add Event</span>
+        </button>
+
+        <button
+          type="button"
+          class="pager-btn"
+          :disabled="loading || !page?.previousPageMarker"
+          @click="$emit('prev')"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          class="pager-btn"
+          :disabled="loading || !(page?.nextPageMarker || page?.pageToken)"
+          @click="$emit('next')"
+        >
+          Next
+        </button>
+      </div>
     </div>
 
-    <table class="min-w-full text-sm border-collapse">
-      <thead>
-        <tr class="bg-gray-50 text-gray-700">
-          <th class="px-3 py-2 text-left border">Title</th>
-          <th class="px-3 py-2 text-left border">Start</th>
-          <th class="px-3 py-2 text-left border">Duration</th>
-          <th class="px-3 py-2 text-left border">Location</th>
-          <th class="px-3 py-2 text-left border">Actions</th>
+    <table class="table-base">
+      <thead class="table-head">
+        <tr>
+          <th class="th">Title</th>
+          <th class="th">Start</th>
+          <th class="th">End</th>
+          <th class="th">Location</th>
+          <th class="th">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -36,7 +58,7 @@
           @refresh="$emit('refresh')"
         />
         <tr v-if="!events?.length">
-          <td class="p-4 text-center text-gray-500 border" colspan="5">No events</td>
+          <td class="table-empty" colspan="5">No events</td>
         </tr>
       </tbody>
     </table>
@@ -67,3 +89,89 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.panel {
+  overflow-x: auto;
+  background-color: white;
+  border-radius: 0.375rem;
+  border-width: 1px;
+  border-color: #e5e7eb;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-bottom-width: 1px;
+  border-bottom-color: #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.text-muted {
+  color: #6b7280;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pager-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  background-color: #f3f4f6;
+  color: #111827;
+  transition: background-color 0.2s;
+}
+
+.pager-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-base {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-head {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.th {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom-width: 2px;
+  border-bottom-color: #e5e7eb;
+}
+
+.table-empty {
+  padding: 1rem;
+  text-align: center;
+  color: #6b7280;
+  border-top-width: 2px;
+  border-top-color: #e5e7eb;
+}
+</style>

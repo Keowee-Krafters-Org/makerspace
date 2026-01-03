@@ -1,3 +1,13 @@
+@reference "./tailwind.css";
+
+/* Allow grid children to shrink so text can wrap */
+.classes-grid { @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch auto-rows-fr; }
+.classes-grid > * { min-width: 0; }
+
+/* Shared event description wrapping */
+.class-desc { @apply text-gray-800; }
+.class-desc, .wrap-anywhere { overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
+
 .classes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -5,7 +15,7 @@
     margin-top: 32px;
 }
 
-/* Allow grid children to shrink so text can wrap */
+/* Ensure grid children can shrink for wrapping */
 .classes-grid > * {
     min-width: 0;
 }

@@ -32,7 +32,7 @@ class CalendarLocation extends Location {
     const data = {
       email: record.resourceEmail || record.email || '',
       name: record.resourceName || record.displayName || '',
-      id: record.resourceId || record.id || record.email || ''
+      id: record.email || ''
     };
     return new CalendarLocation(data);
     }

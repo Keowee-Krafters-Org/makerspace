@@ -1,10 +1,13 @@
 import { AppService } from './AppService.js';
 import { Logger } from '../services/Logger.js';
+import { LookupCache } from './LookupCache.js';
 
 export class EventService {
   constructor(connector, appService) {
     this.connector = connector;
     this.appService = appService || null;
+    // Use shared AppService cache if present; else create local cache
+    this.cache = (this.appService && this.appService.cache) || new LookupCache({ ttlMs: 5 * 60 * 1000 });
   }
 
   // Keep listEvents (paged) - expects options.page
@@ -92,34 +95,52 @@ export class EventService {
   }
 
   // Dropdown list endpoints with Page parameter
-  getEventItemList(options = { page: { pageSize: 100 }, search: '' }) {
-    return this.appService.withSpinner(async () => {
+  getEventItemList(options = { page: { pageSize: 100 }, search: '' , cache: true }) {
+    const useCache = options?.cache !== false && !options?.search; // avoid caching search-filtered results
+    const fetchFn = async () => {
       const responseString = await this.connector.invoke('getEventItemList', options);
       const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
       Logger.debug(`getEventItemList received: ${JSON.stringify(response)}`);
-      return  response;
+      return response;
+    };
+    return this.appService.withSpinner(async () => {
+      return useCache
+        ? await this.cache.fetchOrGet('eventItems', fetchFn)
+        : await fetchFn();
     });
   }
 
-  getEventRooms(options = { page: { pageSize: 100 } }) {
-    return this.appService.withSpinner(async () => {
-     const responseString = await this.connector.invoke('getEventRooms', options);
-     const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
+  getEventRooms(options = { page: { pageSize: 100 }, cache: true }) {
+    const useCache = options?.cache !== false;
+    const fetchFn = async () => {
+      const responseString = await this.connector.invoke('getEventRooms', options);
+      const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
       Logger.debug(`getEventRooms received: ${JSON.stringify(response)}`);
       return response;
+    };
+    return this.appService.withSpinner(async () => {
+      return useCache
+        ? await this.cache.fetchOrGet('rooms', fetchFn)
+        : await fetchFn();
     });
   }
 
-  async getEventHosts(options = { page: { pageSize: 100 }, role: 'instructor' }) {
+  async getEventHosts(options = { page: { pageSize: 100 }, role: 'instructor', cache: true }) {
     const endpoint = 'getEventHosts';
-    return this.appService.withSpinner(async () => {
+    const useCache = options?.cache !== false && !options?.search && !options?.role; // avoid caching filtered role/search variants
+    const fetchFn = async () => {
       const responseString = await this.connector.invoke(endpoint, options);
       const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
       response.data = (response && response.success && Array.isArray(response.data)) ? response.data : [].map((member) =>
-         ({ id: member.id, name: `${member.firstName} ${member.lastName}` })); ;
+         ({ id: member.id, name: `${member.firstName} ${member.lastName}` }));
       Logger.debug(`getEventHosts received: ${JSON.stringify(response)}`);
       return response;
-    })
+    };
+    return this.appService.withSpinner(async () => {
+      return useCache
+        ? await this.cache.fetchOrGet('hosts', fetchFn)
+        : await fetchFn();
+    });
   }
 
 
@@ -168,15 +189,22 @@ export class EventService {
   // Convenience “All” methods now accept Page
   async getEventItemListAll(opts = {}) {
     const pageSize = opts.page?.pageSize ?? 100;
-    return this.fetchAll((p) => this.getEventItemList({ ...opts, ...p }), { pageSize });
+    const res = await this.fetchAll((p) => this.getEventItemList({ ...opts, ...p, cache: false }), { pageSize });
+    // refresh cache with full list
+    this.cache.set('eventItems', { success: true, data: res, page: { pageSize, currentPageMarker: 'ALL' } });
+    return res;
   }
   async getEventRoomsAll(opts = {}) {
     const pageSize = opts.page?.pageSize ?? 100;
-    return this.fetchAll((p) => this.getEventRooms({ ...opts, ...p }), { pageSize });
+    const res = await this.fetchAll((p) => this.getEventRooms({ ...opts, ...p, cache: false }), { pageSize });
+    this.cache.set('rooms', { success: true, data: res, page: { pageSize, currentPageMarker: 'ALL' } });
+    return res;
   }
   async getEventHostsAll(opts = {}) {
     const pageSize = opts.page?.pageSize ?? 100;
-    return this.fetchAll((p) => this.getEventHosts({ ...opts, ...p }), { pageSize });
+    const res = await this.fetchAll((p) => this.getEventHosts({ ...opts, ...p, cache: false }), { pageSize });
+    this.cache.set('hosts', { success: true, data: res, page: { pageSize, currentPageMarker: 'ALL' } });
+    return res;
   }
 
   // Retain getMembersFromContacts for attendee resolution

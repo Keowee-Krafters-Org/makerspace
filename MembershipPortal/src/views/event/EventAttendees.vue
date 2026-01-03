@@ -1,32 +1,34 @@
 <template>
-  <div class="p-4">
-    <header class="flex items-center justify-between mb-3">
+  <div class="panel p-4">
+    <header class="toolbar">
       <h3 class="text-xl font-semibold">Attendees</h3>
-      <Button label="Back" @click="$router.back()" />
+      <div class="toolbar-actions">
+        <Button label="Back" @click="$router.back()" />
+      </div>
     </header>
 
     <Message v-if="error" type="error" :message="error" class="mb-3" />
 
-    <table class="min-w-full border-collapse">
+    <table class="table-base">
       <thead>
-        <tr class="bg-gray-100">
-          <th class="text-left p-2 border">Name</th>
-          <th class="text-left p-2 border">Email</th>
-          <th class="text-left p-2 border">Phone</th>
-          <th class="text-left p-2 border">Outstanding Balance</th>
+        <tr class="table-head">
+          <th class="th">Name</th>
+          <th class="th">Email</th>
+          <th class="th">Phone</th>
+          <th class="th">Outstanding Balance</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="a in attendees" :key="a.id || a.emailAddress">
-          <td class="p-2 border">{{ [a.firstName, a.lastName].filter(Boolean).join(' ') || 'N/A' }}</td>
-          <td class="p-2 border">{{ a.emailAddress || 'N/A' }}</td>
-          <td class="p-2 border">{{ a.phoneNumber || 'N/A' }}</td>
-          <td class="p-2 border">
+          <td class="td">{{ [a.firstName, a.lastName].filter(Boolean).join(' ') || 'N/A' }}</td>
+          <td class="td">{{ a.emailAddress || 'N/A' }}</td>
+          <td class="td">{{ a.phoneNumber || 'N/A' }}</td>
+          <td class="td">
             {{ a.outstandingBalance ? `$${Number(a.outstandingBalance).toFixed(2)}` : '$0.00' }}
           </td>
         </tr>
         <tr v-if="!attendees.length">
-          <td class="p-4 text-center text-gray-500 border" colspan="4">No attendees for this event.</td>
+          <td class="table-empty" colspan="4">No attendees for this event.</td>
         </tr>
       </tbody>
     </table>

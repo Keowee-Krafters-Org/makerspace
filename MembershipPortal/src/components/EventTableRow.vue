@@ -1,10 +1,10 @@
 <template>
   <tr class="hover:bg-gray-50">
-    <td class="p-2 border">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
-    <td class="p-2 border">{{ formatDate(ev.date) }}</td>
-    <td class="p-2 border">{{ ev.eventItem?.duration }}</td>
-    <td class="p-2 border">{{ ev.location?.name }}</td>
-    <td class="p-2 border">
+    <td class="td">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
+    <td class="td">{{ formatDate(ev.date) }}</td>
+    <td class="td">{{ ev.eventItem?.duration }}</td>
+    <td class="td">{{ ev.location?.name }}</td>
+    <td class="td">
       <EventButtonPanel
         :event="ev"
         :member="member"

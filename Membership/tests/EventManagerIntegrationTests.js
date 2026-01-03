@@ -308,20 +308,33 @@ function delete_testEventItem(eventId) {
 
 function test_updateEvent() {
   const eventManager = modelFactory.eventManager();
+  const membershipManager = modelFactory.membershipManager();
+  const locations = eventManager.getEventRooms().data[0];
+  const hosts = membershipManager.getHosts().data[0];
+  eventData.location = { id: locations.id, email: locations.email };
+  eventData.eventItem.host = { id: hosts.id, name: hosts.name };
+  const createdEvent = eventManager.createEvent(eventData);
+  const eventResponse = eventManager.addEvent(createdEvent);
+  const newEvent = eventResponse.data;  
+  const newPrice = eventData.eventItem.price + 10;
+  const newDate = new Date(newEvent.date.getTime() + (2 * 60 * 60 * 1000)); // 2 hours later
   try {
-    const events = eventManager.getEventList({ title: 'Test Event' });
-    const originalEvent = events[0];
-    const eventId = originalEvent.id;
-    const originalEventItem = originalEvent.eventItem; 
-    const eventObject = {id:originalEvent.id, location: {id: '53731675360'}, eventItem: {
-      id:originalEventItem.id,price: originalEventItem.price, host: {id:testVendor.id}, title:originalEventItem.title
+    const originalEventItem = newEvent.eventItem; 
+    const eventObject = {id:newEvent.id, location: locations[1], eventItem: {
+      id:originalEventItem.id,price: originalEventItem.price, host: {id:hosts[1].id}, title:originalEventItem.title
     }};
     
     const response = eventManager.updateEvent(CalendarEvent.createNew(eventObject));
     Logger.log(` response: ${response.message}`);
     assert('Event should be updated successfully', response.success, true);
+    assert('Event price should be updated', response.data.eventItem.price === newPrice, true);
+    assert('Event host should be updated', response.data.eventItem.host.id === eventObject.eventItem.host.id, true);
+    assert('Event location should be updated', response.data.location.id === eventObject.location.id, true);
+    assert('Event date should be updated', response.data.date.getTime() === newDate.getTime(), true);
   } catch (error) {
     Logger.log(` failed: ${error.message}`);
+  } finally {
+    eventManager.deleteEvent(eventResponse.data); 
   }
 }
 

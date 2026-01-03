@@ -17,6 +17,10 @@
       {{ error }}
     </div>
 
+    <h3 v-if="isCard && event" class="text-xl font-bold text-center mb-3">
+      {{ event?.getTitle() }}
+    </h3>
+
     <div v-if="event" :class="bodyClass">
       <!-- Image/Gallery (left) -->
       <div :class="imageColClass">
@@ -47,10 +51,6 @@
 
       <!-- Details (right) -->
       <div :class="detailsColClass">
-        <h3 v-if="isCard" class="text-lg font-semibold mb-1">
-          {{ event?.getTitle() }}
-        </h3>
-
         <div class="text-gray-700 space-y-1">
           <div><span class="font-semibold">Date:</span> {{ formatDate(event.getDate()) }}</div>
           <div><span class="font-semibold">Duration:</span> {{ event.getDurationHours() }} hours</div>
@@ -88,13 +88,13 @@
             </p>
             <div
               v-if="!descExpanded && showDescToggle"
-              class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"
+              class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent"
             />
           </div>
           <button
             v-if="showDescToggle"
             type="button"
-            class="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+            class="relative mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
             @click="descExpanded = !descExpanded"
           >
             {{ descExpanded ? 'Show less' : 'Show more' }}
@@ -147,6 +147,7 @@ export default {
       pending: false,
       message: '',
       error: '',
+      descExpanded: false,
       // gallery state
       images: [],
       activeIndex: 0,
@@ -159,11 +160,11 @@ export default {
     rootClass() {
       return this.isCard
         ? 'rounded-lg border border-gray-200 shadow-sm p-4 bg-white'
-        : 'p-4 max-w-4xl mx-auto';
+        : 'panel p-4 max-w-4xl mx-auto';
     },
     bodyClass() {
       return this.variant === 'card'
-        ? 'grid grid-cols-1 sm:grid-cols-[minmax(160px,200px)_1fr] gap-3'
+        ? 'flex flex-col gap-3'
         : 'grid grid-cols-1 md:grid-cols-[minmax(260px,320px)_1fr] gap-6';
     },
     imageColClass() { return ''; },
