@@ -381,14 +381,7 @@ class EventManager {
       invoice = invoiceResponse?.data || null;
     }
 
-    return {
-      success: true,
-      data: {
-        message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`,
-        eventId,
-        invoice,
-      }
-    };
+    return new Response ( true, null, 'Signed up for event successfully' );
   }
 
   /**

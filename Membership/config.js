@@ -1,6 +1,6 @@
 const config = {
   dev: {
-    version: 'SNAPSHOT-0.2.26',
+    version: 'SNAPSHOT-0.2.27',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
     baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
     calendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com',
@@ -28,10 +28,21 @@ var SharedConfig = {
   loginTokenExpirationMinutes: 15,
   sessionTokenExpirationMinutes: 60 * 24,
   eventInvoiceLeadTime: 3, // days before event to make invoice payable
+  paymentGateways: [
+    { name: 'paypal', configured: true, method: 'standard'},
+    { name: 'stripe', configured: true }
+  ],
   services: {
     calendar: {
       defaultCalendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com'
-    }
+    }, 
+    invoice: {
+      defaultTerms: 'Please make payment by the due date specified on the invoice. Late payments may be subject to additional fees.',
+    paymentGateways: [
+    { name: 'paypal', configured: true },
+    { name: 'stripe', configured: true }
+  ],
+    },
   },
   forms: {
     registration: {
@@ -58,13 +69,14 @@ var SharedConfig = {
         firstName: 'entry.2005620554',
         lastName: 'entry.2134207864',
         emailAddress: 'entry.1045781291'
-      }, 
+      }
+    },
     classRequest: {
       sheetId: '1revNbHEK6W4C5KkxvNIQiOk-_VmkOCZabR5OyKwwc6I',
       formId: '1j1Nyv7zZyMVfe9sDe0K12e6u_A7EqKEDUV33zn4yFO4', 
       templateId: '1d8S21Ee1BMeFMo5yA8_bO-hvauvdIkSZXV-aMm5u0EA'
     }
-    }
+    
   },
 
   emailAddress: {
@@ -121,6 +133,6 @@ var SharedConfig = {
   }
 };
 
-export function getConfig() {
+function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }

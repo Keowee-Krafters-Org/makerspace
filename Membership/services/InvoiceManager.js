@@ -9,7 +9,7 @@ class InvoiceManager {
     this.storageManager = storageManager; // Handles ZohoInvoice storage
     this.membershipManager = membershipManager; // Handles member-related operations
     this.eventManager = eventManager;
-    this.config = getConfig();;
+    this.config = getConfig();
   }
 
   /**
@@ -41,6 +41,9 @@ class InvoiceManager {
    */
   createInvoice(invoiceData, send = false) {
     try {
+      if (this.config.paymentGateways) {
+        invoiceData.paymentGateways = this.config.paymentGateways;
+      }
       const invoice = this.storageManager.createNew(invoiceData);
       const result = this.storageManager.add(invoice, {send:send});
       if (!result || !result.id) {
