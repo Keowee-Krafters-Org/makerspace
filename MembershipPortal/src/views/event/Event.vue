@@ -17,24 +17,40 @@
       {{ error }}
     </div>
 
+    <h3 v-if="isCard && event" class="text-xl font-bold text-center mb-3">
+      {{ event?.getTitle() }}
+    </h3>
+
     <div v-if="event" :class="bodyClass">
-      <!-- Image -->
+      <!-- Image/Gallery (left) -->
       <div :class="imageColClass">
-        <img
-          v-if="imageUrl"
-          :src="imageUrl"
-          alt="Event"
-          :class="imageClass"
-        />
-        <div v-else :class="placeholderClass">No image</div>
+        <div :class="imageWrapperClass" :style="portraitAspectStyle">
+          <img
+            v-if="activeImageUrl"
+            :src="activeImageUrl"
+            alt="Event"
+            :class="imageClass"
+          />
+          <div v-else :class="placeholderClass">No image</div>
+        </div>
+
+        <!-- Thumbnails -->
+        <div v-if="sortedImages.length" class="mt-2 grid grid-cols-5 gap-2">
+          <button
+            v-for="(img, idx) in sortedImages"
+            :key="img.id"
+            type="button"
+            class="border rounded overflow-hidden bg-gray-50 focus:outline-none focus:ring"
+            :class="{'ring-2 ring-blue-500': idx === activeIndex}"
+            @click="setActiveIndex(idx)"
+          >
+            <img :src="img.thumbnailUrl || img.url" :alt="img.caption || 'Image'" class="w-full h-16 object-cover" />
+          </button>
+        </div>
       </div>
 
-      <!-- Details -->
+      <!-- Details (right) -->
       <div :class="detailsColClass">
-        <h3 v-if="isCard" class="text-lg font-semibold mb-1">
-          {{ event?.getTitle() }}
-        </h3>
-
         <div class="text-gray-700 space-y-1">
           <div><span class="font-semibold">Date:</span> {{ formatDate(event.getDate()) }}</div>
           <div><span class="font-semibold">Duration:</span> {{ event.getDurationHours() }} hours</div>
@@ -67,18 +83,18 @@
             class="relative"
             :class="descExpanded ? '' : 'leading-6 max-h-[4.5rem] overflow-hidden'"
           >
-            <p class="text-gray-800 whitespace-pre-line">
+            <p class="text-gray-800 whitespace-pre-line break-words wrap-anywhere">
               {{ description }}
             </p>
             <div
               v-if="!descExpanded && showDescToggle"
-              class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"
+              class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent"
             />
           </div>
           <button
             v-if="showDescToggle"
             type="button"
-            class="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+            class="relative mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
             @click="descExpanded = !descExpanded"
           >
             {{ descExpanded ? 'Show less' : 'Show more' }}
@@ -86,40 +102,20 @@
         </div>
 
         <!-- Actions -->
-        <div class="pt-3 flex gap-3">
-          <!-- If not verified, prompt to verify and hide register/unregister -->
-          <Button
-            v-if="showVerifyButton"
-            icon="envelope"
-            label="Verify Email"
-            @click="onVerify"
-          />
-
-          <!-- Otherwise show signup/unregister -->
-          <template v-else>
-            <Button
-              v-if="!isRegistered"
-              icon="user-plus"
-              :disabled="soldOut || pending"
-              :label="soldOut ? 'Sold Out' : (pending ? 'Working...' : 'Sign Me Up')"
-              @click="onSignup"
-            />
-            <Button
-              v-else
-              icon="user-minus"
-              :disabled="pending"
-              :label="pending ? 'Working...' : 'Cancel my Signup'"
-              @click="onUnregister"
-            />
-          </template>
-
-          <Button
-            v-if="isCard"
-            icon="eye"
-            label="Details"
-            @click="openDetails"
-          />
-        </div>
+        <EventButtonPanel
+          :event="event"
+          :member="member"
+          :pending="pending"
+          :showDetails="isCard"
+          :showAttendees="false"
+          :showSignup="true"
+          detailsLabel="Details"
+          @details="openDetails"
+          @edit="openEditor"
+          @delete="onDelete"
+          @signup="onSignup"
+          @unregister="onUnregister"
+        />
       </div>
     </div>
 
@@ -131,12 +127,14 @@
 import { inject } from 'vue';
 import Button from '@/components/Button.vue';
 import Message from '@/components/Message.vue';
+import EventButtonPanel from '@/components/EventButtonPanel.vue';
 import { Event as EventModel } from '@/model/Event.js';
+import { Logger } from '@/services/Logger.js';
 
 export default {
   name: 'EventView',
   emits: ['updated'],
-  components: { Button, Message },
+  components: { Button, Message, EventButtonPanel },
   props: {
     id: { type: String, required: true },
     mode: { type: String, default: 'list' },
@@ -145,12 +143,14 @@ export default {
   },
   data() {
     return {
-      event: null,
+      event: this.initial || null,
+      pending: false,
       message: '',
       error: '',
-      fromMode: this.mode === 'table' ? 'table' : 'list',
       descExpanded: false,
-      pending: false,
+      // gallery state
+      images: [],
+      activeIndex: 0,
     };
   },
   computed: {
@@ -160,24 +160,56 @@ export default {
     rootClass() {
       return this.isCard
         ? 'rounded-lg border border-gray-200 shadow-sm p-4 bg-white'
-        : 'p-4 max-w-4xl mx-auto';
+        : 'panel p-4 max-w-4xl mx-auto';
     },
     bodyClass() {
-      return this.isCard
-        ? 'grid grid-cols-1 gap-3'
-        : 'grid grid-cols-1 md:grid-cols-3 gap-6';
+      return this.variant === 'card'
+        ? 'flex flex-col gap-3'
+        : 'grid grid-cols-1 md:grid-cols-[minmax(260px,320px)_1fr] gap-6';
     },
-    imageColClass() { return this.isCard ? '' : 'md:col-span-1'; },
-    detailsColClass() { return this.isCard ? '' : 'md:col-span-2 space-y-3'; },
-    imageClass() {
-      return this.isCard
-        ? 'w-full h-48 object-cover object-top rounded-md border border-gray-200'
-        : 'w-full h-56 object-cover object-top rounded-lg border border-gray-200';
+    imageColClass() { return ''; },
+    detailsColClass() { return this.variant === 'card' ? 'min-w-0' : 'space-y-3 min-w-0'; },
+    imageWrapperClass() {
+      return this.variant === 'card'
+        ? 'w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50'
+        : 'w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50';
     },
-    placeholderClass() {
-      return this.isCard
-        ? 'w-full h-48 rounded-md border border-dashed border-gray-300 flex items-center justify-center text-gray-400'
-        : 'w-full h-56 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-400';
+    portraitAspectStyle() { return { aspectRatio: '3 / 4' }; },
+    imageClass() { return 'w-full h-full object-contain'; },
+    placeholderClass() { return 'w-full h-full flex items-center justify-center text-gray-400'; },
+
+    // Gallery data
+    sortedImages() {
+      const imgs = Array.isArray(this.images) && this.images.length
+        ? this.images
+        : (Array.isArray(this.event?.images) ? this.event.images : []);
+      return imgs.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    },
+    activeImageUrl() {
+      const candidate = this.sortedImages[this.activeIndex];
+      if (candidate?.url) return candidate.url;
+      // Fallback to legacy single image fields
+      return (
+        this.event?.eventItem?._imageUrl ||
+        this.event?.eventItem?.image?.url ||
+        this.event?.image?.url ||
+        null
+      );
+    },
+    isRegistered() {
+      const me = this.session?.member?.emailAddress;
+      const attendees = Array.isArray(this.event?.attendees) ? this.event.attendees : [];
+      return !!attendees.find(a => (a.emailAddress || a.email) === me);
+    },
+    soldOut() {
+      const limit = Number(this.event?.eventItem?.sizeLimit || 0);
+      const count = Array.isArray(this.event?.attendees) ? this.event.attendees.length : 0;
+      return limit > 0 && count >= limit;
+    },
+    spotsAvailable() {
+      const limit = Number(this.event?.eventItem?.sizeLimit || 0);
+      const count = Array.isArray(this.event?.attendees) ? this.event.attendees.length : 0;
+      return limit > 0 ? Math.max(0, limit - count) : null;
     },
 
     // Session-derived member info
@@ -234,6 +266,16 @@ export default {
       // If no member, we’ll still route to login when clicking verify
       return this.loginStatus !== 'VERIFIED';
     },
+    canEditEvent() {
+      const level = (this.registrationLevel || '').toUpperCase();
+      // Allow broad set of elevated roles
+      const elevated = [
+        'ADMINISTRATOR','ADMIN','OWNER','MANAGER',
+        'BOARD','PRESIDENT','VICE PRESIDENT',
+        'SECRETARY','TREASURER'
+      ];
+      return elevated.includes(level);
+    },
   },
   created() {
     this.eventService = inject('eventService');
@@ -242,6 +284,7 @@ export default {
 
     if (this.initial) {
       this.event = EventModel.fromObject(this.initial);
+      Logger.info('EventView initialized with pre-fetched event', this.event);
     } else {
       this.loadEvent();
     }
@@ -262,8 +305,21 @@ export default {
         this.logger?.error?.('getEventById failed', e);
       }
     },
+    async fetchImages() {
+      try {
+        const imgs = await this.eventService.getImages(this.id);
+        this.images = Array.isArray(imgs) ? imgs : [];
+        this.activeIndex = 0;
+      } catch {
+        this.images = [];
+      }
+    },
+    setActiveIndex(idx) {
+      if (idx >= 0 && idx < this.sortedImages.length) this.activeIndex = idx;
+    },
     async refreshAfterChange() {
       await this.loadEvent();
+      await this.fetchImages();
       if (this.event) this.$emit('updated', this.event);
     },
     goBack() {
@@ -329,6 +385,14 @@ export default {
         this.pending = false;
       }
     },
+    async onDelete() {
+      try {
+        await this.eventService.deleteEvent(this.id);
+        this.$emit('updated', { id: this.id });
+      } catch (e) {
+        this.error = e?.message || 'Failed to delete event';
+      }
+    },
 
     formatDate(value) {
       if (!value) return '';
@@ -338,6 +402,11 @@ export default {
       } catch {
         return String(value);
       }
+    },
+    openEditor() {
+      const eventId = this.id || this.event?.id;
+      if (!eventId) return;
+      this.$router.push({ name: 'EventEditor', params: { id: eventId } });
     },
   },
 };

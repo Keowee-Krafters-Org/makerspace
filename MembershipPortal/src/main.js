@@ -1,6 +1,11 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import './styles/style.css';
+import '@/styles/tailwind.css';   // must be first so utilities exist
+import '@/styles/base.css';
+import '@/styles/table.css';
+import '@/styles/form.css';
+import '@/styles/event.css';
 
 import { AppService } from './services/AppService.js';
 import { EventService } from './services/EventService.js';

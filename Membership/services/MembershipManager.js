@@ -10,6 +10,8 @@ class MembershipManager {
   }
 
   getAllMembers(params = {}) {
+    // Accept normalized pagination params (currentPageMarker, pageSize)
+    // Rely on storageManager to map them to store-specific params
     return this.storageManager.getAll(params);
   }
 
@@ -159,6 +161,17 @@ class MembershipManager {
     return this.storageManager.getById(member.id).data;
   }
 
+  /**
+   * Find the member and rreturn wrapped in a Response object.
+   * @param {*} emailAddress 
+   * @returns 
+   */
+  getMemberByEmail(emailAddress) {
+    const member = this.memberLookup(emailAddress);
+    if (!member) return new Response(false, null, 'Member not found');
+    return new Response(true, member);
+  }
+
   addMember(memberData) {
     let member = this.memberLookup(memberData.emailAddress);
     if (member) return member;
@@ -258,21 +271,15 @@ class MembershipManager {
   }
 
   getHosts() {
-    return this.storageManager.getFiltered(m => m.registration && m.registration.level >= SharedConfig.levels.Host.value);
+    return this.storageManager.getAll(
+      { host: 'true', page: { pageSize: 200 } });
   }
-
-  getInstructors() {
-    // Use ZohoStorageManager's getFiltered to find members with level > Instructor
+  getInstructors(params) {
     const instructorLevel = SharedConfig.levels.Instructor.value;
-    const response = this.storageManager.getFiltered(
-      member => {
-        const memberLevel = SharedConfig.levels[member.registration.level].value;
-        // Ensure level is a number for comparison
-        return memberLevel >= instructorLevel;
-      }, { contactType: 'vendor', per_page: 200 }
+    const response = this.storageManager.getAll(    
+      { instructor: 'true', params } // normalized pagination
     );
-    // Return only the data array (list of instructors)
-    return response.data;
+    return response;
   }
 
   createNew(data = {}) {

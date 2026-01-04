@@ -8,7 +8,7 @@
       <div>
         <div class="font-semibold">{{ ev.title || ev.name }}</div>
         <div class="text-sm text-gray-600">
-          {{ formatDate(ev.startDate) }}
+          {{ formatDate(ev.date) }}
           <span v-if="ev.endDate"> - {{ formatDate(ev.endDate) }}</span>
           <span v-if="ev.location"> • {{ ev.location }}</span>
         </div>

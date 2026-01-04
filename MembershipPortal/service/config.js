@@ -7,7 +7,7 @@
 
 config = {
   dev: {
-    version: 'SNAPSHOT-0.2.11',
+    version: 'SNAPSHOT-1.2.00',
     deploymentId: 'AKfycbzyt18oWChb23EAyMnO1t22iyPUIL1vVktFrKzoOMrv2y3QO5Qwn2WVTTE9hvLQ6yDL',
     imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
     logLevel: 'DEBUG'

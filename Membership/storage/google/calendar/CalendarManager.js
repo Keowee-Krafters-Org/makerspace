@@ -18,6 +18,18 @@ class CalendarManager extends StorageManager {
       'UTC';
   }
 
+  static matchInstanceByStart_(inst, start) {
+    const s = (start instanceof Date) ? start : new Date(start);
+    const dt =
+      inst.originalStartTime?.dateTime ||
+      inst.originalStartTime?.date ||
+      inst.start?.dateTime ||
+      inst.start?.date;
+    return dt && new Date(dt).getTime() === s.getTime();
+  }
+
+
+
   // ---- Utilities ----
   toDateTime_(d) {
     const dt = d instanceof Date ? d : new Date(d);
@@ -42,14 +54,6 @@ class CalendarManager extends StorageManager {
    */
   fromRecord(item) {
     const ev = CalendarEvent.fromRecord(item); // API parser
-    // Map location email to resource object if available
-    const locationEmail = ev.location || '';
-    if (locationEmail) {
-      const calendarLocation = this.getLocationByEmail(locationEmail);
-      if (calendarLocation) {
-        ev.location = calendarLocation;
-      }
-    }
     return ev;
   }
 
@@ -62,7 +66,13 @@ class CalendarManager extends StorageManager {
     const start = rec.start || calendarEvent.start || calendarEvent.date;
     const durationHrs = Number(calendarEvent.eventItem?.duration ?? calendarEvent.duration ?? 2) || 2;
     const end = rec.end || (start ? new Date((start instanceof Date ? start : new Date(start)).getTime() + durationHrs * 60 * 60 * 1000) : null);
-    const roomEmail = calendarEvent.location?.email || rec.location?.email || '';
+
+    // Accept CalendarLocation object and extract email
+    const roomEmail =
+      calendarEvent.location?.email ||
+      rec.location?.email ||
+      (typeof rec.location === 'string' ? rec.location : '') ||
+      '';
 
     const attendees = [];
     if (roomEmail) attendees.push({ email: roomEmail, resource: true, responseStatus: 'accepted' });
@@ -73,10 +83,10 @@ class CalendarManager extends StorageManager {
       start: this.toDateTime_(start),
       end: this.toDateTime_(end),
       attendees,
+      // Store email string as API expects; fromRecord will remap to CalendarLocation object
       location: roomEmail || '',
     };
 
-    // Convert simplified recurrence to RRULEs if provided
     const rrules = CalendarEvent.normalizeRecurrenceToApi(calendarEvent.recurrence, start);
     if (Array.isArray(rrules) && rrules.length > 0) {
       resource.recurrence = rrules;
@@ -105,6 +115,8 @@ class CalendarManager extends StorageManager {
     return this.fromRecord(item);
   }
 
+  
+
   /**
    * Update an existing event via API
    */
@@ -119,12 +131,19 @@ class CalendarManager extends StorageManager {
 
     const currentAttendees = Array.isArray(current.attendees) ? current.attendees.slice() : [];
     const roomEmails = (this.getCalendarResources() || []).map(r => r.email);
-    const newRoom = calendarEvent.location?.email || '';
+
+    // Accept CalendarLocation object and extract email
+    const newRoomEmail =
+      calendarEvent.location?.email ||
+      rec.location?.email ||
+      (typeof rec.location === 'string' ? rec.location : '') ||
+      '';
+
     let attendees = currentAttendees;
-    if (newRoom) {
-      attendees = currentAttendees.filter(a => !roomEmails.includes(a.email) || a.email === newRoom);
-      if (!attendees.some(a => a.email === newRoom)) {
-        attendees.push({ email: newRoom, resource: true, responseStatus: 'accepted' });
+    if (newRoomEmail) {
+      attendees = currentAttendees.filter(a => !roomEmails.includes(a.email) || a.email === newRoomEmail);
+      if (!attendees.some(a => a.email === newRoomEmail)) {
+        attendees.push({ email: newRoomEmail, resource: true, responseStatus: 'accepted' });
       }
     }
 
@@ -134,12 +153,11 @@ class CalendarManager extends StorageManager {
       start: this.toDateTime_(start),
       end: this.toDateTime_(end),
       attendees,
-      location: newRoom || current.location || '',
+      location: newRoomEmail || current.location || '',
     };
 
-    // Apply recurrence (convert simplified to RRULEs). If explicitly null, clear recurrence.
     if (calendarEvent.recurrence === null) {
-      patch.recurrence = []; // clearing recurrence removes series
+      patch.recurrence = [];
     } else {
       const rrules = CalendarEvent.normalizeRecurrenceToApi(calendarEvent.recurrence, start);
       if (Array.isArray(rrules)) {
@@ -182,29 +200,69 @@ class CalendarManager extends StorageManager {
     return item ? this.fromRecord(item) : null;
   }
 
-  getUpcomingEvents(daysAhead = 14) {
-    const now = new Date();
-    const end = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-    return this.getEventsInRange(now, end);
+  // Page-aware list
+  list(params = {}) {
+    const page = params.page instanceof Page ? params.page : new CalendarPage(params.page || {});
+    const req = page.toRecord(); // { pageToken?, maxResults }
+
+    // Baseline query; add optional q/timeMin/timeMax if provided
+    const query = {
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: req.maxResults,
+    };
+    if (req.pageToken) query.pageToken = req.pageToken;
+    if (params.q) query.q = String(params.q);
+    if (params.timeMin) query.timeMin = new Date(params.timeMin).toISOString();
+    if (params.timeMax) query.timeMax = new Date(params.timeMax).toISOString();
+
+    const res = Calendar.Events.list(this.calendarId, query);
+    const items = (res.items || []).map(item => this.fromRecord(item));
+    const pageOut = CalendarPage.fromRecord(res, query);
+    return new Response(true, items, '', '', pageOut );
   }
 
-  /**
-   * Retrieve events in a range (flattened instances)
-   */
-  getEventsInRange(start, end) {
+  // Paged “All” with options.page
+  getAll(params = {}) {
+    return this.list(params);
+  }
+
+  // Filtered still paged: caller decides to fetch-all or page
+  getFiltered(filterFn, params = {}) {
+    const resp = this.list(params);
+    resp.data = (resp.data || []).filter(filterFn);
+    // page markers remain intact
+    return resp;
+  }
+
+  // Upcoming via range; optionally paged
+  getUpcomingEvents(daysAhead = 14, params = {}) {
+    const now = new Date();
+    const end = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    return this.list({ ...params, timeMin: now, timeMax: end });
+  }
+
+
+   // Calendar resources (rooms)
+  getCalendarResources() {
+    const customerId = 'my_customer';
+    try {
+      const resources = AdminDirectory.Resources.Calendars.list(customerId).items || [];
+      return resources.map(resource => CalendarLocation.fromRecord(resource));
+    } catch (e) {
+      Logger.log('Error fetching calendar resources: ' + e);
+      return [];
+    }
+  }
+
+  // Range via API list (paged)
+  getEventsInRange(start, end, params = {}) {
     if (!(start instanceof Date) || !(end instanceof Date)) {
       throw new Error('Start and end must be Date objects.');
     }
     if (start >= end) throw new Error('Start date must be before end date.');
 
-    const res = Calendar.Events.list(this.calendarId, {
-      singleEvents: true,
-      timeMin: start.toISOString(),
-      timeMax: end.toISOString(),
-      orderBy: 'startTime',
-      maxResults: 250,
-    });
-    return (res.items || []).map(item => this.fromRecord(item));
+    return this.list({ ...params, timeMin: start, timeMax: end });
   }
 
   /**
@@ -226,44 +284,6 @@ class CalendarManager extends StorageManager {
     const item = (res.items || []).find(i => String(i.summary || '').trim() === String(title).trim());
     if (!item) throw new Error(`Event Not Found for title: ${title}`);
     return this.fromRecord(item);
-  }
-
-  getAll(params = {}) {
-    return this.getUpcomingEvents(365);
-  }
-
-  getFiltered(filterFn) {
-    const all = this.getAll();
-    return all.filter(filterFn);
-  }
-
-  updateById(id, calendarEvent) {
-    if (!calendarEvent || id !== calendarEvent.id) {
-      throw new Error('Invalid calendar event or mismatched ID');
-    }
-    return this.update(id, calendarEvent);
-  }
-
-  // Calendar resources (rooms)
-  getCalendarResources() {
-    const customerId = 'my_customer';
-    try {
-      const resources = AdminDirectory.Resources.Calendars.list(customerId).items || [];
-      return resources.map(resource => CalendarLocation.fromRecord(resource));
-    } catch (e) {
-      Logger.log('Error fetching calendar resources: ' + e);
-      return [];
-    }
-  }
-
-  static matchInstanceByStart_(inst, start) {
-    const s = (start instanceof Date) ? start : new Date(start);
-    const dt =
-      inst.originalStartTime?.dateTime ||
-      inst.originalStartTime?.date ||
-      inst.start?.dateTime ||
-      inst.start?.date;
-    return dt && new Date(dt).getTime() === s.getTime();
   }
 
   /**
@@ -352,7 +372,7 @@ class CalendarManager extends StorageManager {
     if (!ev) return { success: false, error: 'Event not found.' };
 
     const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
-    const next = attendees.filter(a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
+    const next = attendees.filter( a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
 
     Calendar.Events.patch({ attendees: next }, this.calendarId, ev.id);
     return {
@@ -376,4 +396,6 @@ class CalendarManager extends StorageManager {
   getLocationById(id) {
     return this.getCalendarResources().find(r => r.id === id);
   }
+
+
 }

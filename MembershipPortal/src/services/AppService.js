@@ -1,6 +1,7 @@
 import { reactive, computed } from 'vue';
 import { Logger } from '@/services/Logger.js';
 import { PortalSession } from '@/services/PortalSession.js';
+import { LookupCache } from '@/services/LookupCache.js';
 import { getConfig } from '../../../Membership/config.js';
 
 
@@ -10,6 +11,7 @@ export class AppService {
     this.config = null;
     this.logger = null;
     this.session = null;
+    this.cache = null; // shared lookup cache (hosts, eventItems, rooms)
     this.bus = this.createEventBus();
 
     this.spinner = reactive({ count: 0 });
@@ -25,6 +27,8 @@ export class AppService {
     const config = getConfig();
     this.config = config;
     this.logger = new Logger(config.logLevel || 'INFO');
+    // Initialize shared cache with default TTL
+    this.cache = new LookupCache({ ttlMs: 5 * 60 * 1000 });
 
     const session = new PortalSession(config);
     session.view = 'event';

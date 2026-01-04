@@ -23,8 +23,17 @@ class CalendarLocation extends Location {
       id: 'resourceId',
       name: 'resourceName',
       email: 'resourceEmail',
-      description: 'generatedResourceName',
       capacity: 'capacity'
     };
   }
-}
+
+
+  static fromRecord(record) {
+    const data = {
+      email: record.resourceEmail || record.email || '',
+      name: record.resourceName || record.displayName || '',
+      id: record.email || ''
+    };
+    return new CalendarLocation(data);
+    }
+  }

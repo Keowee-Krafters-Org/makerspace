@@ -12,7 +12,7 @@ function login(email) {
   if (!email) throw new Error('No email provided.');
   const response = membershipManager.loginMember(email);
   delete response.data.login.authentication.token;
-  return JSON.stringify(response);
+  return response.toString();
 }
 
 /**
@@ -23,13 +23,13 @@ function verifyToken(email, userToken) {
   const membershipManager = modelFactory.membershipManager();
   const response = membershipManager.verifyMemberToken(email, userToken);
   delete response.data.login.authentication.token;
-  return JSON.stringify(response);
+  return response.toString();
 }
 
 function logout(emailAddress) {
   const modelFactory = Membership.newModelFactory();
   const membershipManager = modelFactory.membershipManager();
-  return JSON.stringify(membershipManager.memberLogout(emailAddress));
+  return membershipManager.memberLogout(emailAddress).toString();
 }
 
 /*** Resends a verification token to the user's email via Membership module.
@@ -39,7 +39,7 @@ function resendToken(email) {
   const membershipManager = modelFactory.membershipManager();
   const response = membershipManager.resendMemberToken(email);
   delete response.data.login.authentication.token;
-  return JSON.stringify(response);
+  return response.toString();
 } 
 
 // The following functions are for the Admin Portal
@@ -55,6 +55,6 @@ function addMemberRegistration(memberData) {
   if (!response) {
     throw new Error('Failed to register member');
   }
-  return JSON.stringify(response);
+  return response.toString();  
 }
 

@@ -70,9 +70,10 @@ function test_when_invoice_is_created_then_invoice_exists() {
 function test_when_invoice_is_created_then_invoice_exists_for_customer() {
   let invoiceId;
   let createResponse;
+  let member; 
   try {
     const testMemberData = testMember;
-    const member = membershipManager.memberLookup(testMemberData.emailAddress);
+    member = membershipManager.addMember(testMemberData); 
     assert('Member exists', true, (member != undefined && member.id != undefined));
 
     createResponse = create_test_invoice(true);
@@ -99,6 +100,10 @@ function test_when_invoice_is_created_then_invoice_exists_for_customer() {
       Logger.log('Deleting invoice'); 
       const invoiceId = createResponse.data.id;
       invoiceManager.deleteInvoice(invoiceId);
+      
+    }
+    if (member) {
+      membershipManager.deleteMember(member);
     }
   }
 }

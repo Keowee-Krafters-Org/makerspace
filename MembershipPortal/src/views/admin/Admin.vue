@@ -29,7 +29,7 @@
       </div>
       <div class="ml-auto">
         <label class="block text-sm font-medium mb-1">Page Size</label>
-        <select v-model.number="pageSize" class="border border-gray-300 rounded px-3 py-2" @change="onSearch">
+        <select v-model.number="page.pageSize" class="border border-gray-300 rounded px-3 py-2" @change="onSearch">
           <option :value="10">10</option>
           <option :value="20">20</option>
           <option :value="50">50</option>
@@ -42,7 +42,7 @@
     <UserTable
       :rows="rows"
       :loading="loading"
-      :page="{ currentPage, hasMore }"
+      :page="page"
       @page-change="goToPage"
       @edit="onEdit"
     />
@@ -63,12 +63,15 @@ export default {
       loading: false,
       search: '',
       filterStatus: '',
-      currentPage: 1,
-      pageSize: 10,
-      hasMore: false,
-      cursorMode: false,
-      nextToken: null,
-      prevTokens: [],
+      // Use Page object exclusively
+      page: {
+        currentPageMarker: '1',
+        pageSize: 10,
+        hasMore: false,
+        nextPageMarker: null,
+        previousPageMarker: null,
+        pageToken: null,
+      },
     };
   },
   created() {
@@ -83,43 +86,48 @@ export default {
       if (svc && typeof svc.withSpinner === 'function') return svc.withSpinner(fn);
       return fn();
     },
-    async loadMembers(arg) {
-      if (typeof arg === 'number') this.currentPage = arg;
-      if (arg && typeof arg === 'object' && arg.currentPage) this.currentPage = arg.currentPage;
+    async loadMembers(target) {
+      // target may be a number (go to page), or undefined
+      if (typeof target === 'number') {
+        // advance using server-provided markers
+        if (target > Number(this.page.currentPageMarker)) {
+          // next
+          const next = this.page.nextPageMarker ?? this.page.pageToken;
+          if (!next && !this.page.hasMore) return;
+          this.page.currentPageMarker = String(next ?? (Number(this.page.currentPageMarker) + 1));
+        } else if (target < Number(this.page.currentPageMarker)) {
+          const prev = this.page.previousPageMarker;
+          if (!prev) return;
+          this.page.currentPageMarker = String(prev);
+        }
+      }
 
       this.loading = true;
       this.error = '';
       try {
         await this.withSpinner(async () => {
           const params = {
-            currentPage: this.currentPage,
-            pageSize: this.pageSize,
+            page: { ...this.page },
             search: this.search || '',
             filter: this.filterStatus || '',
           };
-          // cursor back/forward
-          if (this.cursorMode) {
-            if (typeof arg === 'number' && arg > this.currentPage && this.nextToken) {
-              params.pageToken = this.nextToken;
-            } else if (typeof arg === 'number' && arg < this.currentPage && this.prevTokens.length) {
-              params.pageToken = this.prevTokens.pop();
-            }
-          }
 
-          const { rows, page, cursorMode } = await this.memberService.listMembers(params);
-
-          // maintain token stack if using cursor mode (backend puts nextToken in page.nextToken)
-          this.cursorMode = cursorMode;
-          if (cursorMode) {
-            if (typeof arg === 'number' && arg > this.currentPage && this.nextToken) {
-              this.prevTokens.push(this.nextToken);
-            }
-            this.nextToken = page.nextToken || null;
-          }
+          const { rows, page } = await this.memberService.listMembers(params);
 
           this.rows = rows;
-          this.currentPage = page.currentPage || this.currentPage || 1;
-          this.hasMore = !!page.hasMore;
+          // Normalize page state from response
+          const current = String(page?.currentPageMarker ?? this.page.currentPageMarker ?? '1');
+          const size = Number((page?.pageSize ?? this.page.pageSize ?? rows.length) || 0);
+          const hasMore = !!(page?.hasMore ?? ((page?.nextPageMarker ?? page?.pageToken) ? true : false));
+
+          this.page = {
+            currentPageMarker: current,
+            pageSize: size,
+            hasMore,
+            nextPageMarker: page?.nextPageMarker ?? (hasMore ? String(Number(current) + 1) : null),
+            previousPageMarker: page?.previousPageMarker ?? (Number(current) > 1 ? String(Number(current) - 1) : null),
+            pageToken: page?.pageToken ?? null,
+          };
         });
       } catch (e) {
         this.error = e?.message || 'Failed to load members';
@@ -129,16 +137,18 @@ export default {
       }
     },
     onSearch() {
-      this.currentPage = 1;
-      this.cursorMode = false;
-      this.nextToken = null;
-      this.prevTokens = [];
-      this.loadMembers(1);
+      // reset to first page
+      this.page.currentPageMarker = '1';
+      this.page.nextPageMarker = null;
+      this.page.previousPageMarker = null;
+      this.page.pageToken = null;
+      this.page.hasMore = false;
+      this.loadMembers();
     },
     goToPage(pageNumber) {
       const target = Math.max(1, Number(pageNumber) || 1);
       if (this.loading) return;
-      if (target > this.currentPage && !this.hasMore) return;
+      if (target > Number(this.page.currentPageMarker) && !this.page.hasMore) return;
       this.loadMembers(target);
     },
     onEdit(member) {

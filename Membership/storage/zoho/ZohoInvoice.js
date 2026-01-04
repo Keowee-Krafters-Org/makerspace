@@ -78,6 +78,7 @@ class ZohoInvoice extends Invoice {
       data.lineItems = record.line_items.map(item => ZohoLineItem.fromRecord(item));
     }
 
+    data.paymentGateways = (record.payment_options?.payment_gateways || []).map(pg => ZohoPaymentGateway.fromRecord(pg));
     return new ZohoInvoice(data);
   }
 
@@ -99,6 +100,9 @@ class ZohoInvoice extends Invoice {
       record.contact_persons_associated = this.contacts.map(c => c.toRecord()); 
     }
     record.discount_type = 'entity_level';
+    record.payment_options = {
+      payment_gateways: (this.paymentGateways || []).map(pg => pg.toRecord()) 
+    };
     return record;
   }
 
@@ -114,6 +118,9 @@ class ZohoInvoice extends Invoice {
       ? data.lineItems.map(item => ZohoLineItem.createNew(item))
       : [];
     invoice.contacts = Array.isArray(data.contacts)? data.contacts.map(c => ZohoContact.createNew(c)): []; 
+    invoice.paymentGateways = Array.isArray(data.paymentGateways)
+      ? data.paymentGateways.map(pg => ZohoPaymentGateway.createNew(pg))
+      : [];
     return invoice;
   }
 }

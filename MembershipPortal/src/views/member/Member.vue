@@ -57,7 +57,7 @@
             @click="onConfirmCreateNew"
             :disabled="loading"
           >
-            I’m new to {{ orgName }}
+            Create account with {{orgName}}
           </button>
         </div>
       </div>
@@ -114,6 +114,9 @@ export default {
     canSignUp() {
       const s = this.registrationStatus;
       return s === 'PENDING' || s === 'REGISTERED';
+    },
+    orgName() {
+      return this.appService?.config?.organization?.name || 'our organization';
     },
   },
   created() {

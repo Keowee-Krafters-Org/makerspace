@@ -158,9 +158,9 @@ class CalendarEvent extends Event {
     return {
       id: this.id,
       seriesId: this.seriesId, // include series id
-      date: this.start,
+      date: this.date,
       duration: this.duration,
-      location: this.location,
+      location: this.location.toObject(),
       room: this.room,
       attendees: this.attendees,
       creator: this.creator,
@@ -179,6 +179,10 @@ class CalendarEvent extends Event {
       event.eventItem = (typeof ZohoEvent?.createNew === 'function')
         ? ZohoEvent.createNew(data.eventItem)
         : data.eventItem;
+    }
+    if (data && data.location) {
+      event.location = 
+         CalendarLocation.createNew(data.location);
     }
     event.seriesId = data.seriesId || data.recurringEventId || data.id || null;
     return event;
@@ -215,11 +219,14 @@ class CalendarEvent extends Event {
     // Filter attendees:
     // - Exclude room/resource attendees (a.resource === true)
     // - Exclude the location email if it was stored in item.location
-    const locationEmail = String(item.location || '').toLowerCase();
+    var location = item.location? { displayName: item.location } : null;
+    const filteredForLocation  = item.attendees? item.attendees.filter(a => a && a.resource && a.email) : [];
+    if (filteredForLocation.length > 0) {
+      location = filteredForLocation[0];
+    }
     const attendees = (item.attendees || [])
       .filter(a => a && a.email)
-      .filter(a => !a.resource) // drop resource attendees (rooms)
-      .filter(a => String(a.email).toLowerCase() !== locationEmail)
+      .filter(a => !a.resource) 
       .map(a => CalendarContact.fromRecord({ email: a.email }));
 
     const record = {
@@ -229,7 +236,7 @@ class CalendarEvent extends Event {
       description: item.description || '',
       start: start ? new Date(start) : null,
       end: end ? new Date(end) : null,
-      location: item.location || '',
+      location: location ? CalendarLocation.fromRecord(location) : null,
       // Use attendees (not guests)
       attendees,
       creator: item.creator?.email || item.organizer?.email || '',
@@ -266,7 +273,9 @@ class CalendarEvent extends Event {
     const durationHours = Number(this.eventItem.duration) || 2;
     this._end = start ? new Date(start.getTime() + durationHours * 60 * 60 * 1000) : undefined;
     this._description = this.id ? this.updateDescription() : undefined;
-    return super.convertDataToRecord(CalendarEvent.getToRecordMap());
+    const record =  super.convertDataToRecord(CalendarEvent.getToRecordMap());
+    record.location = this.location ? this.location.toRecord() : undefined;
+    return record;
   }
 
 

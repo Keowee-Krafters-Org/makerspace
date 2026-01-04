@@ -1,0 +1,18 @@
+@reference "./tailwind.css";
+
+.panel { @apply bg-white border rounded; }
+.toolbar { @apply flex items-center justify-between p-2 border-b bg-gray-50; }
+.toolbar-actions { @apply flex items-center gap-2; }
+.text-muted { @apply text-sm text-gray-600; }
+
+.btn { @apply inline-flex items-center gap-1 px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50; }
+.btn-primary { @apply bg-blue-600 text-white border-blue-600 hover:bg-blue-700; }
+.btn-danger { @apply bg-red-600 text-white border-red-600 hover:bg-red-700; }
+.btn-icon { @apply inline-flex items-center gap-1; }
+
+.pager { @apply flex items-center justify-between p-2 border-t bg-gray-50; }
+/* Was: @apply btn; — invalid. Use utilities directly. */
+.pager-btn { @apply inline-flex items-center gap-1 px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50; }
+
+.min-w-0 { min-width: 0; }
+.wrap-anywhere { overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }

@@ -1,0 +1,7 @@
+@reference "./tailwind.css";
+
+.table-base { @apply min-w-full text-sm border-collapse; }
+.table-head { @apply bg-gray-50 text-gray-700; }
+.th { @apply px-3 py-2 text-left border; }
+.td { @apply px-3 py-2 border; }
+.table-empty { @apply p-4 text-center text-gray-500 border; }

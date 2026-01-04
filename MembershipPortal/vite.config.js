@@ -21,8 +21,6 @@ export default defineConfig(({ mode }) => {
           // Always include GAS service code and manifest in dist root
           { src: 'service/**/*', dest: 'dist/service' },
           { src: 'appsscript.json', dest: 'dist' },
-          // Include tests only for dev deploys
-          ...(!isProd ? [{ src: 'tests/**/*', dest: 'dist/tests' }] : []),
         ],
         hook: 'writeBundle',
       }),

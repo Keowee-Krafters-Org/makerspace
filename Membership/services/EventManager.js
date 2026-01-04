@@ -4,28 +4,31 @@
  * It also integrates with a calendar system to manage event scheduling.  
  */
 class EventManager {
-  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
     this.invoiceManager = invoiceManager;
-    this.fileManager = fileManager;
+    this.fileManager = fileManager;      // legacy single-image handling
+    this.driveService = driveService;    // new multiple image handling
     this.config = getConfig();
   }
 
   getEventItemList(params = {}) {
-    const result = this.storageManager.getAll(params);
-    return result;
+    // Expect storageManager.getAll to return { success, data, page? }
+    return this.storageManager.getAll(params);
   }
 
   getEventItemById(id) {
-    const result = this.storageManager.getById(id);
-    return result;
+    return this.storageManager.getById(id);
   }
 
   getEventList(params = {}) {
-    const calendarEvents = this.calendarManager.getAll(params);
-    return this.enrichCalendarEvents(calendarEvents);
+    // calendarManager.getAll should accept normalized pagination params
+    const res = this.calendarManager.getAll(params);
+    const data = Array.isArray(res?.data) ? this.enrichCalendarEvents(res.data) : [];
+    res.data = data;
+    return res;
   }
 
   /**
@@ -40,11 +43,10 @@ class EventManager {
    */
   getUpcomingEvents(params = {}) {
     const eventHorizon = params.horizon || getConfig().eventHorizon;
-    const calendarEvents = this.calendarManager.getUpcomingEvents(eventHorizon);
-    if (!calendarEvents || calendarEvents.length === 0) {
-      return [];
-    }
-    return this.enrichCalendarEvents(calendarEvents);
+    const calendarEventsResponse = this.calendarManager.getUpcomingEvents(eventHorizon);
+    const calendarEvents = calendarEventsResponse.data ?? [];
+    calendarEventsResponse.data = this.enrichCalendarEvents(calendarEvents);
+    return calendarEventsResponse;
   }
 
   /**
@@ -60,13 +62,12 @@ class EventManager {
    *  @throws {Error} If there is an issue retrieving the events from the calendar
    */
   getUpcomingClasses(params = {}) {
-    const events = this.getUpcomingEvents(params);
-    if (!events || events.length === 0) {
-      return [];
-    }
-    return events.filter(event => {
+    const eventsResponse = this.getUpcomingEvents(params);
+    const events = (eventsResponse.data || []).filter(event => {
       return event.eventItem && event.eventItem.type === 'Event' && event.eventItem.eventType === 'Class';
     });
+    eventsResponse.data = events; 
+    return eventsResponse;
   }
   /**
    * Merges calendar events with event items from storage.
@@ -97,6 +98,18 @@ class EventManager {
       }
       calendarEvent.eventItem = eventItem;
     }
+
+    // Ensure calendarEvent.location is a CalendarLocation object
+    if (calendarEvent.location && typeof calendarEvent.location === 'string') {
+      const loc = this.calendarManager.getLocationByEmail(calendarEvent.location);
+      if (loc) {
+        calendarEvent.location = loc; // { id, name, email }
+      } else {
+        // Fallback object to carry id for Dropdown sync
+        calendarEvent.location = { id: calendarEvent.location, name: calendarEvent.location, email: calendarEvent.location };
+      }
+    }
+
     return calendarEvent;
 
   }
@@ -154,36 +167,37 @@ class EventManager {
     try {
       const event = this.createEvent(eventData);
       let eventItem = event.eventItem;
-
-      // Handle image upload if image is a base64 string
       this.saveEventImage(eventItem);
-      // If eventItem already exists, update it; otherwise, create a new one
 
       if (eventItem && eventItem.id && eventItem.id !== 'null') {
         const eventItemResponse = this.updateEventItem(eventItem);
         eventItem = eventItemResponse.data;
       } else {
         const existingEventItem = this.getEventItemByTitle(eventItem.title);
-        if (!existingEventItem) {
-          eventItem = this.addEventItem(eventItem);
-        } else {
-          eventItem = existingEventItem;
-        }
+        eventItem = existingEventItem || this.addEventItem(eventItem);
       }
-      if (!eventItem) {
-        throw new Error('Failed to create event item.');
-      }
-      // Add the event to the calendar
+      if (!eventItem) throw new Error('Failed to create event item.');
+
       const newCalendarEvent = this.addCalendarEvent(event, eventItem);
       newCalendarEvent.eventItem = eventItem;
-      return { success: true, data: newCalendarEvent };
+
+      // Ensure event folder (defer to drive service)
+      if (this.driveService) {
+        try {
+          this.driveService.ensureEventFolder(this.calendarManager.calendarId, newCalendarEvent.id, newCalendarEvent.title);
+        } catch (e) {
+          Logger.log('ensureEventFolder failed: ' + e);
+        }
+      }
+
+      return new Response ( true, newCalendarEvent, 'Event created successfully');
     } catch (err) {
       console.error('Failed to create event:', err);
-      return { success: false, message: 'Failed to create event.', error: err.toString() };
+      return new Response ( false, null, 'Failed to create event.', err.toString() );
     }
   }
 
-  saveEventImage(eventItem) {
+ saveEventImage(eventItem) {
     if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
       // Upload the image and get the DriveFile object
       const file = this.fileManager.addImage(eventItem.image.data, 'event-image');
@@ -255,9 +269,12 @@ class EventManager {
   }
 
   deleteEvent(event) {
-    const eventItemId = event.eventItem.id;
-    eventManager.deleteEventItem(eventItemId);
+    const eventItemId = event.eventItem?.id;
+    if (eventItemId) {
+      this.deleteEventItem(eventItemId);
+    }
     this.deleteCalendarEvent(event);
+    return new Response ( true, null, 'Event deleted successfully' );
   }
 
   deleteCalendarEvent(event) {
@@ -282,6 +299,53 @@ class EventManager {
     return calendarEvent;
   }
 
+
+
+  // Image gallery mediation
+  getEventImages(eventId) {
+    if (!this.driveService) return [];
+    return this.driveService.listEventImages(this.calendarManager.calendarId, eventId);
+  }
+
+  addEventImage(eventId, imageMeta) {
+    if (!this.driveService) return { success: false, message: 'Drive service unavailable.' };
+    let images;
+    try {
+      // imageMeta may be { base64, name, mimeType, caption }
+      images = this.driveService.addEventImage(
+        this.calendarManager.calendarId,
+        eventId,
+        imageMeta,
+        imageMeta.caption
+      );
+    } catch (e) {
+      return new Response ( false, null, 'Failed to add image.', e.toString() );
+    }
+    return new Response ( true, images, 'Image added successfully' );
+  }
+
+  removeEventImage(eventId, fileId) {
+    if (!this.driveService) return { success: false, message: 'Drive service unavailable.' };
+    let images;
+    try {
+      images = this.driveService.removeEventImage(this.calendarManager.calendarId, eventId, fileId);
+    } catch (e) {
+      return new Response ( false, null, 'Failed to remove image.', e.toString() );
+    }
+    return new Response ( true, images, 'Image removed successfully' );
+  }
+
+  reorderEventImages(eventId, orderedIds = []) {
+    if (!this.driveService) return { success: false, message: 'Drive service unavailable.' };
+    let images;
+    try {
+      images = this.driveService.reorderEventImages(this.calendarManager.calendarId, eventId, orderedIds);
+    } catch (e) {
+      return new Response ( false, null, 'Failed to reorder images.', e.toString() );
+    }
+    return new Response ( true, images, 'Images reordered successfully' );
+  }
+
   /**
    * Sign up a member to an event occurrence by its instance id
    */
@@ -304,7 +368,7 @@ class EventManager {
 
     const limit = Number(eventItem?.sizeLimit || 0);
     if (limit > 0 && Array.isArray(event.attendees) && event.attendees.length >= limit) {
-      return { success: false, error: 'Event is full.' };
+      return new Response ( false, null, 'Event is full.' );
     }
 
     // Add attendee directly to the instance id
@@ -317,14 +381,7 @@ class EventManager {
       invoice = invoiceResponse?.data || null;
     }
 
-    return {
-      success: true,
-      data: {
-        message: `You are successfully signed up for: ${event.eventItem.title}. You will receive an email with payment details shortly. Please check your inbox.`,
-        eventId,
-        invoice,
-      }
-    };
+    return new Response ( true, null, 'Signed up for event successfully' );
   }
 
   /**
@@ -335,7 +392,7 @@ class EventManager {
       return this.invoiceManager.createInvoiceForEvent(member, event);
     } catch (err) {
       console.error('Failed to create invoice for event signup:', err);
-      return { success: false, message: 'Failed to create invoice for event signup.', error: err.toString() };
+      return new Response ( false, null, 'Failed to create invoice for event signup.', err.toString() );
     }
   }     
    
@@ -355,9 +412,9 @@ class EventManager {
       this.invoiceManager.deleteInvoiceFor(member.id, eventId);
     } catch (err) {
       console.error('Failed to unregister from event:', err);
-      return { success: false, message: 'Failed to unregister from event.', error: err.toString() };
+      return  new Response ( false, null, 'Failed to unregister from event.', err.toString() );
     }
-    return { success: true, data: { message: `You have been unregistered from event: ${eventId}`, eventId } };
+    return new Response ( true, { message: `You have been unregistered from event: ${eventId}`, eventId }, 'Unregistered from event successfully' );
   }
 
   enrichWithCalendarData(event) {
@@ -378,7 +435,18 @@ class EventManager {
   }
 
   getEventRooms() {
-    return this.calendarManager.getCalendarResources();
+    // Use CalendarManager resources (normalized to { id, name, email })
+    try {
+      const rooms =  (this.calendarManager.getCalendarResources() || []).map(r => ({
+        id: r.id || r.email || r.name,
+        name: r.name || r.resourceName || r.title || r.email || r.id,
+        email: r.email || r.resourceEmail || '',
+      }));
+      return new Response(true, rooms);
+    } catch (error) {
+      Logger.log(`getEventRooms failed: ${error.message}`);
+      throw error;
+    }
   }
 
   getEventLocations() {
@@ -389,23 +457,6 @@ class EventManager {
     const eventItemListResponse = this.storageManager.getAll({ title: title });
     if (eventItemListResponse && eventItemListResponse.success && eventItemListResponse.data.length > 0) {
       return eventItemListResponse.data[0];
-    }
-  }
-
-  getEventRooms() {
-    try {
-      const optionalArgs = {
-
-      };
-      const resources = AdminDirectory.Resources.Calendars.list('my_customer', optionalArgs);
-      return resources.items.map(resource => ({
-        id: resource.resourceId,
-        name: resource.resourceName,
-        email: resource.resourceEmail,
-      }));
-    } catch (error) {
-      Logger.log(`getEventRooms failed: ${error.message}`);
-      throw error;
     }
   }
 

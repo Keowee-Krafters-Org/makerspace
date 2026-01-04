@@ -59,7 +59,7 @@ class Login extends Entity {
     return {
       id: this.id,
       status: this.status,
-      authentication: this.authentication,
+      //authentication: this.authentication,
       errors: this.errors,
       found: this.found
     };

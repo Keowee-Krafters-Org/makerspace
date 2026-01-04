@@ -4,7 +4,7 @@
  *  - other contacts might be emergency contact,  spouse, parent etc
  */
 
-class Contact extends Entity {
+ class Contact extends Entity {
     constructor(data = {}) {
         super(data);
     }

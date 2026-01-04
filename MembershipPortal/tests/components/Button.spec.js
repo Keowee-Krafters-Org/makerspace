@@ -1,7 +1,20 @@
+import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
-import Button from '@/components/Button.vue';
+import Button from '../../src/components/Button.vue';
 
 describe('Button.vue', () => {
+  it('renders label and emits click', async () => {
+    const wrapper = mount(Button, { props: { label: 'Go', icon: 'play' } });
+    expect(wrapper.text()).toContain('Go');
+    await wrapper.trigger('click');
+    expect(wrapper.emitted('click')).toBeTruthy();
+  });
+
+  it('disables when disabled prop is true', () => {
+    const wrapper = mount(Button, { props: { disabled: true } });
+    expect(wrapper.attributes('disabled')).toBeDefined();
+  });
+
   it('renders the button with the correct label', () => {
     const wrapper = mount(Button, {
       props: {
