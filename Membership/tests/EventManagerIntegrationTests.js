@@ -8,16 +8,19 @@
 const TEST_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAn8B9p6p7wAAAABJRU5ErkJggg=='
 const TEST_EVENT_NAME = 'Test Event';
 const TEST_USER_EMAIL = 'testuser@keoweekrafters.org';
-const RECURRING_EVENT_ID = '2kdq6q1ond4udslu88gl8dbra8@google.com'; 
+const RECURRING_EVENT_ID = '2kdq6q1ond4udslu88gl8dbra8@google.com';
+const TEST_HOST_ID = '5636475000002236054';
+const TEST_INSTRUCTOR_ID = '5636475000002266005';
 const eventData = {
-  date: new Date()+(7*24*60*60*1000), // One week from now
+  date: new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000)), // One week from now
   attendees: [],
   location: { email: 'c_188dhi7k2lgmegqijd6t4cp6flkio@resource.calendar.google.com' },
   eventItem: {
     id: '',
     title: 'Test Event',
     sizeLimit: '3',
-    host: { name: 'Test Host', id: '5636475000000295003' },
+    host: { firstName: 'Test', lastName: 'Host', id: TEST_HOST_ID },
+    instructor: { firstName: 'Test', lastName: 'Instructor', id: TEST_INSTRUCTOR_ID },
     description: 'This is a test event. Do not signup !!',
     price: 20,
     cost: 5,
@@ -29,7 +32,7 @@ const eventData = {
   }
 };
 
-const testVendor = {id: '5636475000000295003', name: 'Test Vendor'}; 
+const testVendor = { id: TEST_INSTRUCTOR_ID, name: 'Test Vendor' };
 const eventManager = modelFactory.eventManager();
 
 function eventManagerIntegrationTests() {
@@ -46,15 +49,15 @@ function eventManagerIntegrationTests() {
 }
 
 function test_get_event_by_title() {
-      const events = eventManager.getEventList({ title: 'Test Event' });
-    const event = events[0];
-    assert('Event found', true, event!=undefined); 
+  const events = eventManager.getEventList({ title: 'Test Event' });
+  const event = events[0];
+  assert('Event found', true, event != undefined);
 
 }
 function test_getEventList() {
   const eventManager = modelFactory.eventManager();
   try {
-    const eventsResponse = eventManager.getUpcomingEvents(365,  { page: { pageSize: 5 }});
+    const eventsResponse = eventManager.getUpcomingEvents(365, { page: { pageSize: 5 } });
     Logger.log('getEventList response: ' + JSON.stringify(eventsResponse));
     assert('Event list should not be null or undefined', eventsResponse != undefined, true);
     assert('Event list should be an array', Array.isArray(eventsResponse.data), true);
@@ -84,7 +87,7 @@ function test_getUpcomingEvents() {
   const eventManager = modelFactory.eventManager();
   try {
     const eventsResponse = eventManager.getUpcomingEvents();
-    const events = eventsResponse.data; 
+    const events = eventsResponse.data;
     Logger.log(`Retrieved ${events.length} upcoming events.`);
     Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
     assert('Upcoming events should be an array', Array.isArray(events), true);
@@ -103,8 +106,11 @@ function test_getUpcomingEvents() {
 
 function test_getUpcomingClasses() {
   const eventManager = modelFactory.eventManager();
+  let event;
   try {
-    const eventsResponse = eventManager.getUpcomingClasses();
+    event = addEvent(eventData);
+    const options = { eventType: 'Class', page: { pageSize: 30 } };
+    const eventsResponse = eventManager.getUpcomingEvents(options);
     Logger.log(`Retrieved ${eventsResponse.data.length} upcoming classes.`);
     Logger.log('getUpcomingEvents response: ' + JSON.stringify(eventsResponse.data));
     assert('Upcoming events should be an array', Array.isArray(eventsResponse.data), true);
@@ -113,11 +119,16 @@ function test_getUpcomingClasses() {
       assert(`Upcoming Event ${idx} has id`, typeof event.id !== 'undefined', true);
       assert(`Upcoming Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
       assert(`Upcoming Event ${idx} has date`, event.date instanceof Date, true);
+      assert(`Upcoming Event ${idx} is of type Class`, event.eventItem.eventType === 'Class', true);
     });
     Logger.log('Upcoming events verification passed.');
 
   } catch (error) {
     Logger.log(`getUpcomingEvents failed: ${error.message}`);
+  } finally {
+    if (event) {
+      eventManager.deleteEvent(event);
+    }
   }
 }
 
@@ -169,7 +180,7 @@ function test_addEvent() {
   let event;
   try {
     // Sample 1x1 transparent PNG (replace with a real image for production tests)
-    event = addEvent();
+    event = addEvent(eventData);
 
     assert('Event ID should be returned', event.id != undefined, true);
     assert('Event Item ID should be returned', event.eventItem.id != undefined, true);
@@ -179,8 +190,15 @@ function test_addEvent() {
 
     // Validate the calendar event was created
     const calendarEvent = calendarManager.getById(event.id);
-    assert('Calendar event should exist', calendarEvent != null, true);
-    assert('Calendar event title matches', calendarEvent.title, eventData.eventItem.title);
+    assert('Calendar event should exist', true, calendarEvent != null);
+    assert('Calendar event title matches', eventData.eventItem.title, calendarEvent.title);
+    assert('Calendar event description matches', true, calendarEvent._description.includes(`eventId=${event.id}`));
+    assert('Calendar event location matches', eventData.location.email, calendarEvent.location.email);
+    assert('Calendar event start time matches', event.date.getTime(), calendarEvent.date.getTime());
+    assert('Calendar event end time matches', event.date.getTime() + (eventData.eventItem.duration * 60 * 60 * 1000), calendarEvent._end.getTime());
+    assert('Calendar event attendee limit matches', eventData.eventItem.sizeLimit, event.eventItem.sizeLimit);
+    assert('Calendar event host matches', eventData.eventItem.host.id, event.eventItem.host.id);
+    assert('Calendar event instructor matches', eventData.eventItem.instructor.id, calendarEvent.eventItem.instructor.id);
     Logger.log('Calendar event verification passed.');
 
   } catch (error) {
@@ -193,22 +211,22 @@ function test_addEvent() {
 
 }
 
-  function addEvent() {
-    const base64Image = TEST_IMAGE;
+function addEvent(eventData) {
+  const base64Image = TEST_IMAGE;
 
-    // Clone and add image to event data
-    const event = JSON.parse(JSON.stringify(eventData));
-    event.eventItem.image = { data: base64Image, name: 'New Image' };
+  // Clone and add image to event data
+  const event = JSON.parse(JSON.stringify(eventData));
+  event.eventItem.image = { data: base64Image, name: 'New Image' };
 
-    const response = eventManager.addEvent(event);
-    Logger.log(`addEvent response: ${response.message}`);
-    return response.data;
-  }
+  const response = eventManager.addEvent(event);
+  Logger.log(`addEvent response: ${response.message}: ${response.data}`);
+  return response.data;
+}
 /**
  * Helper method to add a recurring event
  * @returns 
  */
-function addRecurringEvent() {  
+function addRecurringEvent() {
   const eventManager = modelFactory.eventManager();
   const calendarManager = modelFactory.calendarManager();
   let event;
@@ -217,7 +235,7 @@ function addRecurringEvent() {
     const base64Image = TEST_IMAGE;
 
     // Clone and add image to event data
-     event = JSON.parse(JSON.stringify(eventData));
+    event = JSON.parse(JSON.stringify(eventData));
     event.eventItem.image = { data: base64Image, name: 'New Image' };
     event.isRecurring = true;
     event.recurrence = {
@@ -226,10 +244,10 @@ function addRecurringEvent() {
       count: 5
     };
     const response = eventManager.addEvent(event);
-   return response.data;
+    return response.data;
   } catch (error) {
     Logger.log(`addEvent failed: ${error.message}`);
-  } 
+  }
 }
 function test_add_recurring_Event() {
   const eventManager = modelFactory.eventManager();
@@ -309,32 +327,40 @@ function delete_testEventItem(eventId) {
 function test_updateEvent() {
   const eventManager = modelFactory.eventManager();
   const membershipManager = modelFactory.membershipManager();
-  const locations = eventManager.getEventRooms().data[0];
-  const hosts = membershipManager.getHosts().data[0];
-  eventData.location = { id: locations.id, email: locations.email };
-  eventData.eventItem.host = { id: hosts.id, name: hosts.name };
-  const createdEvent = eventManager.createEvent(eventData);
-  const eventResponse = eventManager.addEvent(createdEvent);
-  const newEvent = eventResponse.data;  
-  const newPrice = eventData.eventItem.price + 10;
-  const newDate = new Date(newEvent.date.getTime() + (2 * 60 * 60 * 1000)); // 2 hours later
+  const locations = eventManager.getEventRooms().data;
+  const hosts = membershipManager.getHosts().data;
+  const instructors = membershipManager.getInstructors().data;
+  const originalEventData = JSON.parse(JSON.stringify(eventData));
+  const newHost = hosts[0];
+  const newInstructor = instructors[0];
+  const updatedHost = hosts[1];
+  const updatedInstructor = instructors[0];
+  originalEventData.eventItem.host = {id:newHost.id, firstName:newHost.firstName, lastName:newHost.lastName};
+  originalEventData.eventItem.instructor = {id:newInstructor.id, firstName:newHost.firstName, lastName:newInstructor.lastName} ;
+  let originalEvent;
+
+
   try {
-    const originalEventItem = newEvent.eventItem; 
-    const eventObject = {id:newEvent.id, location: locations[1], eventItem: {
-      id:originalEventItem.id,price: originalEventItem.price, host: {id:hosts[1].id}, title:originalEventItem.title
-    }};
-    
+    originalEvent = addEvent(originalEventData);
+
+  const updatedDate = new Date(originalEvent.date.getTime() + (2 * 60 * 60 * 1000)); // 2 hours later
+
+    const originalEventItem = originalEvent.eventItem;
+    const updatedEvent = originalEvent.toObject();
+
+    const updatedPrice = originalEventItem.eventItem.price + 10;
+
     const response = eventManager.updateEvent(CalendarEvent.createNew(eventObject));
     Logger.log(` response: ${response.message}`);
     assert('Event should be updated successfully', response.success, true);
-    assert('Event price should be updated', response.data.eventItem.price === newPrice, true);
+    assert('Event price should be updated', response.data.eventItem.price === updatedPrice, true);
     assert('Event host should be updated', response.data.eventItem.host.id === eventObject.eventItem.host.id, true);
     assert('Event location should be updated', response.data.location.id === eventObject.location.id, true);
-    assert('Event date should be updated', response.data.date.getTime() === newDate.getTime(), true);
+    assert('Event date should be updated', response.data.date.getTime() === updatedDate.getTime(), true);
   } catch (error) {
     Logger.log(` failed: ${error.message}`);
   } finally {
-    eventManager.deleteEvent(eventResponse.data); 
+    eventManager.deleteEvent(originalEvent);
   }
 }
 
@@ -375,7 +401,7 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
     const member = membershipManager.memberLookup('testuser@keoweekrafters.org');
     assert('Found member', member != undefined, true);
     testMemberId = member.id;
-    const testEvent = addEvent();
+    const testEvent = addEvent(eventData);
     assert('Event created', true, (testEvent && testEvent.id != undefined));
 
     eventId = testEvent.id;
@@ -385,11 +411,11 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
     Logger.log(JSON.stringify(confirmation));
     assert('Member signup should succeed', confirmation && confirmation.success === true, true);
   } catch (e) {
-    throw(e);
+    throw (e);
   } finally {
     if (eventId) {
-      try { eventManager.unregister(eventId, testMemberId); } catch (e) {}
-      try { eventManager.deleteEvent(eventId); } catch (e) {}
+      try { eventManager.unregister(eventId, testMemberId); } catch (e) { }
+      try { eventManager.deleteEvent(eventId); } catch (e) { }
     }
   }
 }
@@ -397,7 +423,7 @@ function test_when_member_signs_up_for_event__then_event_is_updated() {
 function test_when_member_signs_up_for_recurring_event__then_event_is_updated() {
   let seriesId;
   let occurrenceId;
-  let testEvent; 
+  let testEvent;
   let testMemberId;
   const eventManager = modelFactory.eventManager();
 
@@ -410,7 +436,7 @@ function test_when_member_signs_up_for_recurring_event__then_event_is_updated() 
     testEvent = addRecurringEvent();
 
     // Ensure event created (this is the series id)
-    seriesId = testEvent.id; 
+    seriesId = testEvent.id;
     assert('Event created', true, (testEvent != undefined && testEvent.id != undefined));
 
     // Get the first occurrence of the recurring event and use its instance id
@@ -425,10 +451,10 @@ function test_when_member_signs_up_for_recurring_event__then_event_is_updated() 
     throw (e);
   } finally {
     if (occurrenceId) {
-      try { eventManager.unregister(occurrenceId, testMemberId); } catch (e) {}
+      try { eventManager.unregister(occurrenceId, testMemberId); } catch (e) { }
     }
     if (seriesId) {
-      try { eventManager.deleteEvent(seriesId); } catch (e) {}
+      try { eventManager.deleteEvent(seriesId); } catch (e) { }
     }
   }
 }
@@ -437,8 +463,8 @@ function test_getEventRooms() {
   const eventManager = modelFactory.eventManager();
   try {
     const roomsresponse = eventManager.getEventRooms();
-    assert('getEventRooms response should not be null or undefined', roomsresponse != undefined, true);   
-    assert('getEventRooms response should have data property', 'data' in roomsresponse, true);  
+    assert('getEventRooms response should not be null or undefined', roomsresponse != undefined, true);
+    assert('getEventRooms response should have data property', 'data' in roomsresponse, true);
     const rooms = roomsresponse.data;
     Logger.log('getEventRooms returned: ' + JSON.stringify(rooms));
     assert('Event rooms should be an array', Array.isArray(rooms), true);
@@ -573,7 +599,7 @@ function test_when_rooms_are_retrieved__then_at_least_one_room_is_returned() {
 
 function test_get_event_items() {
   const eventManager = newModelFactory().eventManager();
-  const response = eventManager.getEventItemList({  page: { pageSize: 5 } });
+  const response = eventManager.getEventItemList({ page: { pageSize: 5 } });
   Logger.log('getEventItemList response: ' + JSON.stringify(response));
   assert('Event items should not be null or undefined', response != undefined, true);
   assert('Event items should be an array', Array.isArray(response.data), true);
@@ -600,7 +626,7 @@ function test_pagination_on_event_items() {
   // Use nextPageMarker if available, fallback to pageToken for compatibility
   const nextMarker = resp1.page.nextPageMarker ?? resp1.page.pageToken;
   if (nextMarker != null) {
-    const resp2 = eventManager.getEventItemList({ page: { pageSize: 2, currentPageMarker: nextMarker }  });
+    const resp2 = eventManager.getEventItemList({ page: { pageSize: 2, currentPageMarker: nextMarker } });
     assert('Next page object present', true, !!resp2.page);
     const items2 = resp2.data;
     assert('Page 2 has items', true, Array.isArray(items2) && items2.length > 0);
@@ -611,17 +637,17 @@ function test_pagination_on_event_items() {
   }
 }
 
-function test_get_event_rooms__returns_rooms  () {  
+function test_get_event_rooms__returns_rooms() {
   const eventManager = newModelFactory().eventManager();
   const roomsResponse = eventManager.getEventRooms();
-  const rooms = roomsResponse.data; 
+  const rooms = roomsResponse.data;
   assert("At least one room is returned", true, (rooms && rooms.length > 0));
 }
 
 function test_get_event_rooms__returns_rooms_with_details() {
   const eventManager = newModelFactory().eventManager();
   const roomsResponse = eventManager.getEventRooms();
-  const rooms = roomsResponse.data;   
+  const rooms = roomsResponse.data;
   assert("At least one room is returned", true, (rooms && rooms.length > 0));
   rooms.forEach((room, idx) => {
     assert(`Room ${idx} has id`, typeof room.id !== 'undefined', true);
@@ -633,7 +659,7 @@ function test_get_event_rooms__returns_rooms_with_details() {
 function test_get_event_rooms__returns_rooms_with_capacity() {
   const eventManager = newModelFactory().eventManager();
   const roomsResponse = eventManager.getEventRooms();
-  const rooms = roomsResponse.data;   
+  const rooms = roomsResponse.data;
   assert("At least one room is returned", true, (rooms && rooms.length > 0));
   rooms.forEach((room, idx) => {
     assert(`Room ${idx} has capacity`, typeof room.capacity !== 'undefined', true);

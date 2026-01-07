@@ -4,7 +4,7 @@
  * Extends the base Entity class.
  * @extends Entity
  */
-class Member extends Entity {
+class Member extends Contact {
   constructor(data = {}) {
     super(data)
   }
@@ -24,15 +24,7 @@ class Member extends Entity {
       interests: data.interests || ''
     });
   }
-  // Common validation and utility methods
-  validateEmail(email) {
-    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!isValid) {
-      console.warn(`Invalid email format: ${email}`);
-      return '';
-    }
-    return email;
-  }
+ 
 
   toObjectNoAuthentication() {
     const clone = { ...this };
@@ -41,14 +33,9 @@ class Member extends Entity {
   }
 
   toObject() {
-    return {
-      id: this.id,
-      emailAddress: this.emailAddress,
-      firstName: this.firstName,
-      lastName: this.lastName,
-      phoneNumber: this.phoneNumber,
-      address: this.address,
+    return {...super.toObject(),
       interests: this.interests,
+      host: this.host,
       login: this.login.toObject(),
       registration: this.registration.toObject()
     };

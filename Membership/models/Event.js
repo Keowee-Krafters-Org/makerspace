@@ -87,6 +87,14 @@ class Event extends Entity {
         return this.host;
     }
 
+    getInstructor() {
+        return this.instructor;
+    }
+
+    setInstructor(instructor) {
+        this.instructor = instructor;
+    }
+
     getName() {
         return this.name;
     }

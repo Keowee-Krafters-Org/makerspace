@@ -23,7 +23,8 @@ export default {
     return {
       brand: 'Makerspace',
       navLinks: [
-        { label: 'Events', to: { path: '/event', query: { mode: 'list' } } },
+        { label: 'Classes', to: { path: '/event', query: { mode: 'list', type: 'Class' } } },
+        { label: 'Events', to: { path: '/event', query: { mode: 'list', type: 'Event' }} },
         { label: 'Member', to: { path: '/member' } },
         // Add more links as needed
       ],

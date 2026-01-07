@@ -16,6 +16,7 @@ class ZohoEvent extends Event {
       costDescription: 'purchase_description',      
       price: 'rate',
       _hostId: 'cf_host',
+      _instructorId: 'cf_instructor',
       location: 'cf_location',
       duration: 'cf_duration_hrs',
       description: 'cf_event_description',
@@ -40,6 +41,10 @@ class ZohoEvent extends Event {
     if (record.cf_host) {
       data.host = new Member({name: record.cf_host, id: record.cf_host_unformatted}); 
     }
+
+    if (record.cf_instructor) {
+      data.instructor = new Instructor({name: record.cf_instructor, id: record.cf_instructor_unformatted});
+    }
     
     if (data._attendees) {
       data.attendees = JSON.parse(data._attendees);
@@ -60,6 +65,7 @@ class ZohoEvent extends Event {
   
     // Flatten the host record to id only
     this._hostId = this.host?this.host.id:'';
+    this._instructorId = this.instructor?this.instructor.id:'';
     this._imageUrl = this.image?this.image.url:''; 
 
     const record = this.convertDataToRecord(ZohoEvent.getToRecordMap())

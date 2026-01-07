@@ -4,13 +4,14 @@
  * It also integrates with a calendar system to manage event scheduling.  
  */
 class EventManager {
-  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService, vendorManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
     this.invoiceManager = invoiceManager;
     this.fileManager = fileManager;      // legacy single-image handling
     this.driveService = driveService;    // new multiple image handling
+    this.vendorManager = vendorManager;
     this.config = getConfig();
   }
 
@@ -27,7 +28,12 @@ class EventManager {
     // calendarManager.getAll should accept normalized pagination params
     const res = this.calendarManager.getAll(params);
     const data = Array.isArray(res?.data) ? this.enrichCalendarEvents(res.data) : [];
-    res.data = data;
+    
+    if (params.eventType) {
+      res.data = data.filter(e => e.eventItem?.eventType === params.eventType);
+    } else {
+      res.data = data;
+    }
     return res;
   }
 
@@ -44,8 +50,17 @@ class EventManager {
   getUpcomingEvents(params = {}) {
     const eventHorizon = params.horizon || getConfig().eventHorizon;
     const calendarEventsResponse = this.calendarManager.getUpcomingEvents(eventHorizon);
-    const calendarEvents = calendarEventsResponse.data ?? [];
-    calendarEventsResponse.data = this.enrichCalendarEvents(calendarEvents);
+    const calendarEvents = this.enrichCalendarEvents(calendarEventsResponse.data ?? []);
+    if (!params.eventType) {
+      calendarEventsResponse.data = calendarEvents;
+      return calendarEventsResponse;
+    }
+    // Filter by eventType
+    const events = (calendarEvents|| []).filter(event => {
+      return event.eventItem && event.eventItem.type === 'Event' 
+        && event.eventItem.eventType.includes(params.eventType);
+    });   
+    calendarEventsResponse.data = events;
     return calendarEventsResponse;
   }
 
@@ -62,10 +77,9 @@ class EventManager {
    *  @throws {Error} If there is an issue retrieving the events from the calendar
    */
   getUpcomingClasses(params = {}) {
+    params.eventType = 'Class';
     const eventsResponse = this.getUpcomingEvents(params);
-    const events = (eventsResponse.data || []).filter(event => {
-      return event.eventItem && event.eventItem.type === 'Event' && event.eventItem.eventType === 'Class';
-    });
+    
     eventsResponse.data = events; 
     return eventsResponse;
   }
@@ -250,7 +264,7 @@ class EventManager {
       return new Response(true, updatedEvent, 'Event updated successfully.');
     } catch (err) {
       console.error('Failed to update calendar event:', err);
-      return { success: false, message: 'Failed to update calendar event.', error: err.toString() };
+      return new Response( false, null, 'Failed to update calendar event.', err.toString() );
     }
   }
 
@@ -262,10 +276,10 @@ class EventManager {
   deleteEventItem(eventItemId) {
     const event = this.storageManager.getById(eventItemId);
     if (!event) {
-      return { success: false, message: 'Event not found.' };
+      return new Response( false, null, 'Event not found.' );
     }
     const response = this.storageManager.delete(eventItemId);
-    return { success: true, message: 'Event deleted successfully!' };
+    return new Response( true, null, 'Event deleted successfully!' );
   }
 
   deleteEvent(event) {
@@ -290,10 +304,15 @@ class EventManager {
     if (!eventItem) {
       throw new Error('Failed to create event item.');
     }
-    const host = this.membershipManager.createNew(data.host || {});
+    const host = this.membershipManager.createNew(data.eventItem?.host || {});
     if (!host) {
       throw new Error('Failed to create host.');
     }
+    const instructor = this.vendorManager.createNew(data.eventItem?.instructor || {});
+    if (!instructor) {
+      throw new Error('Failed to create instructor.');
+    }
+    eventItem.instructor = instructor;
     eventItem.host = host;
     calendarEvent.eventItem = eventItem;
     return calendarEvent;

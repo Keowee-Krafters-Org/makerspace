@@ -40,8 +40,15 @@ export class Event extends Entity{
     return (
       this?.host?.name ||
       this?.eventItem?.host?.name ||
-      this?.eventItem?.instructor?.name ||
       this?.hostName ||
+      ''
+    );
+  }
+
+  getInstructorName() {
+    return (
+      this?.instructor?.name ||
+      this?.eventItem?.instructor?.name ||
       this?.instructorName ||
       this?.eventItem?.instructorName ||
       ''

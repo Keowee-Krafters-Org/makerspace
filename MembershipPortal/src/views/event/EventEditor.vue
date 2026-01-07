@@ -85,6 +85,18 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label">Instructor</label>
+        <DropdownList
+          v-model="selectedInstructorId"
+          :list-items="instructors"
+          :value-prop="'value'"
+          :label-prop="'label'"
+          empty-message="Select Instructor"
+          @change="applyInstructor"
+        />
+      </div>
+
+      <div class="form-group">
         <label class="form-label">Image</label>
         <div class="flex items-center gap-2">
           <input v-model="form.eventItem.image.url" type="text" class="form-input" placeholder="Image URL" />
@@ -118,9 +130,11 @@ export default {
       eventItems: [],
       rooms: [],
       hosts: [],
+      instructors: [],
       form: this.emptyForm(),
       selectedEventItemId: '',
       selectedHostId: '',
+      selectedInstructorId: '',
       previewUrl: '',
       fromMode: this.$route?.query?.mode === 'table' ? 'table' : 'list',
     };
@@ -145,6 +159,7 @@ export default {
   },
   watch: {
     hosts() { this.syncSelections(); },
+    instructors() { this.syncSelections(); },
     rooms() { this.syncSelections(); },
     eventItems() { this.syncSelections(); },
   },
@@ -166,6 +181,7 @@ export default {
           enabled: false,
           duration: 0,
           host: { id: '' },
+          instructor: { id: '' },
           image: { data: '' },
         },
         date: null,
@@ -227,10 +243,11 @@ export default {
       this.error = '';
       try {
         Logger.debug('EventEditor loading all reference data');
-        const [items, rooms, hosts] = await Promise.all([
+        const [items, rooms, hosts, instructors] = await Promise.all([
           this.eventService.getEventItemList?.({ page: { pageSize: 100 } }),
           this.eventService.getEventRooms?.({ page: { pageSize: 100 } }),
           this.eventService.getEventHosts?.({ page: { pageSize: 100 } }),
+          this.eventService.getInstructors?.({ page: { pageSize: 100 } }),
         ]);
 
         // Event Items -> { value, label, id, ... }
@@ -258,6 +275,15 @@ export default {
             const id = String(h.id);
             const name =  [h.firstName, h.lastName].filter(Boolean).join(' ');
             return id ? { ...h, id, name, value: id, label: name } : null;
+          })
+          .filter(Boolean);
+
+        // Instructors -> { value, label }
+        this.instructors = (instructors?.data || [])
+          .map(i => {
+            const id = String(i.id);
+            const name = i.name || i.companyName || [i.firstName, i.lastName].filter(Boolean).join(' ');
+            return id ? { ...i, id, name, value: id, label: name } : null;
           })
           .filter(Boolean);
 
@@ -295,6 +321,7 @@ export default {
           enabled: !!(ev?.eventItem?.enabled ?? ev?.enabled),
           duration: Number(ev?.eventItem?.duration ?? ev?.duration ?? 0),
           host: ev?.eventItem?.host ?? '',
+          instructor: ev?.eventItem?.instructor ?? '',
           image: { data: '', url: imgUrl },
         },
         date: ev?.date ? new Date(ev.date) : null,
@@ -322,6 +349,11 @@ export default {
         this.selectedHostId = hostId;
         this.applyHost();
       }
+      const instructorId = this.resolveHostId(item.instructor); // Reuse resolveHostId logic for instructor
+      if (instructorId) {
+        this.selectedInstructorId = instructorId;
+        this.applyInstructor();
+      }
       const locId = this.toId(item.locationId || item.location?.id || '');
       if (locId) {
         const locMatch = this.rooms.find(r => this.toId(r.id) === locId);
@@ -336,6 +368,12 @@ export default {
       this.form.eventItem.host = sel ? { id: this.toId(sel.id), name: sel.name || sel.label } : '';
     },
 
+    applyInstructor() {
+      const id = this.toId(this.selectedInstructorId);
+      const sel = this.instructors.find(i => this.toId(i.id) === id || this.toId(i.value) === id);
+      this.form.eventItem.instructor = sel ? { id: this.toId(sel.id), name: sel.name || sel.label } : '';
+    },
+
     syncSelections() {
       if (this.form?.eventItem?.id && !this.selectedEventItemId) {
         const id = this.toId(this.form.eventItem.id);
@@ -344,6 +382,9 @@ export default {
       }
       const currentHostId = this.resolveHostId(this.form?.eventItem?.host);
       if (currentHostId) this.selectedHostId = this.toId(currentHostId);
+
+      const currentInstructorId = this.resolveHostId(this.form?.eventItem?.instructor);
+      if (currentInstructorId) this.selectedInstructorId = this.toId(currentInstructorId);
 
       if (this.form?.location) {
         const locId = this.toId(this.form.location.id);
@@ -392,6 +433,7 @@ export default {
           enabled: !!this.form.eventItem.enabled,
           duration: Number(this.form.eventItem.duration || 0),
           host: this.form.eventItem.host || '',
+          instructor: this.form.eventItem.instructor || '',
           ...(hasNewImage
             ? { image: { data: img.data, name: img.name || '', contentType: img.contentType || '' } }
             : (img.url ? { image: { url: img.url } } : {})),
@@ -456,29 +498,6 @@ export default {
       } catch {
         return '';
       }
-    },
-
-    // Legacy helper kept for reference; not used by EventEditor after refactor
-    async getEventHosts() {
-      const raw = await this.connector.invoke('getInstructors');
-      const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-      const list = Array.isArray(obj) ? obj
-        : (Array.isArray(obj?.data) ? obj.data
-        : (Array.isArray(obj?.rows) ? obj.rows
-        : (Array.isArray(obj?.list) ? obj.list : [])));
-
-      return list.map(h => {
-        const id = h.id || h.memberId || h.contactId || h.emailAddress || h.email || h.name || h.fullName || '';
-        const name =
-          h.name ||
-          h.fullName ||
-          [h.firstName, h.lastName].filter(Boolean).join(' ') ||
-          h.emailAddress ||
-          String(id);
-        const emailAddress = h.emailAddress || h.email || '';
-        return { id: String(id), name, emailAddress };
-      }).filter(h => !!h.id);
     },
   },
 };

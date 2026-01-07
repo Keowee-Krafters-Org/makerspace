@@ -5,6 +5,7 @@ function getEventList(paramsString = {}) {
   const eventManager = modelFactory.eventManager();
   const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
   const eventsResponse = eventManager.getUpcomingEvents(params);
+  
   return JSON.stringify(eventsResponse.toObject());
 }
 
@@ -14,7 +15,24 @@ function signup(classId, memberId) {
   return JSON.stringify(response.toObject());
 }
 
+/**
+ * Get all events including classes
+ * @param {*} paramsString 
+ * @returns 
+ */
 function getAllEvents(paramsString = {}) { 
+  const eventManager = Membership.newModelFactory().eventManager();
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
+  const eventsResponse = eventManager.getUpcomingEvents(params);
+  return JSON.stringify(eventsResponse.toObject());
+}
+
+/**
+ * Get all classes
+ * @param {*} paramsString 
+ * @returns 
+ */
+function getAllClasses(paramsString = {}) { 
   const eventManager = Membership.newModelFactory().eventManager();
   const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
   const eventsResponse = eventManager.getUpcomingClasses(params);
@@ -58,14 +76,7 @@ function deleteEvent(eventId) {
   return JSON.stringify(response.toObject());
 }
 
-// FIX: accept params (pageSize, pageToken, search, role filters, etc.)
-function getInstructors(paramsString = {}) {
-  const modelFactory = Membership.newModelFactory();
-  const membershipManager = modelFactory.membershipManager();
-  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
-  const instructorsResponse = membershipManager.getInstructors(params);
-  return JSON.stringify(instructorsResponse.toObject());
-}
+
 
 function getEventHosts(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();

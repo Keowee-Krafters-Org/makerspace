@@ -26,7 +26,7 @@ export function createRouter(session) {
         const view = (session?.view || 'event').toString().toLowerCase();
         if (view === 'member') return { path: '/member' };
         const mode = (session?.viewMode || 'list').toString().toLowerCase();
-        return { path: '/event', query: { mode } };
+        return { path: '/event', query: { mode, type: 'Class' } };
       },
     },
   ];

@@ -14,13 +14,17 @@ export class EventService {
   listEvents(options = { page: { pageSize: 10 } }) {
     return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('getEventList', options);
+      Logger.debug(`listEvents received: ${JSON.stringify(res)}`);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
 
-  // Retain getAllEvents (alias for listEvents with explicit page)
-  getAllEvents(options = { page: { pageSize: 100 } }) {
-    return this.listEvents(options);
+  getAllClasses(options = { page: { pageSize: 10 } }) {
+    return this.listEvents({ ...options, eventType: 'Class' });
+  }
+
+  getAllEvents(options = { page: { pageSize: 10 } }) {
+    return this.listEvents({ ...options});
   }
 
   getEventById(id) {
@@ -139,6 +143,22 @@ export class EventService {
     return this.appService.withSpinner(async () => {
       return useCache
         ? await this.cache.fetchOrGet('hosts', fetchFn)
+        : await fetchFn();
+    });
+  }
+
+  async getInstructors(options = { page: { pageSize: 100 }, cache: true }) {
+    const endpoint = 'getAllInstructors';
+    const useCache = options?.cache !== false;
+    const fetchFn = async () => {
+      const responseString = await this.connector.invoke(endpoint, options);
+      const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;
+      Logger.debug(`getInstructors received: ${JSON.stringify(response)}`);
+      return response;
+    };
+    return this.appService.withSpinner(async () => {
+      return useCache
+        ? await this.cache.fetchOrGet('instructors', fetchFn)
         : await fetchFn();
     });
   }

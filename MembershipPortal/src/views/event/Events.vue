@@ -1,7 +1,7 @@
 <template>
   <div class="events-view">
     <header class="flex items-center justify-between mb-4">
-      <h2 class="text-2xl font-bold">Events</h2>
+      <h2 class="text-2xl font-bold">{{ title }}</h2>
       <div class="flex items-center gap-2">
         <Button icon="list" label="List" @click="viewMode = 'list'" :disabled="viewMode === 'list' || loading" />
         <Button
@@ -102,11 +102,21 @@ export default {
   watch: {
     viewMode(newMode) {
       if (this.session) this.session.viewMode = newMode;
-      this.$router.replace({ path: '/event', query: { mode: newMode } });
+      this.$router.replace({ path: '/event', query: { ...this.$route.query, mode: newMode } });
       this.enforceModePermissions();
+    },
+    '$route.query.type'() {
+      this.page.currentPageMarker = '1'; // Reset page on type change
+      this.loadEvents();
     },
   },
   computed: {
+    eventType() {
+      return this.$route.query.type || 'Class';
+    },
+    title() {
+      return this.eventType === 'Class' ? 'Classes' : 'Events';
+    },
     member() { return this.session?.member || null; },
     isMemberRegisteredLogin() {
       const status = (this.member?.login?.status || '').toString().toUpperCase();
@@ -127,7 +137,7 @@ export default {
       this.loading = true;
       try {
         // Pass Page object exclusively
-        const res = await this.eventService.listEvents({ page: { ...this.page } });
+        const res = await this.eventService.listEvents({ page: { ...this.page }, eventType: this.eventType });
 
         // If service returns array only, keep basic pagination via list length
         if (Array.isArray(res)) {
@@ -193,9 +203,9 @@ export default {
     enforceModePermissions(initial = false) {
       if (this.viewMode === 'table' && !this.isTableAllowed) {
         this.viewMode = 'list';
-        this.$router.replace({ path: '/event', query: { mode: 'list' } });
+        this.$router.replace({ path: '/event', query: { ...this.$route.query, mode: 'list' } });
       } else if (initial && !this.$route.query.mode) {
-        this.$router.replace({ path: '/event', query: { mode: this.viewMode } });
+        this.$router.replace({ path: '/event', query: { ...this.$route.query, mode: this.viewMode } });
       }
     },
     getLevelValue(name) {

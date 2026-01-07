@@ -40,12 +40,18 @@ class ModelFactory {
     this.calendarManager(),
     this.membershipManager(), 
     this.googleDriveService(),
-    this.invoiceManager()
+    this.invoiceManager(),
+    this.googleDriveService(),
+    this.vendorManager()
     );
   }
 
   membershipManager() {
     return new MembershipManager(new ZohoStorageManager(ZohoMember));
+  }
+
+  vendorManager() {
+    return new VendorManager(new ZohoStorageManager(ZohoInstructor));
   }
 
   event(data = {}) {

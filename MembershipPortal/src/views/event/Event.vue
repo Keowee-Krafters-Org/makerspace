@@ -56,6 +56,7 @@
           <div><span class="font-semibold">Duration:</span> {{ event.getDurationHours() }} hours</div>
           <div><span class="font-semibold">Price:</span> ${{ price }}</div>
           <div v-if="hostName"><span class="font-semibold">Host:</span> {{ hostName }}</div>
+          <div v-if="instructorName"><span class="font-semibold">Instructor:</span> {{ instructorName }}</div>
           <div v-if="locationName"><span class="font-semibold">Location:</span> {{ locationName }}</div>
 
           <div v-if="hasSizeLimit">
@@ -249,6 +250,7 @@ export default {
     isRegistered() { return this.event?.isMemberRegistered(this.member) ?? false; },
     imageUrl() { return this.event?.getImageUrl() || ''; },
     hostName() { return this.event?.getHostName() || ''; },
+    instructorName() { return this.event?.getInstructorName() || ''; },
     locationName() { return this.event?.getLocationName() || ''; },
     description() { return this.event?.eventItem?.description || this.event?.description || ''; },
     price() {
