@@ -14,8 +14,12 @@ class ZohoInstructor extends Instructor {
     return 'contact';
   }
 
+  /**
+   * Retrieves the filter criteria for fetching member records from Zoho CRM.
+   * @returns {Object} The filter criteria object.
+   */
   static getFilter() {
-    return {}; 
+    return { contactType: 'vendor', instructor: true };
   }
 
   static getToRecordMap() {

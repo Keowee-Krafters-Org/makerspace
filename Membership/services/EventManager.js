@@ -211,6 +211,14 @@ class EventManager {
     }
   }
 
+  getInstructors(params = {}) {
+    return this.vendorManager.getAllVendors({ instructor: true }, params);
+  }
+
+  getHosts(params = {}) {
+    return this.membershipManager.getAllHosts(params);
+  }
+
  saveEventImage(eventItem) {
     if (eventItem && eventItem.image && eventItem.image.data && typeof eventItem.image.data === 'string' && eventItem.image.data.startsWith('data:image')) {
       // Upload the image and get the DriveFile object

@@ -274,13 +274,7 @@ class MembershipManager {
     return this.storageManager.getAll(
       { host: 'true', page: { pageSize: 200 } });
   }
-  getInstructors(params) {
-    const instructorLevel = SharedConfig.levels.Instructor.value;
-    const response = this.storageManager.getAll(    
-      { instructor: 'true', params } // normalized pagination
-    );
-    return response;
-  }
+ 
 
   createNew(data = {}) {
     const member = this.storageManager.createNew(data);

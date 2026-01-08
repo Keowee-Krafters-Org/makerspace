@@ -329,7 +329,7 @@ function test_updateEvent() {
   const membershipManager = modelFactory.membershipManager();
   const locations = eventManager.getEventRooms().data;
   const hosts = membershipManager.getHosts().data;
-  const instructors = membershipManager.getInstructors().data;
+  const instructors = eventManager.getInstructors().data;
   const originalEventData = JSON.parse(JSON.stringify(eventData));
   const newHost = hosts[0];
   const newInstructor = instructors[0];
@@ -337,6 +337,7 @@ function test_updateEvent() {
   const updatedInstructor = instructors[0];
   originalEventData.eventItem.host = {id:newHost.id, firstName:newHost.firstName, lastName:newHost.lastName};
   originalEventData.eventItem.instructor = {id:newInstructor.id, firstName:newHost.firstName, lastName:newInstructor.lastName} ;
+  originalEventData.location = locations[0]; 
   let originalEvent;
 
 
@@ -348,14 +349,21 @@ function test_updateEvent() {
     const originalEventItem = originalEvent.eventItem;
     const updatedEvent = originalEvent.toObject();
 
-    const updatedPrice = originalEventItem.eventItem.price + 10;
+    const updatedPrice = originalEventItem.price + 10;
 
-    const response = eventManager.updateEvent(CalendarEvent.createNew(eventObject));
+    updatedEvent.price = updatedPrice; 
+    updatedEvent.eventItem.host=updatedHost.toObject();
+    updatedEvent.eventItem.instructor = updatedInstructor.toObject();
+    updatedEvent.location = locations[1];
+    updatedEvent.date = updatedDate; 
+
+    const response = eventManager.updateEvent(CalendarEvent.createNew(updatedEvent));
     Logger.log(` response: ${response.message}`);
     assert('Event should be updated successfully', response.success, true);
     assert('Event price should be updated', response.data.eventItem.price === updatedPrice, true);
-    assert('Event host should be updated', response.data.eventItem.host.id === eventObject.eventItem.host.id, true);
-    assert('Event location should be updated', response.data.location.id === eventObject.location.id, true);
+    assert('Event host should be updated', response.data.eventItem.host.id === updatedEvent.eventItem.host.id, true);
+    assert('Event Istructor should be updated', response.data.eventItem.instructor.id === updatedEvent.eventItem.instructor.id, true); 
+    assert('Event location should be updated', response.data.location.id === updatedEvent.location.id, true);
     assert('Event date should be updated', response.data.date.getTime() === updatedDate.getTime(), true);
   } catch (error) {
     Logger.log(` failed: ${error.message}`);

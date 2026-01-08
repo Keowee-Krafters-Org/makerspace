@@ -23,4 +23,5 @@ class VendorManager {
   createNew(data = {}) {
     return this.storageManager.createNew(data);
   }
+  
 }

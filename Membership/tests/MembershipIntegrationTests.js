@@ -280,17 +280,7 @@ function test_whenMemberIsCreatedFromData_thenAllFieldsAreThere() {
   assert('Login Status', testMember.status, newMember.login.status);
 }
 
-function test_getInstructors_returns_instructors() {
-  const instructorsResponse = membershipManager.getInstructors({page: { pageSize: 5 } });
-  const instructors = instructorsResponse.data;
-  Logger.log('Instructors:', instructors);
-  assert('Instructors is array', true, Array.isArray(instructors));
-  assert('At least one instructor found', true, instructors.length > 0);
-  instructors.forEach((inst, idx) => {
-    assert(`Instructor ${idx} has level`, true, typeof inst.registration.level !== 'undefined');
-    assert(`Instructor ${idx} has emailAddress`, true, typeof inst.emailAddress !== 'undefined');
-  });
-}
+
 
 function test_getHosts_returns_hosts() {
   const hostsResponse = membershipManager.getHosts({page: { pageSize: 5 } });
