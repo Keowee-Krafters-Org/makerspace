@@ -77,6 +77,14 @@ function deleteEvent(eventId) {
 }
 
 
+function getInstructors(paramsString = {}) {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  // If your EventManager reuses membershipManager, forward params similarly
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;  
+  const instructorsResponse = eventManager.getInstructors(params);
+  return JSON.stringify(instructorsResponse.toObject());
+}
 
 function getEventHosts(paramsString = {}) {
   const modelFactory = Membership.newModelFactory();

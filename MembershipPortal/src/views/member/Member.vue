@@ -245,6 +245,12 @@ export default {
       this.loading = true;
       try {
         const res = await this.memberService.verifyCode(this.email, this.token);
+
+        if (res && res.success === false) {
+          this.error = 'Invalid Code - Please check email code and try again';
+          return;
+        }
+
         if (res?.redirectToForm && res.url) {
           window.location.assign(res.url);
           return;

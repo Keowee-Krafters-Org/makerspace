@@ -19,9 +19,10 @@ import NavBar from '@/components/NavBar.vue';
 export default {
   name: 'App',
   components: { Spinner, NavBar },
+  inject: ['appService'],
   data() {
     return {
-      brand: 'Makerspace',
+      brand: this.appService?.config?.organization?.name || 'Makerspace',
       navLinks: [
         { label: 'Classes', to: { path: '/event', query: { mode: 'list', type: 'Class' } } },
         { label: 'Events', to: { path: '/event', query: { mode: 'list', type: 'Event' }} },
