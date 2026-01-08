@@ -8,7 +8,7 @@ const config = {
     logLevel: 'DEBUG'
   },
   prod: {
-    version: 'RELEASE-1.2.2',
+    version: 'RELEASE-1.2.3',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',    
     calendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com',
@@ -18,7 +18,7 @@ const config = {
 }
 
 var SharedConfig = {
-  mode: 'dev',
+  mode: 'prod',
   appName: 'MakerSpace Portal',
   organization: {name: 'MakeKeowee', address: '4 Eagle Lane, Salem, SC 29676', phone: '864-123-4567'},
   eventHorizon: 30, // days
