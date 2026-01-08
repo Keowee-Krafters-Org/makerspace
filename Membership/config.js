@@ -20,7 +20,7 @@ const config = {
 var SharedConfig = {
   mode: 'dev',
   appName: 'MakerSpace Portal',
-  organization: {name: 'MakeKeowee'},
+  organization: {name: 'MakeKeowee', address: '4 Eagle Lane, Salem, SC 29676', phone: '864-123-4567'},
   eventHorizon: 30, // days
   upcomingClassesLimit: 10, // max number of classes to show in the upcoming classes
   upcomingClassesSort: 'start', // sort by start date
@@ -133,6 +133,6 @@ var SharedConfig = {
   }
 };
 
- function getConfig() {
+export function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }
