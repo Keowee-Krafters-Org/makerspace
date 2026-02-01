@@ -27,6 +27,16 @@ export class LookupCache {
     this.store.delete(String(key));
   }
 
+  invalidatePattern(pattern) {
+    const isRegExp = pattern instanceof RegExp;
+    const strPattern = String(pattern);
+    for (const key of this.store.keys()) {
+      if (isRegExp ? pattern.test(key) : key.includes(strPattern)) {
+        this.store.delete(key);
+      }
+    }
+  }
+
   clear() {
     this.store.clear();
   }

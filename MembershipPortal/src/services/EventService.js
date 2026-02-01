@@ -12,10 +12,13 @@ export class EventService {
 
   // Keep listEvents (paged) - expects options.page
   listEvents(options = { page: { pageSize: 10 } }) {
+    const key = `listEvents:${JSON.stringify(options)}`;
     return this.appService.withSpinner(async () => {
-      const res = await this.connector.invoke('getEventList', options);
-      Logger.debug(`listEvents received: ${JSON.stringify(res)}`);
-      return (res && res.success && 'data' in res) ? res.data : res;
+      return this.cache.fetchOrGet(key, async () => {
+        const res = await this.connector.invoke('getEventList', options);
+        Logger.debug(`listEvents received: ${JSON.stringify(res)}`);
+        return (res && res.success && 'data' in res) ? res.data : res;
+      });
     });
   }
 
@@ -29,9 +32,13 @@ export class EventService {
 
   getEventById(id) {
     if (!id) throw new Error('getEventById requires id');
+    const key = `event:${id}`;
     return this.appService.withSpinner(async () => {
-      const res = await this.connector.invoke('getEventById', id);
-      return (res && res.success && 'data' in res) ? res.data : res;
+      // Use short TTL or fetchOrGet
+      return this.cache.fetchOrGet(key, async () => {
+        const res = await this.connector.invoke('getEventById', id);
+        return (res && res.success && 'data' in res) ? res.data : res;
+      });
     });
   }
 
@@ -46,6 +53,9 @@ export class EventService {
       if (res && res.success === false) {
         throw new Error(res.error || res.message || 'Failed to save event');
       }
+      // Invalidate list caches and specific event cache
+      this.cache.invalidatePattern(/^listEvents:/);
+      if (event.id) this.cache.invalidate(`event:${event.id}`);
       return res;
     };
     return this.appService?.withSpinner ? this.appService.withSpinner(run) : run();
@@ -55,6 +65,8 @@ export class EventService {
     if (!id) throw new Error('deleteEvent requires id');
     return this.appService.withSpinner(async () => {
       const res = await this.connector.invoke('deleteEvent', id);
+      this.cache.invalidatePattern(/^listEvents:/);
+      this.cache.invalidate(`event:${id}`);
       return (res && res.success && 'data' in res) ? res.data : res;
     });
   }
@@ -69,6 +81,11 @@ export class EventService {
       const message = success
         ? (obj?.data?.message || obj?.message || defaultMsg)
         : (obj?.error || obj?.message || 'Failed to sign up for the event');
+      
+      if (success) {
+        this.cache.invalidatePattern(/^listEvents:/);
+        this.cache.invalidate(`event:${eventId}`);
+      }
       return { success, message, data: obj?.data || null };
     });
   }
@@ -77,6 +94,10 @@ export class EventService {
     if (!eventId || !memberId) throw new Error('unregister requires eventId and memberId');
     return this.appService.withSpinner(async () => {
       const obj = await this.connector.invoke('unregister', String(eventId), String(memberId));
+      if (obj?.success) {
+        this.cache.invalidatePattern(/^listEvents:/);
+        this.cache.invalidate(`event:${eventId}`);
+      }
       return { success: !!obj?.success, message: obj?.message || obj?.error, data: obj?.data || null };
     });
   }
@@ -114,7 +135,7 @@ export class EventService {
     };
     return this.appService.withSpinner(async () => {
       return useCache
-        ? await this.cache.fetchOrGet('eventItems', fetchFn)
+        ? await this.cache.fetchOrGet(`eventItems:${JSON.stringify(options)}`, fetchFn)
         : await fetchFn();
     });
   }
@@ -129,7 +150,7 @@ export class EventService {
     };
     return this.appService.withSpinner(async () => {
       return useCache
-        ? await this.cache.fetchOrGet('rooms', fetchFn)
+        ? await this.cache.fetchOrGet(`rooms:${JSON.stringify(options)}`, fetchFn)
         : await fetchFn();
     });
   }
@@ -147,7 +168,7 @@ export class EventService {
     };
     return this.appService.withSpinner(async () => {
       return useCache
-        ? await this.cache.fetchOrGet('hosts', fetchFn)
+        ? await this.cache.fetchOrGet(`hosts:${JSON.stringify(options)}`, fetchFn)
         : await fetchFn();
     });
   }
@@ -163,7 +184,7 @@ export class EventService {
     };
     return this.appService.withSpinner(async () => {
       return useCache
-        ? await this.cache.fetchOrGet('instructors', fetchFn)
+        ? await this.cache.fetchOrGet(`instructors:${JSON.stringify(options)}`, fetchFn)
         : await fetchFn();
     });
   }
