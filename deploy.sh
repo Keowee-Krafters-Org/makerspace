@@ -30,6 +30,17 @@ function extract_from_config() {
 
 
 
+# --- Function: update mode in config.js ---
+function update_mode_in_config() {
+  local mode=$1
+  awk -v mode="$mode" '
+    $0 ~ /mode:[[:space:]]*'\''[^'\'']*'\''/ {
+      sub(/mode:[[:space:]]*'\''[^'\'']*'\''/, "mode: '\''" mode "'\''")
+    }
+    { print }
+  ' "$CONFIG_FILE" > config.tmp && mv config.tmp "$CONFIG_FILE"
+}
+
 # Function to update and deploy clasp projects
 function update_and_deploy() {
     local directory=$1
@@ -54,6 +65,7 @@ function update_and_deploy() {
     new_version=$(increment_version "$version")
 
     update_version_in_config "$new_version" "$mode"
+    update_mode_in_config "$mode"
 
     echo "Pushing changes for $directory..."
     clasp push

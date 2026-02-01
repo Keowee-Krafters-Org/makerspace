@@ -189,29 +189,29 @@ export default {
       };
     },
 
-    resolveHostId(host) {
-      if (!host) return '';
-      const list = Array.isArray(this.hosts) ? this.hosts : [];
+    resolveId(person, list) {
+      if (!person) return '';
+      const safeList = Array.isArray(list) ? list : [];
 
-      const byId = (id) => list.find(h => String(h.id) === String(id))?.id || '';
+      const byId = (id) => safeList.find(h => String(h.id) === String(id))?.id || '';
       const byEmail = (email) => {
         const norm = String(email || '').trim().toLowerCase();
-        return list.find(h => String(h.emailAddress || '').trim().toLowerCase() === norm)?.id || '';
+        return safeList.find(h => String(h.emailAddress || '').trim().toLowerCase() === norm)?.id || '';
       };
       const byName = (name) => {
         const norm = String(name || '').trim().toLowerCase();
-        return list.find(h => String(h.name || '').trim().toLowerCase() === norm)?.id || '';
+        return safeList.find(h => String(h.name || '').trim().toLowerCase() === norm)?.id || '';
       };
 
-      if (typeof host === 'object') {
+      if (typeof person === 'object') {
         return (
-          (host.id && byId(host.id)) ||
-          (host.emailAddress && byEmail(host.emailAddress)) ||
-          (host.name && byName(host.name)) ||
+          (person.id && byId(person.id)) ||
+          (person.emailAddress && byEmail(person.emailAddress)) ||
+          (person.name && byName(person.name)) ||
           ''
         );
       }
-      return byId(host) || byEmail(host) || byName(host) || '';
+      return byId(person) || byEmail(person) || byName(person) || '';
     },
 
     unwrapList(res, keys = []) {
@@ -344,12 +344,12 @@ export default {
         enabled: !!item.enabled,
         duration: Number(item.duration ?? 0),
       });
-      const hostId = this.resolveHostId(item.host);
+      const hostId = this.resolveId(item.host, this.hosts);
       if (hostId) {
         this.selectedHostId = hostId;
         this.applyHost();
       }
-      const instructorId = this.resolveHostId(item.instructor); // Reuse resolveHostId logic for instructor
+      const instructorId = this.resolveId(item.instructor, this.instructors);
       if (instructorId) {
         this.selectedInstructorId = instructorId;
         this.applyInstructor();
@@ -380,10 +380,10 @@ export default {
         const exists = this.eventItems.some(i => this.toId(i.id) === id || this.toId(i.value) === id);
         if (exists) this.selectedEventItemId = id;
       }
-      const currentHostId = this.resolveHostId(this.form?.eventItem?.host);
+      const currentHostId = this.resolveId(this.form?.eventItem?.host, this.hosts);
       if (currentHostId) this.selectedHostId = this.toId(currentHostId);
 
-      const currentInstructorId = this.resolveHostId(this.form?.eventItem?.instructor);
+      const currentInstructorId = this.resolveId(this.form?.eventItem?.instructor, this.instructors);
       if (currentInstructorId) this.selectedInstructorId = this.toId(currentInstructorId);
 
       if (this.form?.location) {
@@ -418,6 +418,7 @@ export default {
       this.error = '';
       try {
         this.applyHost();
+        this.applyInstructor();
 
         const img = this.form.eventItem.image || {};
         const hasNewImage =

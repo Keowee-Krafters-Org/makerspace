@@ -49,8 +49,7 @@ function getMemberById(id) {
  * Returns all instructors (vendors) for admin listing.
  */
 function getAllInstructors(paramsString) {
-  const params = paramsString ? JSON.parse(paramsString) : {};
-  params.instructor=true
+  const params = paramsString ? JSON.parse(paramsString) : {instructor:true};
   const vendorManager = Membership.newModelFactory().vendorManager();
   const response = vendorManager.getAllVendors(params);
   return response.toString();

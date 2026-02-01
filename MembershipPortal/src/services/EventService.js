@@ -39,9 +39,14 @@ export class EventService {
     if (!event) throw new Error('saveEvent requires event');
     const payload = event; // connector will stringify for GAS
     const run = async () => {
-      return event.id
+      const res = event.id
         ? await this.connector.invoke('updateEvent', payload)
         : await this.connector.invoke('createEvent', payload);
+
+      if (res && res.success === false) {
+        throw new Error(res.error || res.message || 'Failed to save event');
+      }
+      return res;
     };
     return this.appService?.withSpinner ? this.appService.withSpinner(run) : run();
   }
