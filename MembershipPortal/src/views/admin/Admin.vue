@@ -93,7 +93,10 @@ export default {
         if (target > Number(this.page.currentPageMarker)) {
           // next
           const next = this.page.nextPageMarker ?? this.page.pageToken;
+          // It's possible for next to be valid even if hasMore is false/undefined in some APIs,
+          // but typically we rely on hasMore. If next is present, we should use it.
           if (!next && !this.page.hasMore) return;
+          
           this.page.currentPageMarker = String(next ?? (Number(this.page.currentPageMarker) + 1));
         } else if (target < Number(this.page.currentPageMarker)) {
           const prev = this.page.previousPageMarker;
@@ -106,8 +109,19 @@ export default {
       this.error = '';
       try {
         await this.withSpinner(async () => {
+          // IMPORTANT: Create a clean page object for the API call
+          // The backend expects pageToken to be populated for next page calls if available
+          const pageParam = {
+            pageSize: this.page.pageSize,
+            // Pass the marker we want to load. 
+            // Note: Some backends use 'pageToken' for the cursor, others use 'currentPageMarker'
+            // If we just advanced currentPageMarker above, we use that.
+            currentPageMarker: this.page.currentPageMarker,
+            pageToken: this.page.currentPageMarker // Often the token for the *requested* page
+          };
+
           const params = {
-            page: { ...this.page },
+            page: pageParam,
             search: this.search || '',
             filter: this.filterStatus || '',
           };
@@ -118,15 +132,18 @@ export default {
           // Normalize page state from response
           const current = String(page?.currentPageMarker ?? this.page.currentPageMarker ?? '1');
           const size = Number((page?.pageSize ?? this.page.pageSize ?? rows.length) || 0);
-          const hasMore = !!(page?.hasMore ?? ((page?.nextPageMarker ?? page?.pageToken) ? true : false));
+          
+          // Ensure we capture the next token correctly from the response
+          const nextMarker = page?.nextPageMarker ?? page?.pageToken ?? null;
+          const hasMore = !!(page?.hasMore ?? (nextMarker ? true : false));
 
           this.page = {
             currentPageMarker: current,
             pageSize: size,
             hasMore,
-            nextPageMarker: page?.nextPageMarker ?? (hasMore ? String(Number(current) + 1) : null),
+            nextPageMarker: nextMarker, // This is the token for the *next* page
             previousPageMarker: page?.previousPageMarker ?? (Number(current) > 1 ? String(Number(current) - 1) : null),
-            pageToken: page?.pageToken ?? null,
+            pageToken: nextMarker, // Store the token for the next forward navigation
           };
         });
       } catch (e) {

@@ -1,6 +1,6 @@
 const config = {
   dev: {
-    version: 'SNAPSHOT-1.2.8',
+    version: 'SNAPSHOT-1.2.9',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
     baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
     calendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com',
@@ -18,7 +18,7 @@ const config = {
 }
 
 var SharedConfig = {
-  mode: 'prod',
+  mode: 'dev',
   appName: 'MakeKeowee Portal',
   organization: {name: 'MakeKeowee', address: '4 Eagle Lane, Salem, SC 29676', phone: '864-123-4567'},
   eventHorizon: 30, // days

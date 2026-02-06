@@ -20,6 +20,7 @@ import {
   UserPlusIcon,
   UserMinusIcon,
   EnvelopeOpenIcon,
+  EllipsisVerticalIcon,
 } from '@heroicons/vue/24/outline';
 
 const registry = {
@@ -34,6 +35,7 @@ const registry = {
   'user-plus': UserPlusIcon,
   'user-minus': UserMinusIcon,
   envelope: EnvelopeOpenIcon,
+  menu: EllipsisVerticalIcon,
 };
 
 export default {

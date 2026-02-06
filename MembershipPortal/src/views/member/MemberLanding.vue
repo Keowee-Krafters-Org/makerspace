@@ -1,85 +1,60 @@
-<!-- filepath: /home/csmith/Development/makerspace/MembershipPortal/src/views/memberLanding/MemberLanding.vue -->
 <template>
   <div class="member-landing p-4 max-w-2xl mx-auto">
-    <!-- Member menu only; NavBar shows member info -->
-    <nav class="member-menu">
-      <ul class="menu-list">
-        <li
-          v-for="menuItem in menuItems"
-          :key="menuItem.label"
-          class="menu-item"
-        >
-          <Button
-            :label="`${menuItem.icon ? menuItem.icon + ' ' : ''}${menuItem.label}`"
-            :disabled="menuItem.disabled"
-            @click="menuItem.action"
-          />
-        </li>
-      </ul>
-    </nav>
+    <Card class="mb-4">
+      <template #header>
+        <h2 class="text-xl font-bold">Welcome, {{ memberName }}</h2>
+      </template>
+      <div class="space-y-2">
+        <p><strong>Status:</strong> <span :class="statusColor">{{ statusText }}</span></p>
+        <p v-if="session?.member?.emailAddress"><strong>Email:</strong> {{ session.member.emailAddress }}</p>
+        <p v-if="session?.member?.registration?.level"><strong>Level:</strong> {{ session.member.registration.level }}</p>
+      </div>
+      <template #footer>
+        <div class="flex gap-2">
+           <Button v-if="!session?.member" label="Sign Up / Login" @click="onLogin" />
+           <Button v-if="isAdmin" label="Admin Dashboard" @click="$router.push('/admin')" />
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script>
 import Button from '@/components/Button.vue';
+import Card from '@/components/Card.vue';
 
 export default {
   name: 'MemberLanding',
-  components: { Button },
+  components: { Button, Card },
   inject: ['session'],
   computed: {
-    authLevel() {
+    memberName() {
+      const m = this.session?.member;
+      if (!m) return 'Guest';
+      return [m.firstName, m.lastName].filter(Boolean).join(' ') || 'Member';
+    },
+    statusText() {
+      const m = this.session?.member;
+      if (!m) return 'Not Signed In';
+      return m.registration?.status || m.login?.status || 'Unknown';
+    },
+    statusColor() {
+      const s = this.statusText.toUpperCase();
+      if (s === 'ACTIVE' || s === 'REGISTERED' || s === 'VERIFIED') return 'text-green-600 font-medium';
+      return 'text-gray-500';
+    },
+    isAdmin() {
       const lvl = (this.session?.member?.registration?.level || '').toString().toUpperCase();
-      if (['ADMIN', 'ADMINISTRATOR', 'MANAGER', 'OWNER'].includes(lvl)) return 'admin';
-      if (['MEMBER', 'HOST', 'INSTRUCTOR'].includes(lvl)) return 'member';
-      return 'guest';
-    },
-    menuItems() {
-      const commonViewEvents = { label: 'View Events', icon: '📅', action: this.viewEvents, disabled: false };
-      const byLevel = {
-        guest: [
-          { label: 'Sign Up', icon: '📝', action: this.signUp, disabled: false },
-          { label: 'Learn More', icon: 'ℹ️', action: this.learnMore, disabled: false },
-          commonViewEvents,
-        ],
-        member: [
-          { label: 'View Profile', icon: '👤', action: this.viewProfile, disabled: false },
-          { label: 'Edit Profile', icon: '✏️', action: this.editProfile, disabled: false },
-          commonViewEvents,
-        ],
-        admin: [
-          { label: 'Manage Members', icon: '👥', action: this.manageMembers, disabled: false },
-          { label: 'Manage Events', icon: '🗓️', action: this.manageEvents, disabled: false },
-          { label: 'View Reports', icon: '📊', action: this.viewReports, disabled: false },
-          commonViewEvents,
-        ],
-      };
-      return byLevel[this.authLevel] || [commonViewEvents];
-    },
+      return ['ADMIN', 'ADMINISTRATOR', 'MANAGER', 'OWNER'].includes(lvl);
+    }
   },
   methods: {
-    signUp() { console.log('Sign Up action triggered'); },
-    learnMore() { console.log('Learn More action triggered'); },
-    viewProfile() { console.log('View Profile action triggered'); },
-    editProfile() { console.log('Edit Profile action triggered'); },
-    viewEvents() {
-      if (this.session) this.session.viewMode = 'list';
-      this.$router.push({ path: '/event', query: { mode: 'list' } });
-    },
-    manageMembers() {
-      this.$router.push({ path: '/admin' });
-    },
-    manageEvents() {
-      if (this.session) this.session.viewMode = 'table';
-      this.$router.push({ path: '/event', query: { mode: 'table' } });
-    },
-    viewReports() { console.log('View Reports action triggered'); },
-  },
+    onLogin() {
+      // Logic for login or redirect to auth page
+      // For now, reload or trigger auth flow if needed
+      // Assuming App handles auth via Google/Node connector automatically or via a specific login route
+      console.log('Login requested');
+    }
+  }
 };
 </script>
-
-<style scoped>
-.member-menu { margin-top: 0.5rem; }
-.menu-list { list-style: none; padding: 0; }
-.menu-item { margin-bottom: 0.75rem; }
-</style>

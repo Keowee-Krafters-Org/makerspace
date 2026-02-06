@@ -26,17 +26,19 @@ export default {
       navLinks: [
         { label: 'Classes', to: { path: '/event', query: { mode: 'list', type: 'Class' } } },
         { label: 'Events', to: { path: '/event', query: { mode: 'list', type: 'Event' }} },
+        { label: 'Manage Members', to: { path: '/admin' }, role: 'admin' },
+        { label: 'Manage Events', to: { path: '/event', query: { mode: 'table' } }, role: 'admin' },
         { label: 'Member', to: { path: '/member' } },
-        // Add more links as needed
       ],
     };
   },
   methods: {
-    // Example: only show Admin when authorized
     filterLink(link, session) {
-      if (link.label !== 'Admin') return true;
+      if (!link.role) return true;
       const lvl = (session?.member?.registration?.level || '').toString().toUpperCase();
-      return ['ADMIN', 'ADMINISTRATOR', 'MANAGER', 'OWNER'].includes(lvl);
+      const isAdmin = ['ADMIN', 'ADMINISTRATOR', 'MANAGER', 'OWNER'].includes(lvl);
+      if (link.role === 'admin') return isAdmin;
+      return true;
     },
   },
 };

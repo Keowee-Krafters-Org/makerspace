@@ -39,8 +39,6 @@
         <tr>
           <th class="th">Title</th>
           <th class="th">Start</th>
-          <th class="th">End</th>
-          <th class="th">Location</th>
           <th class="th">Actions</th>
         </tr>
       </thead>

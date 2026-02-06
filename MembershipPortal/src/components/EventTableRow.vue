@@ -1,9 +1,7 @@
 <template>
   <tr class="hover:bg-gray-50">
-    <td class="td">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
+    <td class="td font-medium">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
     <td class="td">{{ formatDate(ev.date) }}</td>
-    <td class="td">{{ ev.eventItem?.duration }}</td>
-    <td class="td">{{ ev.location?.name }}</td>
     <td class="td">
       <EventButtonPanel
         :event="ev"
@@ -13,6 +11,7 @@
         :showAttendees="true"
         :showSignup="true"
         detailsLabel="View"
+        layout="menu"
         @details="$emit('select', ev)"
         @edit="$emit('edit', ev)"
         @delete="$emit('delete', ev)"
