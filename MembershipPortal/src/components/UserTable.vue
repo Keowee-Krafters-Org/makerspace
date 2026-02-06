@@ -1,72 +1,44 @@
 <template>
-  <div class="user-table">
-    <div class="overflow-x-auto border border-gray-200 rounded-md bg-white">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50 text-gray-700">
-          <tr>
-            <th class="text-left px-3 py-2">Email</th>
-            <th class="text-left px-3 py-2">Name</th>
-            <th class="text-left px-3 py-2">Registration</th>
-            <th class="text-left px-3 py-2">Level</th>
-            <th class="text-left px-3 py-2 w-28">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="!loading && rows.length === 0">
-            <td colspan="5" class="px-3 py-6 text-center text-gray-500">No members found</td>
-          </tr>
-          <tr
-            v-for="m in rows"
-            :key="m.id || m.emailAddress"
-            class="border-t border-gray-100 hover:bg-gray-50"
-          >
-            <td class="px-3 py-2">{{ m.emailAddress || '' }}</td>
-            <td class="px-3 py-2">{{ (m.firstName || '') + ' ' + (m.lastName || '') }}</td>
-            <td class="px-3 py-2">{{ (m.registration?.status || '') }}</td>
-            <td class="px-3 py-2">{{ (m.registration?.level || '') }}</td>
-            <td class="px-3 py-2">
-              <button
-                class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
-                @click="$emit('edit', m)"
-              >
-                Edit
-              </button>
-            </td>
-          </tr>
-          <tr v-if="loading">
-            <td colspan="5" class="px-3 py-6 text-center text-gray-500">Loading…</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <EntityTable
+    :loading="loading"
+    :page="normalizedPage"
+    :isEmpty="!loading && rows.length === 0"
+    :columnCount="5"
+    emptyMessage="No members found"
+    @request-page="$emit('request-page', $event)"
+  >
+    <template #header>
+      <tr class="text-gray-700">
+        <th class="text-left px-3 py-2 font-semibold">Email</th>
+        <th class="text-left px-3 py-2 font-semibold">Name</th>
+        <th class="text-left px-3 py-2 font-semibold">Registration</th>
+        <th class="text-left px-3 py-2 font-semibold">Level</th>
+        <th class="text-left px-3 py-2 w-28 font-semibold">Actions</th>
+      </tr>
+    </template>
 
-    <div class="flex items-center justify-between mt-3">
-      <div class="text-sm text-gray-600">
-        Page {{ page.currentPage || 1 }}
-      </div>
-      <div class="flex gap-2">
-        <button
-          class="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50"
-          :disabled="(page.currentPage || 1) <= 1 || loading"
-          @click="$emit('page-change', (page.currentPage || 1) - 1)"
-        >
-          Previous
-        </button>
-        <button
-          class="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50"
-          :disabled="!page.hasMore || loading"
-          @click="$emit('page-change', (page.currentPage || 1) + 1)"
-        >
-          Next
-        </button>
-      </div>
-    </div>
-  </div>
+    <template #body>
+      <UserTableRow
+        v-for="m in rows"
+        :key="m.id || m.emailAddress"
+        :user="m"
+        class="border-t border-gray-100"
+        @edit="$emit('edit', $event)"
+        @invoices="$emit('invoices', $event)"
+        @payments="$emit('payments', $event)"
+        @delete="$emit('delete', $event)"
+      />
+    </template>
+  </EntityTable>
 </template>
 
 <script>
+import EntityTable from './EntityTable.vue';
+import UserTableRow from './UserTableRow.vue';
+
 export default {
   name: 'UserTable',
+  components: { EntityTable, UserTableRow },
   props: {
     rows: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
@@ -75,10 +47,16 @@ export default {
       default: () => ({ currentPage: 1, hasMore: false }),
     },
   },
-  emits: ['page-change', 'edit'],
+  emits: ['page-change', 'request-page', 'edit', 'invoices', 'payments', 'delete'],
+  computed: {
+    normalizedPage() {
+      // UserTable uses 'currentPage' but EntityTable expects 'pageNumber' for number-based pagination
+      return {
+        ...this.page,
+        pageNumber: this.page.currentPage || 1,
+      };
+    },
+  },
 };
 </script>
 
-<style scoped>
-.user-table { }
-</style>

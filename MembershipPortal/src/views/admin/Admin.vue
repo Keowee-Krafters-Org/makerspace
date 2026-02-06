@@ -43,7 +43,7 @@
       :rows="rows"
       :loading="loading"
       :page="page"
-      @page-change="goToPage"
+      @request-page="loadMembers"
       @edit="onEdit"
     />
   </div>
@@ -87,22 +87,16 @@ export default {
       return fn();
     },
     async loadMembers(target) {
-      // target may be a number (go to page), or undefined
-      if (typeof target === 'number') {
-        // advance using server-provided markers
-        if (target > Number(this.page.currentPageMarker)) {
-          // next
-          const next = this.page.nextPageMarker ?? this.page.pageToken;
-          // It's possible for next to be valid even if hasMore is false/undefined in some APIs,
-          // but typically we rely on hasMore. If next is present, we should use it.
-          if (!next && !this.page.hasMore) return;
-          
-          this.page.currentPageMarker = String(next ?? (Number(this.page.currentPageMarker) + 1));
-        } else if (target < Number(this.page.currentPageMarker)) {
-          const prev = this.page.previousPageMarker;
-          if (!prev) return;
-          this.page.currentPageMarker = String(prev);
-        }
+      // Prepare pagination parameters
+      let marker = this.page.currentPageMarker || '1';
+      let pageSize = this.page.pageSize;
+
+      if (target && typeof target === 'object' && target.currentPageMarker) {
+        // Handle request-page event from EntityTable
+        marker = target.currentPageMarker;
+        if (target.pageSize) pageSize = target.pageSize;
+      } else if (target === undefined || target === null) {
+        // Reload current or reset (handled by initialization)
       }
 
       this.loading = true;
@@ -110,14 +104,10 @@ export default {
       try {
         await this.withSpinner(async () => {
           // IMPORTANT: Create a clean page object for the API call
-          // The backend expects pageToken to be populated for next page calls if available
           const pageParam = {
-            pageSize: this.page.pageSize,
-            // Pass the marker we want to load. 
-            // Note: Some backends use 'pageToken' for the cursor, others use 'currentPageMarker'
-            // If we just advanced currentPageMarker above, we use that.
-            currentPageMarker: this.page.currentPageMarker,
-            pageToken: this.page.currentPageMarker // Often the token for the *requested* page
+            pageSize: pageSize,
+            currentPageMarker: marker,
+            pageToken: marker 
           };
 
           const params = {
@@ -130,8 +120,8 @@ export default {
 
           this.rows = rows;
           // Normalize page state from response
-          const current = String(page?.currentPageMarker ?? this.page.currentPageMarker ?? '1');
-          const size = Number((page?.pageSize ?? this.page.pageSize ?? rows.length) || 0);
+          const current = String(page?.currentPageMarker ?? marker);
+          const size = Number((page?.pageSize ?? pageSize ?? rows.length) || 0);
           
           // Ensure we capture the next token correctly from the response
           const nextMarker = page?.nextPageMarker ?? page?.pageToken ?? null;
@@ -141,9 +131,11 @@ export default {
             currentPageMarker: current,
             pageSize: size,
             hasMore,
-            nextPageMarker: nextMarker, // This is the token for the *next* page
-            previousPageMarker: page?.previousPageMarker ?? (Number(current) > 1 ? String(Number(current) - 1) : null),
-            pageToken: nextMarker, // Store the token for the next forward navigation
+            nextPageMarker: nextMarker, 
+            previousPageMarker: page?.previousPageMarker ?? null,
+            pageToken: nextMarker,
+            totalItems: page?.totalItems,
+            pageNumber: page?.pageNumber // Pass through if available
           };
         });
       } catch (e) {

@@ -1,5 +1,5 @@
 <template>
-  <tr class="hover:bg-gray-50">
+  <EntityTableRow @click="$emit('click', $event)">
     <td class="td font-medium">{{ ev.title || ev.name || ev.eventItem?.title }}</td>
     <td class="td">{{ formatDate(ev.date) }}</td>
     <td class="td">
@@ -20,16 +20,17 @@
         @unregister="onUnregister(ev)"
       />
     </td>
-  </tr>
+  </EntityTableRow>
 </template>
 
 <script>
 import EventButtonPanel from './EventButtonPanel.vue';
+import EntityTableRow from './EntityTableRow.vue';
 
 export default {
   name: 'EventTableRow',
-  components: { EventButtonPanel },
-  emits: ['select', 'edit', 'delete', 'attendees', 'refresh'],
+  components: { EventButtonPanel, EntityTableRow },
+  emits: ['select', 'edit', 'delete', 'attendees', 'refresh', 'click'],
   props: {
     ev: { type: Object, required: true },
     member: { type: Object, default: null },
