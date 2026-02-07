@@ -51,8 +51,7 @@
       @select="handleSelect"
       @delete="handleDelete"
       @edit="handleEdit"
-      @prev="prevPage"
-      @next="nextPage"
+      @request-page="loadEvents"
       @attendees="openAttendees"
     />
     <!-- If somehow in table mode but not allowed, silently show list instead -->
@@ -132,18 +131,40 @@ export default {
     },
   },
   methods: {
-    async loadEvents() {
+    async loadEvents(target) {
       this.error = '';
       this.loading = true;
       try {
-        // Pass Page object exclusively
-        const res = await this.eventService.listEvents({ page: { ...this.page }, eventType: this.eventType });
+        let marker = this.page.currentPageMarker || '1';
+        let pageSize = this.page.pageSize;
+
+        if (target && typeof target === 'object' && target.currentPageMarker) {
+             marker = target.currentPageMarker;
+             if (target.pageSize) pageSize = target.pageSize;
+        }
+
+        const pageParam = {
+            currentPageMarker: marker,
+            pageSize: pageSize
+        };
+
+        const res = await this.eventService.listEvents({ page: pageParam, eventType: this.eventType });
 
         // If service returns array only, keep basic pagination via list length
         if (Array.isArray(res)) {
           this.events = res;
-          const hasMoreGuess = this.events.length >= Number(this.page.pageSize || 0);
-          this.page = { ...this.page, hasMore: hasMoreGuess, nextPageMarker: hasMoreGuess ? String(Number(this.page.currentPageMarker || 1) + 1) : null, previousPageMarker: Number(this.page.currentPageMarker) > 1 ? String(Number(this.page.currentPageMarker) - 1) : null };
+          // For legacy array response, we can't do much about deep history validation here
+          // But we can update current marker
+          const hasMoreGuess = this.events.length >= Number(pageSize || 0);
+          this.page = { 
+               ...this.page,
+               currentPageMarker: marker,
+               pageSize: pageSize,
+               hasMore: hasMoreGuess, 
+               nextPageMarker: hasMoreGuess ? String(Number(marker) + 1) : null 
+               // removed previousPageMarker calculation logic as it's now handled by EntityTable
+          };
+          // EntityTable needs 'page.pageNumber' sometimes? No, it uses markers mostly.
           return;
         }
 
@@ -153,19 +174,18 @@ export default {
         this.events = data;
 
         // Normalize page fields; prefer server markers
-        const current = String(p.currentPageMarker ?? this.page.currentPageMarker ?? '1');
-        const size = Number(p.pageSize ?? this.page.pageSize ?? (data.length || 0));
+        const current = String(p.currentPageMarker ?? marker);
+        const size = Number(p.pageSize ?? pageSize ?? (data.length || 0));
         const hasMore = Boolean(p.hasMore ?? (!!p.nextPageMarker || data.length >= size));
         const next = p.nextPageMarker ?? (hasMore ? String(Number(current) + 1) : null);
-        const prev = p.previousPageMarker ?? (Number(current) > 1 ? String(Number(current) - 1) : null);
-
+        
         this.page = {
           currentPageMarker: current,
           pageSize: size,
           hasMore,
           nextPageMarker: next,
-          previousPageMarker: prev,
-          pageToken: p.pageToken ?? null,
+          previousPageMarker: p.previousPageMarker ?? null,
+          pageToken: p.pageToken ?? next ?? null,
         };
       } catch (e) {
         this.error = e?.message || 'Failed to load events';
@@ -175,30 +195,17 @@ export default {
       }
     },
     onRefresh() { this.loadEvents(); },
-    addEvent() { this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode } }); },
+    addEvent() { this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode, type: this.eventType } }); },
 
-    prevPage() {
-      const prev = this.page.previousPageMarker;
-      if (!prev) return;
-      this.page.currentPageMarker = String(prev);
-      this.loadEvents();
-    },
-    nextPage() {
-      const next = this.page.nextPageMarker ?? this.page.pageToken;
-      if (!next) return;
-      this.page.currentPageMarker = String(next);
-      this.loadEvents();
-    },
-
-    handleSelect(ev) { this.$router.push({ name: 'EventView', query: { id: ev?.id, mode: this.viewMode } }); },
+    handleSelect(ev) { this.$router.push({ name: 'EventView', query: { id: ev?.id, mode: this.viewMode, type: this.eventType } }); },
     async handleDelete(ev) {
       try { await this.eventService.deleteEvent(ev.id); await this.loadEvents(); }
       catch (e) { this.error = e?.message || 'Failed to delete event'; }
     },
     handleEdit(ev) {
-      this.$router.push({ name: 'EventEditor', params: { id: String(ev?.id || '') }, query: { mode: this.viewMode } });
+      this.$router.push({ name: 'EventEditor', params: { id: String(ev?.id || '') }, query: { mode: this.viewMode, type: this.eventType } });
     },
-    openAttendees(ev) { this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode } }); },
+    openAttendees(ev) { this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode, type: this.eventType } }); },
 
     enforceModePermissions(initial = false) {
       if (this.viewMode === 'table' && !this.isTableAllowed) {

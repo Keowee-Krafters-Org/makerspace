@@ -8,7 +8,7 @@
     />
     <div
       v-if="isOpen"
-      class="mt-2 w-48 bg-white rounded-md shadow-lg z-50 ring-1 ring-black ring-opacity-5 focus:outline-none" 
+      :class="['absolute right-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50', openUpwards ? 'bottom-full mb-2 origin-bottom-right' : 'mt-2 origin-top-right']"
       @click.stop
     >
       <div class="py-1" role="menu">
@@ -66,6 +66,7 @@ export default {
   data() {
     return {
       isOpen: false,
+      openUpwards: false,
     };
   },
   computed: {
@@ -143,8 +144,24 @@ export default {
     },
   },
   methods: {
-    toggleMenu() {
-      this.isOpen = !this.isOpen;
+    toggleMenu(event) {
+      if (this.isOpen) {
+        this.isOpen = false;
+        return;
+      }
+
+      // Check available space below
+      if (event && event.currentTarget) {
+        // Handle both native event or component event payload
+        const target = event.currentTarget || event.target;
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          const spaceBelow = window.innerHeight - rect.bottom;
+          this.openUpwards = spaceBelow < 250; 
+        }
+      }
+
+      this.isOpen = true;
     },
     handleAction(action) {
       if (action.disabled) return;

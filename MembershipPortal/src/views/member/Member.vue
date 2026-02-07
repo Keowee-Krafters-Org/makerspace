@@ -14,23 +14,16 @@
         type="email"
         class="block w-full border border-gray-300 rounded-md px-3 py-2 mb-3"
         placeholder="you@example.com"
-        :disabled="loading"
+        :disabled="loading || showVerificationInputs"
       />
 
       <div class="flex gap-2 mb-3">
         <button
           class="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50"
-          @click="onRequestToken"
+          @click="showVerificationInputs ? onResendToken() : onRequestToken()"
           :disabled="!email || loading"
         >
-          Verify Email
-        </button>
-        <button
-          class="px-3 py-2 rounded bg-gray-600 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
-          @click="onResendToken"
-          :disabled="!email || loading"
-        >
-          Resend
+          {{ showVerificationInputs ? 'Resend Code' : 'Verify Email' }}
         </button>
       </div>
 

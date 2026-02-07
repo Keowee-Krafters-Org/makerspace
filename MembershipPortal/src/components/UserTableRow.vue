@@ -16,7 +16,7 @@
 
         <div
           v-if="isOpen"
-          class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+          :class="['absolute right-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50', openUpwards ? 'bottom-full mb-2 origin-bottom-right' : 'mt-2 origin-top-right']"
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="menu-button"
@@ -80,11 +80,24 @@ export default {
   data() {
     return {
       isOpen: false,
+      openUpwards: false,
     };
   },
   methods: {
-    toggleMenu() {
-      this.isOpen = !this.isOpen;
+    toggleMenu(event) {
+      if (this.isOpen) {
+        this.isOpen = false;
+        return;
+      }
+
+      // Check available space below
+      if (event && event.currentTarget) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        this.openUpwards = spaceBelow < 250; // Threshold for menu height
+      }
+
+      this.isOpen = true;
     },
     handleAction(action) {
       this.$emit(action, this.user);

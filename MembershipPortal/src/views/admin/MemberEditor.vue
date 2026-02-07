@@ -64,9 +64,7 @@
           <label class="block text-sm font-medium mb-1">Registration Status</label>
           <select v-model="member.registration.status" class="w-full border border-gray-300 rounded px-3 py-2">
             <option value="">(none)</option>
-            <option value="REGISTERED">Registered</option>
-            <option value="UNREGISTERED">Unregistered</option>
-            <option value="PENDING">Pending</option>
+            <option v-for="(label, value) in registrationStatuses" :key="value" :value="value">{{ label }}</option>
           </select>
         </div>
 
@@ -99,6 +97,9 @@ export default {
     return { member: null, loading: false, saving: false, error: '', message: '' };
   },
   computed: {
+    registrationStatuses() {
+      return this.appService?.config?.registration?.statuses || {};
+    },
     levelOptions() {
       const levels = this.appService?.config?.levels || {};
       // Include fees in labels; store string level name as value

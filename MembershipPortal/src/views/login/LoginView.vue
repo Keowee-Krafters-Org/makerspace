@@ -18,7 +18,7 @@
       />
 
       <TextInput
-        v-if="status === 'UNVERIFIED' || status === 'TOKEN_EXPIRED'"
+        v-if="status === 'UNVERIFIED' || status === 'TOKEN_EXPIRED' || status === 'VERIFYING'"
         label="Email Address"
         v-model="email"
         :disabled="status === 'VERIFYING'"
@@ -31,19 +31,14 @@
       />
 
       <Button
-        v-if="status === 'UNVERIFIED'"
-        label="Verify Email"
-        @click="emitRequestToken"
+        v-if="status === 'UNVERIFIED' || status === 'TOKEN_EXPIRED' || status === 'VERIFYING'"
+        :label="status === 'VERIFYING' ? 'Resend Code' : 'Verify Email'"
+        @click="status === 'VERIFYING' ? emitResendToken() : emitRequestToken()"
       />
       <Button
         v-if="status === 'VERIFYING'"
         label="Verify Code"
         @click="emitVerifyCode"
-      />
-      <Button
-        v-if="status === 'VERIFYING'"
-        label="Resend Code"
-        @click="emitResendToken"
       />
     </Card>
   </div>

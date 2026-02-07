@@ -12,6 +12,12 @@ class MembershipManager {
   getAllMembers(params = {}) {
     // Accept normalized pagination params (currentPageMarker, pageSize)
     // Rely on storageManager to map them to store-specific params
+
+    // Ensure filters is initialized if not present
+    if (!params.filters) {
+      params.filters = [];
+    }
+
     return this.storageManager.getAll(params);
   }
 
@@ -71,7 +77,7 @@ class MembershipManager {
       }
 
 
-      if (member.login && member.login.status === 'VERIFYING') {
+      if (member.login && (member.login.status === 'VERIFYING' || member.login.status === 'UNVERIFIED')) {
         
         member.login.authentication = this.generateAuthentication();        
         member = this.storageManager.update(member.id, member).data;

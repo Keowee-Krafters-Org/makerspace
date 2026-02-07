@@ -3,40 +3,6 @@
   <div class="p-4 max-w-6xl mx-auto">
     <h2 class="text-2xl font-semibold mb-4">Admin</h2>
 
-    <div class="mb-3 flex flex-wrap items-end gap-3">
-      <div>
-        <label class="block text-sm font-medium mb-1">Search</label>
-        <input
-          v-model.trim="search"
-          type="text"
-          class="border border-gray-300 rounded px-3 py-2"
-          placeholder="Search by email or name"
-          @keyup.enter="onSearch"
-        />
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Status</label>
-        <select
-          v-model="filterStatus"
-          class="border border-gray-300 rounded px-3 py-2"
-          @change="onSearch"
-        >
-          <option value="">All</option>
-          <option value="REGISTERED">Registered</option>
-          <option value="UNREGISTERED">Unregistered</option>
-          <option value="PENDING">Pending</option>
-        </select>
-      </div>
-      <div class="ml-auto">
-        <label class="block text-sm font-medium mb-1">Page Size</label>
-        <select v-model.number="page.pageSize" class="border border-gray-300 rounded px-3 py-2" @change="onSearch">
-          <option :value="10">10</option>
-          <option :value="20">20</option>
-          <option :value="50">50</option>
-        </select>
-      </div>
-    </div>
-
     <p v-if="error" class="text-sm text-red-600 mb-2">{{ error }}</p>
 
     <UserTable
@@ -45,7 +11,49 @@
       :page="page"
       @request-page="loadMembers"
       @edit="onEdit"
-    />
+    >
+      <template #search>
+        <div class="relative flex items-center">
+          <input
+            v-model.trim="search"
+            type="text"
+            class="border border-gray-300 rounded pl-2 pr-8 py-1 text-sm w-48"
+            placeholder="Search members..."
+            @keyup.enter="onSearch"
+          />
+          <button
+            v-if="search"
+            class="absolute right-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+            @click="clearSearch"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <select
+          v-model="filterStatus"
+          class="border border-gray-300 rounded px-2 py-1 text-sm"
+          @change="onSearch"
+        >
+          <option value="">Status: All</option>
+          <option v-for="(label, value) in registrationStatuses" :key="value" :value="value">{{ label }}</option>
+        </select>
+      </template>
+      
+      <template #actions>
+        <select 
+          v-model.number="page.pageSize" 
+          class="border border-gray-300 rounded px-2 py-1 text-sm ml-2" 
+          @change="onSearch"
+          title="Page Size"
+        >
+          <option :value="10">10 / page</option>
+          <option :value="20">20 / page</option>
+          <option :value="50">50 / page</option>
+        </select>
+      </template>
+    </UserTable>
   </div>
 </template>
 
@@ -80,6 +88,11 @@ export default {
     this.appService = inject('appService');
     this.loadMembers();
   },
+  computed: {
+    registrationStatuses() {
+      return this.appService?.config?.registration?.statuses || {};
+    },
+  },
   methods: {
     async withSpinner(fn) {
       const svc = this.appService;
@@ -106,14 +119,20 @@ export default {
           // IMPORTANT: Create a clean page object for the API call
           const pageParam = {
             pageSize: pageSize,
-            currentPageMarker: marker,
-            pageToken: marker 
+            currentPageMarker: marker
           };
+
+          const filters = [];
+          if (this.search) {
+            filters.push({ field: 'name', comparator: 'CONTAINS', value: this.search });
+          }
+          if (this.filterStatus) {
+            filters.push({ field: 'registration.status', comparator: 'EQUALS', value: this.filterStatus });
+          }
 
           const params = {
             page: pageParam,
-            search: this.search || '',
-            filter: this.filterStatus || '',
+            filters: filters,
           };
 
           const { rows, page } = await this.memberService.listMembers(params);
@@ -144,6 +163,10 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    clearSearch() {
+      this.search = '';
+      this.onSearch();
     },
     onSearch() {
       // reset to first page

@@ -36,6 +36,7 @@ class ZohoStorageManager extends StorageManager {
     // Get flat Zoho request params from DTO (includes page if provided)
     const zohoParams = requestParams.toRecord();
 
+
     // Execute request
     const response = this.zohoAPI.getEntities(this.resourceName, zohoParams);
     if (!response || !response[this.resourceName]) {

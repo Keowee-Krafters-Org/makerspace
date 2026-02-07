@@ -137,6 +137,7 @@ export default {
       selectedInstructorId: '',
       previewUrl: '',
       fromMode: this.$route?.query?.mode === 'table' ? 'table' : 'list',
+      fromType: this.$route?.query?.type,
     };
   },
   computed: {
@@ -453,7 +454,7 @@ export default {
         };
 
         await this.eventService.saveEvent(payload);
-        this.$router.push({ path: '/event', query: { mode: this.fromMode } });
+        this.$router.push({ path: '/event', query: { mode: this.fromMode, type: this.fromType } });
       } catch (e) {
         this.error = e?.message || 'Failed to save event';
         this.logger?.error?.('EventEditor save failed', e);
@@ -461,7 +462,7 @@ export default {
     },
 
     onCancel() {
-      this.$router.push({ path: '/event', query: { mode: this.fromMode } });
+      this.$router.push({ path: '/event', query: { mode: this.fromMode, type: this.fromType } });
     },
 
     triggerImageInput() {

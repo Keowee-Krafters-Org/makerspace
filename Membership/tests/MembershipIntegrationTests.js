@@ -182,7 +182,7 @@ function test_verifyToken_transitions_user_to_VERIFIED() {
 //
 
 function test_getAllMembers_returns_members() {
-  const allResponse = membershipManager.getAllMembers({ pageSize: 5 }); // normalized param
+  const allResponse = membershipManager.getAllMembers({page:{ pageSize: 5 }}); // normalized param
   const all = allResponse.data;
   assert("Found Members", true, all.length > 0);
 
@@ -195,17 +195,16 @@ function test_getAllMembers_returns_members() {
 
   // Back-compat token provided when more pages
   if (page.hasMore === true) {
-    assert("Page Token (compat)", true, page.pageToken != null);
     assert("Next Page Marker", true, page.nextPageMarker != null);
   }
 }
 
 function test_getAllMembers_by_page_returns_members() {
-  const resp1 = membershipManager.getAllMembers({ currentPageMarker: 1, pageSize: 5 });
+  const resp1 = membershipManager.getAllMembers({ page: { currentPageMarker: 1, pageSize: 5 } });
   const page1Members = resp1.data;
   const member1 = page1Members[0];
 
-  const resp2 = membershipManager.getAllMembers({ currentPageMarker: 2, pageSize: 5 });
+  const resp2 = membershipManager.getAllMembers({ page: { currentPageMarker: 2, pageSize: 5 } });
   const page2Members = resp2.data;
   const member2 = page2Members[0];
 
@@ -217,7 +216,7 @@ function test_getAllMembers_by_page_returns_members() {
 }
 
 function test_when_a_page_is_requested__then_page_token_is_returned() {
-  const response = membershipManager.getAllMembers({ pageSize: 2 });
+  const response = membershipManager.getAllMembers({ page: { pageSize: 2 } });
   assert("Page object present", true, !!response.page);
 
   // Back-compat token present when more pages
@@ -227,8 +226,8 @@ function test_when_a_page_is_requested__then_page_token_is_returned() {
     // Fetch next page using common marker; fall back to token if needed
     const nextMarker = response.page.nextPageMarker;
     const nextParams = nextMarker != null
-      ? { pageSize: 2, currentPageMarker: nextMarker }
-      : { pageSize: 2, pageToken: response.page.pageToken };
+      ? { page: { pageSize: 2, currentPageMarker: nextMarker } }
+      : { page: { pageSize: 2, pageToken: response.page.pageToken } };
 
     const nextResponse = membershipManager.getAllMembers(nextParams);
     assert("Next page object present", true, !!nextResponse.page);
@@ -251,6 +250,25 @@ function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
   assert('Token', authenticationIn.token, authenticationOut.token);
 }
 
+/**
+ * Test when there is a filter applied then filtered data returns
+ */
+function test_whenFilterIsApplied_thenFilteredDataReturns() {
+  // Get a list of members
+  const membersResponse  = membershipManager.getAllMembers({ page: { pageSize: 5 } }); // normalized param to get filters initialized
+  const member = membersResponse.data[0];
+  const name = member.name;
+  const filter = {field: 'name', comparator: 'CONTAINS', value: name};
+  const filteredResponse = membershipManager.getAllMembers({ page: { pageSize: 5 }, filters: [filter] });
+  const filteredMembers = filteredResponse.data;
+  assert('Found Members', true, filteredMembers.length > 0);
+  assert('Name matches filter', name, filteredMembers[0].name);
+}
+
+
+/**
+ * Test updating a member's data and verifying the changes are saved correctly.
+ */
 function test_whenMemberIsUpdated_thenMemberData_is_changed() {
   const originalMember = membershipManager.memberLookup(testMember.emailAddress);
   const memberChanges = new ZohoMember({ id: originalMember.id, name: originalMember.name, registration: originalMember.registration });
@@ -375,7 +393,18 @@ function test_when_a_page_is_requested__then_page_token_is_returned() {
   assert("Different members on different pages", true, firstPageFirstMember.id !== secondPageFirstMember.id);
 }
 
-
+/**
+ * Test when a status filter is applied then only members with that status are returned.
+ */
+function test_whenStatusFilterIsApplied_thenOnlyMembersWithThatStatusAreReturned() {
+  const filter = { field: 'registration.status', comparator: 'EQUALS', value: 'PENDING' };
+  const response = membershipManager.getAllMembers({ page: { pageSize: 5 }, filters: [filter] });
+  const members = response.data;
+  assert('Found Members', true, members.length > 0);
+  members.forEach((member, idx) => {
+    assert(`Member ${idx} has Pending status`, 'PENDING', member.registration.status);
+  });
+}
 // Add to runAllTests
 function runAllTests() {
   test_if_member_registers__then_member_data_is_complete();

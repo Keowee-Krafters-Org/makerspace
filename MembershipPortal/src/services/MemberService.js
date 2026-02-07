@@ -109,13 +109,12 @@ export class MemberService {
     return { list, page, nextMarker, hasMore };
   }
 
-  // Refactored to use Page exclusively
+  // Refactored to use Page and Filters
   async listMembers(options = { page: { currentPageMarker: '1', pageSize: 10 } }) {
     const page = options?.page || { currentPageMarker: '1', pageSize: 10 };
-    const search = options?.search || '';
-    const filter = options?.filter || '';
+    const filters = options?.filters || [];
 
-    const raw = await this.connector.invoke('getAllMembers', { page, search, filter });
+    const raw = await this.connector.invoke('getAllMembers', { page, filters });
     const { list, page: respPage, nextMarker, hasMore } = this.unwrapList(raw || {});
     const rows = (list || []).map(m => this.toMember(m)).filter(Boolean);
 

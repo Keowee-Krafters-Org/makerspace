@@ -7,6 +7,14 @@
     emptyMessage="No members found"
     @request-page="$emit('request-page', $event)"
   >
+    <template #search>
+      <slot name="search"></slot>
+    </template>
+    
+    <template #actions>
+      <slot name="actions"></slot>
+    </template>
+
     <template #header>
       <tr class="text-gray-700">
         <th class="text-left px-3 py-2 font-semibold">Email</th>

@@ -27,7 +27,8 @@ export default {
         { label: 'Classes', to: { path: '/event', query: { mode: 'list', type: 'Class' } } },
         { label: 'Events', to: { path: '/event', query: { mode: 'list', type: 'Event' }} },
         { label: 'Manage Members', to: { path: '/admin' }, role: 'admin' },
-        { label: 'Manage Events', to: { path: '/event', query: { mode: 'table' } }, role: 'admin' },
+        { label: 'Manage Classes', to: { path: '/event', query: { mode: 'table', type: 'Class' } }, role: 'admin' },
+        { label: 'Manage Events', to: { path: '/event', query: { mode: 'table', type: 'Event' } }, role: 'admin' },
         { label: 'Member', to: { path: '/member' } },
       ],
     };

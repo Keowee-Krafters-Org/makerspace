@@ -1,15 +1,15 @@
 <template>
-  <div class="panel border border-gray-200 rounded-md bg-white overflow-hidden">
+  <div class="panel border border-gray-200 rounded-md bg-white overflow-visible">
     <!-- Toolbar -->
-    <div class="toolbar flex flex-col sm:flex-row justify-between items-center p-3 bg-gray-50 border-b border-gray-200 gap-3">
+    <div class="toolbar flex flex-col sm:flex-row justify-between items-center p-3 bg-gray-50 border-b border-gray-200 gap-3 rounded-t-md">
       <div class="flex flex-1 gap-2 items-center w-full sm:w-auto">
         <slot name="search"></slot>
         <div v-if="page" class="text-sm text-gray-500 whitespace-nowrap">
           <span v-if="page.totalItems">
-            {{ ((page.pageNumber || 1) - 1) * (page.pageSize || 0) + 1 }}-{{ Math.min(((page.pageNumber || 1)) * (page.pageSize || 0), page.totalItems) }} of {{ page.totalItems }}
+            {{ (historyIndex * (page.pageSize || 0)) + 1 }}-{{ Math.min((historyIndex + 1) * (page.pageSize || 0), page.totalItems) }} of {{ page.totalItems }}
           </span>
           <span v-else>
-            Page {{ page.pageNumber || 1 }}
+            Page {{ historyIndex + 1 }}
           </span>
         </div>
       </div>
@@ -53,7 +53,7 @@
     </div>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
+    <div class="overflow-x-visible">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <slot name="header"></slot>
