@@ -1,6 +1,6 @@
 const config = {
   dev: {
-    version: 'SNAPSHOT-1.2.9',
+    version: 'SNAPSHOT-1.2.11',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
     baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
     calendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com',
@@ -28,6 +28,15 @@ var SharedConfig = {
   loginTokenExpirationMinutes: 15,
   sessionTokenExpirationMinutes: 60 * 24,
   eventInvoiceLeadTime: 3, // days before event to make invoice payable
+  registration: {
+    statuses: {
+      NEW: 'New',
+      APPLIED: 'Applied',
+      PENDING: 'Pending',
+      REGISTERED: 'Registered',
+      UNREGISTERED: 'Unregistered'
+    }
+  },
   paymentGateways: [
     { name: 'paypal', configured: true, method: 'standard'},
     { name: 'stripe', configured: true }
