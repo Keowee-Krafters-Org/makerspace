@@ -47,7 +47,7 @@ class ModelFactory {
   }
 
   membershipManager() {
-    return new MembershipManager(new ZohoStorageManager(ZohoMember));
+    return new MembershipManager(new ZohoStorageManager(ZohoMember), this.invoiceManager());
   }
 
   vendorManager() {
@@ -63,7 +63,7 @@ class ModelFactory {
   }
 
   invoiceManager() {
-    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice));
+    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice), new ZohoStorageManager(ZohoEvent));
   }
   googleDriveService() {
     return new GoogleDriveService(this._config); 

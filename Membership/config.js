@@ -142,6 +142,6 @@ var SharedConfig = {
   }
 };
 
-export function getConfig() {
+function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }

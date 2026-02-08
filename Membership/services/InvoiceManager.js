@@ -5,10 +5,9 @@
  * 
  */
 class InvoiceManager {
-  constructor(storageManager, membershipManager, eventManager) {
+  constructor(storageManager, eventStorageManager) {
     this.storageManager = storageManager; // Handles ZohoInvoice storage
-    this.membershipManager = membershipManager; // Handles member-related operations
-    this.eventManager = eventManager;
+    this.eventStorageManager = eventStorageManager;
     this.config = getConfig();
   }
 
@@ -239,7 +238,7 @@ class InvoiceManager {
     const membershipItemId = this.config.levels[member.registration.level].itemId;
     if (!membershipItemId) throw new Error(`No itemId for level '${member.registration.level}'.`);
 
-    const eventItemResponse = this.eventManager.getEventItemById(membershipItemId);
+    const eventItemResponse = this.eventStorageManager.getById(membershipItemId);
     if (!eventItemResponse?.data?.id) throw new Error(`Membership item '${membershipItemId}' not found.`);
     const eventItem = eventItemResponse.data;
 

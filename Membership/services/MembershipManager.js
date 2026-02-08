@@ -5,8 +5,9 @@ class MembershipManager {
   /**
    * @param {StorageManager} storageManager - An instance of a storage manager (e.g., SheetStorageManager)
    */
-  constructor(storageManager) {
+  constructor(storageManager, invoiceManager) {
     this.storageManager = storageManager;
+    this.invoiceManager = invoiceManager;
   }
 
   getAllMembers(params = {}) {
@@ -224,8 +225,9 @@ class MembershipManager {
     } else {
       throw new Error('Member must be verified before registering.');
     }
-    registeredMember = this.storageManager.update(registeredMember.id, registeredMember);
-    return registeredMember;
+    const registeredMemberResponse = this.storageManager.update(registeredMember.id, registeredMember);
+    this.invoiceManager.createMembershipInvoice(registeredMemberResponse.data);
+    return registeredMemberResponse.data;
   }
 
   setMemberStatus(id, status) {
