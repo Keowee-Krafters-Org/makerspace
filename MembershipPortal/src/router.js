@@ -9,6 +9,7 @@ export function createRouter(session) {
 
     { path: '/admin', component: () => import('@/views/admin/Admin.vue'), props: true },
     { path: '/admin/member/:id?', name: 'MemberEditor', component: () => import('@/views/admin/MemberEditor.vue'), props: (route) => ({ id: route.params.id, email: route.query.email }) },
+    { path: '/admin/invoices/:id', name: 'MemberInvoices', component: () => import('@/views/admin/MemberInvoices.vue'), props: true },
 
     // Events
     { path: '/event', name: 'Events', component: () => import('@/views/event/Events.vue') },
