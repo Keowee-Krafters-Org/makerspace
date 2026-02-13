@@ -246,13 +246,15 @@ class InvoiceManager {
    * @returns 
    */
   createMembershipInvoice(member) {
+    // Validate member and registration level
     if (!member || !member.id) throw new Error('Invalid member.');
     if (!member.registration?.level) throw new Error('Missing registration level.');
-    if (!this.config.levels?.[member.registration.level]) throw new Error(`Level '${member.registration.level}' not found.`);
-
-    const membershipItemId = this.config.levels[member.registration.level].itemId;
-    if (!membershipItemId) throw new Error(`No itemId for level '${member.registration.level}'.`);
-
+    const membershipLevel = member.registration.level;
+    if (membershipLevel==='Interested Party') return new Response ( false, null, 'No invoice for interested parties.' );
+    if (!this.config.levels?.[membershipLevel]) throw new Error(`Level '${membershipLevel}' not found.`);
+    
+    const membershipItemId = this.config.levels[membershipLevel].itemId;
+    if (!membershipItemId) throw new Error(`No itemId for level '${membershipLevel}'.`);
     const eventItemResponse = this.eventStorageManager.getById(membershipItemId);
     if (!eventItemResponse?.data?.id) throw new Error(`Membership item '${membershipItemId}' not found.`);
     const eventItem = eventItemResponse.data;
@@ -273,6 +275,6 @@ class InvoiceManager {
       ],
       contacts: [{ id: member.primaryContactId }]
     };
-    return this.createAndSendInvoice(invoiceData);
+    return new Response(true, this.createAndSendInvoice(invoiceData), 'Membership invoice created and sent.' );
   }
 }

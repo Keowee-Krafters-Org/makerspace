@@ -141,10 +141,12 @@ function getEventById(eventId) {
   return JSON.stringify({ success: true, data: event });
 }
 
-function getMembersFromContacts(contacts, params = {}) {
+function getMembersFromContacts(contacts, paramsString = {}) {
   const modelFactory = Membership.newModelFactory();
   const membershipManager = modelFactory.membershipManager();
-  const members = membershipManager.getMembersFromContacts(contacts, params);
+  const contactsArray = Array.isArray(contacts) ? contacts : (typeof contacts === 'string' ? JSON.parse(contacts) : []);
+  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;
+  const members = membershipManager.getMembersFromContacts(contactsArray, params);
   return JSON.stringify({ success: true, data: members });
 }
 
