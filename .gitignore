@@ -99,3 +99,4 @@ __pycache__/
 # dist folder
 dist/
 index.html
+package-lock.json
