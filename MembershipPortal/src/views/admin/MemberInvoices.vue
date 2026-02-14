@@ -38,13 +38,13 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="inv in invoices" :key="inv.id || inv.invoice_id">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              {{ inv.invoice_number || inv.invoiceNumber }}
+              {{ inv.invoiceNumber || inv.invoice_number }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ inv.date }}
+              {{ formatDate(inv.date) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ formatCurrency(inv.total) }}
+              {{ formatCurrency(inv.totalAmount || inv.total) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ formatCurrency(inv.balance) }}
@@ -63,7 +63,7 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                <!-- If invoice_url exists use it, otherwise maybe placeholder -->
-               <a v-if="inv.invoice_url" :href="inv.invoice_url" target="_blank" class="text-blue-600 hover:text-blue-900">View</a>
+               <a v-if="inv.invoiceUrl || inv.invoice_url" :href="inv.invoiceUrl || inv.invoice_url" target="_blank" class="text-blue-600 hover:text-blue-900">View</a>
             </td>
           </tr>
           <tr v-if="invoices.length === 0">
@@ -125,6 +125,9 @@ export default {
             // Client-side filter for 'paid' since backend might return all if open=false
             list = list.filter(i => this.isPaid(i));
         }
+
+        // Filter out void invoices
+        list = list.filter(i => (i.status || '').toLowerCase() !== 'void');
         
         this.invoices = list;
         
@@ -133,6 +136,10 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    formatDate(val) {
+      if (!val) return '';
+      return new Date(val).toLocaleDateString();
     },
     isPaid(inv) {
         const s = (inv.status || '').toLowerCase();
