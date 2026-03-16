@@ -2,14 +2,16 @@
   <nav :class="['w-full border-b border-gray-200 bg-white', sticky ? 'sticky top-0 z-40' : '']">
     <div class="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
       <!-- Left: Brand -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 overflow-hidden">
         <slot name="brand">
-          <span class="text-lg font-semibold cursor-pointer" @click="goHome">{{ brandText }}</span>
+          <span class="text-lg font-semibold cursor-pointer whitespace-nowrap" @click="goHome">{{ brandText }}</span>
+          <span v-if="pageTitle" class="text-gray-400 mx-1">/</span>
+          <span v-if="pageTitle" class="text-base text-gray-700 font-medium truncate">{{ pageTitle }}</span>
         </slot>
       </div>
 
       <!-- Center: Links (Desktop) -->
-      <ul class="hidden md:flex items-center gap-4">
+      <ul class="hidden md:flex items-center gap-4 flex-shrink-0">
         <li v-for="(lnk, idx) in visibleLinks" :key="idx">
           <button
             class="text-sm px-2 py-1 rounded hover:bg-gray-100"
@@ -91,6 +93,7 @@ export default {
   },
   props: {
     brand: { type: String, default: '' },
+    pageTitle: { type: String, default: '' },
     links: {
       type: Array,
       default: () => ([

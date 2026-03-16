@@ -1,8 +1,19 @@
 <template>
   <div class="events-view">
-    <header class="flex items-center justify-between mb-4">
-      <h2 class="text-2xl font-bold">{{ title }}</h2>
-      <div class="flex items-center gap-2">
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-end mb-4 gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <select
+          v-model="eventHorizon"
+          @change="loadEvents"
+          class="p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          title="Time Range"
+        >
+          <option :value="14">2 Weeks</option>
+          <option :value="30">1 Month</option>
+          <option :value="60">2 Months</option>
+          <option :value="90">3 Months</option>
+          <option :value="180">6 Months</option>
+        </select>
         <Button icon="list" label="List" @click="viewMode = 'list'" :disabled="viewMode === 'list' || loading" />
         <Button
           v-if="isTableAllowed"
@@ -15,7 +26,7 @@
         <button
           v-if="viewMode === 'list'"
           type="button"
-          class="p-2 rounded border border-gray-300 hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+          class="p-2 rounded border border-gray-200 hover:bg-gray-50 text-gray-700 disabled:opacity-50"
           @click="onRefresh"
           :disabled="loading"
           aria-label="Refresh"
@@ -76,6 +87,7 @@ import EventTableView from './EventTableView.vue';
 export default {
   name: 'Events',
   components: { Button, Message, EventListView, EventTableView },
+  inject: ['setPageTitle', 'appService', 'logger', 'session', 'eventService'],
   data() {
     return {
       events: [],
@@ -84,14 +96,10 @@ export default {
       page: { currentPageMarker: '1', pageSize: 10, hasMore: false, nextPageMarker: null, previousPageMarker: null, pageToken: null },
       viewMode: this.$route.query.mode === 'table' ? 'table' : 'list',
       loading: false,
+      eventHorizon: 30, // Default to 1 Month
     };
   },
   created() {
-    this.appService = inject('appService');
-    this.logger = inject('logger');
-    this.session = inject('session');
-    this.eventService = inject('eventService');
-
     if (this.session && !this.$route.query.mode) {
       this.viewMode = this.session.viewMode || this.viewMode;
     }
@@ -108,6 +116,15 @@ export default {
       this.page.currentPageMarker = '1'; // Reset page on type change
       this.loadEvents();
     },
+    title: {
+      immediate: true,
+      handler(val) {
+        if (this.setPageTitle) this.setPageTitle(val);
+      }
+    },
+  },
+  unmounted() {
+    if (this.setPageTitle) this.setPageTitle('');
   },
   computed: {
     eventType() {
@@ -148,7 +165,7 @@ export default {
             pageSize: pageSize
         };
 
-        const res = await this.eventService.listEvents({ page: pageParam, eventType: this.eventType });
+        const res = await this.eventService.listEvents({ page: pageParam, eventType: this.eventType, horizon: this.eventHorizon });
 
         // If service returns array only, keep basic pagination via list length
         if (Array.isArray(res)) {
@@ -195,17 +212,19 @@ export default {
       }
     },
     onRefresh() { this.loadEvents(); },
-    addEvent() { this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode, type: this.eventType } }); },
+    addEvent() { this.appService.withSpinner(() => this.$router.push({ name: 'EventEditorNew', query: { mode: this.viewMode, type: this.eventType } })); },
 
-    handleSelect(ev) { this.$router.push({ name: 'EventView', query: { id: ev?.id, mode: this.viewMode, type: this.eventType } }); },
+    handleSelect(ev) { this.appService.withSpinner(() => this.$router.push({ name: 'EventView', query: { id: ev?.id, mode: this.viewMode, type: this.eventType } })); },
     async handleDelete(ev) {
-      try { await this.eventService.deleteEvent(ev.id); await this.loadEvents(); }
-      catch (e) { this.error = e?.message || 'Failed to delete event'; }
+      await this.appService.withSpinner(async () => {
+        try { await this.eventService.deleteEvent(ev.id); await this.loadEvents(); }
+        catch (e) { this.error = e?.message || 'Failed to delete event'; }
+      });
     },
     handleEdit(ev) {
-      this.$router.push({ name: 'EventEditor', params: { id: String(ev?.id || '') }, query: { mode: this.viewMode, type: this.eventType } });
+      this.appService.withSpinner(() => this.$router.push({ name: 'EventEditor', params: { id: String(ev?.id || '') }, query: { mode: this.viewMode, type: this.eventType } }));
     },
-    openAttendees(ev) { this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode, type: this.eventType } }); },
+    openAttendees(ev) { this.appService.withSpinner(() => this.$router.push({ path: '/event/attendees', query: { id: ev.id, mode: this.viewMode, type: this.eventType } })); },
 
     enforceModePermissions(initial = false) {
       if (this.viewMode === 'table' && !this.isTableAllowed) {

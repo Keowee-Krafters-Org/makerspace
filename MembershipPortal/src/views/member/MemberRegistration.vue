@@ -66,7 +66,7 @@ import { Member } from '@/model/Member.js';
 
 export default {
   name: 'MemberRegistration',
-  inject: ['session'],
+  inject: ['session', 'appService', 'memberService', 'logger'],
   data() {
     return {
       member: null,  // Member model instance bound to the form
@@ -76,9 +76,6 @@ export default {
     };
   },
   computed: {
-    appService() { return this.$.appContext.provides['appService']; },
-    memberService() { return this.$.appContext.provides['memberService']; },
-    logger() { return this.$.appContext.provides['logger']; },
     rateSheetLink() {
       return this.appService?.config?.rateSheetLink || '';
     },
@@ -117,32 +114,37 @@ export default {
       this.error = '';
       this.message = '';
       this.saving = true;
-      try {
-        await nextTick(); // flush v-model edits
 
-        // Build minimal Member instance from current session + form fields
-        const current = this.session?.member || {};
-        const edits = this.member || {};
-        const regMember = Member.forRegistration(current, edits);
+      await this.appService.withSpinner(async () => {
+        try {
+          await nextTick(); // flush v-model edits
 
-        // Post minimal registration
-        const result = await this.memberService.addMemberRegistration(regMember);
+          // Build minimal Member instance from current session + form fields
+          const current = this.session?.member || {};
+          const edits = this.member || {};
+          const regMember = Member.forRegistration(current, edits);
 
-        // Update session member from response or refetch
-        const updated = result?.member || null;
-        if (updated) this.session.member = updated;
-        const target = { path: '/member' };
-        const redirect = this.$route?.query?.redirect;
-        if (redirect) target.query = { redirect };
-        this.$router.push(target);
-      } catch (e) {
-        this.error = e?.message || 'Failed to submit registration';
-        this.logger?.error?.('MemberRegistration.onSubmit', e);
-      } finally {
-        this.saving = false;
-      }
+          // Post minimal registration
+          const result = await this.memberService.addMemberRegistration(regMember);
+
+          // Update session member from response or refetch
+          const updated = result?.member || null;
+          if (updated) this.session.member = updated;
+          const target = { path: '/member' };
+          const redirect = this.$route?.query?.redirect;
+          if (redirect) target.query = { redirect };
+          this.$router.push(target);
+        } catch (e) {
+          this.error = e?.message || 'Failed to submit registration';
+          this.logger?.error?.('MemberRegistration.onSubmit', e);
+        } finally {
+          this.saving = false;
+        }
+      });
     },
-    onCancel() { this.$router.push({ path: '/member' }); },
+    onCancel() {
+      this.appService.withSpinner(() => this.$router.push({ path: '/member' }));
+    },
   },
 };
 </script>

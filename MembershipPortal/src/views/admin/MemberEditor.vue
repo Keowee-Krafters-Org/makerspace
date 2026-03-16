@@ -1,7 +1,5 @@
 <template>
   <div class="p-4 max-w-3xl mx-auto">
-    <h2 class="text-2xl font-semibold mb-4">Edit Member</h2>
-
     <p v-if="error" class="text-sm text-red-600 mb-3">{{ error }}</p>
     <p v-if="message" class="text-sm text-green-700 mb-3">{{ message }}</p>
 
@@ -92,6 +90,7 @@ import { inject } from 'vue';
 
 export default {
   name: 'MemberEditor',
+  inject: ['setPageTitle', 'logger', 'appService', 'memberService'],
   props: { id: { type: String, default: '' }, email: { type: String, default: '' } },
   data() {
     return { member: null, loading: false, saving: false, error: '', message: '' };
@@ -126,19 +125,22 @@ export default {
     },
   },
   created() {
-    this.logger = inject('logger');
-    this.appService = inject('appService');
-    this.memberService = inject('memberService');
+    if (this.setPageTitle) this.setPageTitle('Edit Member');
     this.loadMember();
+  },
+  unmounted() {
+    if (this.setPageTitle) this.setPageTitle('');
   },
   methods: {
     async loadMember() {
       this.loading = true;
       this.error = '';
       try {
-        this.member = this.id
-          ? await this.memberService.getMemberById(this.id)
-          : await this.memberService.getMemberByEmail(this.email);
+        await this.appService.withSpinner(async () => {
+          this.member = this.id
+            ? await this.memberService.getMemberById(this.id)
+            : await this.memberService.getMemberByEmail(this.email);
+        });
       } catch (e) {
         this.error = e?.message || 'Failed to load member';
         this.logger?.error?.('MemberEditor.loadMember', e);
@@ -152,30 +154,32 @@ export default {
       this.message = '';
       this.saving = true;
       try {
-        const connector = this.memberService?.connector;
-        if (!connector) throw new Error('Service connector unavailable');
+        await this.appService.withSpinner(async () => {
+          const connector = this.memberService?.connector;
+          if (!connector) throw new Error('Service connector unavailable');
 
-        const firstName = (this.member.firstName || '').trim();
-        const lastName = (this.member.lastName || '').trim();
-        const name = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (this.member.name || '');
+          const firstName = (this.member.firstName || '').trim();
+          const lastName = (this.member.lastName || '').trim();
+          const name = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (this.member.name || '');
 
-        const request = {
-          id: this.member.id,
-          name,
-          emailAddress: this.member.emailAddress,
-          firstName,
-          lastName,
-          registration: {
-            level: this.member.registration?.level || '',
-            status: this.member.registration?.status || '',
-            waiverSigned: !!this.member.registration?.waiverSigned,
-            waiverPdfLink: this.member.registration?.waiverPdfLink || '',
-          },
-        };
+          const request = {
+            id: this.member.id,
+            name,
+            emailAddress: this.member.emailAddress,
+            firstName,
+            lastName,
+            registration: {
+              level: this.member.registration?.level || '',
+              status: this.member.registration?.status || '',
+              waiverSigned: !!this.member.registration?.waiverSigned,
+              waiverPdfLink: this.member.registration?.waiverPdfLink || '',
+            },
+          };
 
-        await connector.invoke('updateMember', request);
-        this.message = 'Member saved.';
-        this.$router.push({ path: '/admin' });
+          await connector.invoke('updateMember', request);
+          this.message = 'Member saved.';
+          this.$router.push({ path: '/admin' });
+        });
       } catch (e) {
         this.error = e?.message || 'Failed to save member';
         this.logger?.error?.('MemberEditor.onSave', e);
@@ -183,7 +187,7 @@ export default {
         this.saving = false;
       }
     },
-    onCancel() { this.$router.back(); },
+    onCancel() { this.appService.withSpinner(() => this.$router.back()); },
   },
 };
 </script>

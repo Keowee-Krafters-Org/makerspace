@@ -1,8 +1,7 @@
 <template>
   <div class="p-4 max-w-3xl mx-auto">
-    <header class="flex items-center justify-between mb-4">
-      <h2 class="text-2xl font-bold">{{ isNew ? 'Create Class' : 'Edit Class' }}</h2>
-      <div class="toolbar-actions">
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-end mb-4 gap-2">
+      <div class="toolbar-actions self-start sm:self-auto">
         <Button icon="refresh" label="Reload" @click="loadAll" />
         <Button icon="trash" label="Cancel" @click="onCancel" />
         <Button icon="pencil" :label="isNew ? 'Create' : 'Save'" @click="onSave" />
@@ -121,6 +120,7 @@ import { Logger }  from '@/services/Logger.js';
 export default {
   name: 'EventEditor',
   components: { Button, Message, DropdownList },
+  inject: ['setPageTitle', 'eventService', 'logger', 'appService'],
   props: {
     id: { type: String, default: '' }, // optional route param for edit
   },
@@ -141,6 +141,9 @@ export default {
     };
   },
   computed: {
+    pageTitle() {
+      return this.isNew ? 'Create Class' : 'Edit Class';
+    },
     isNew() {
       return !this.id;
     },
@@ -154,11 +157,19 @@ export default {
     },
   },
   created() {
-    this.eventService = inject('eventService');
-    this.logger = inject('logger');
+    this.logger.debug('EventEditor mounted', { id: this.id });
     this.loadAll();
   },
+  unmounted() {
+    if (this.setPageTitle) this.setPageTitle('');
+  },
   watch: {
+    pageTitle: {
+      immediate: true,
+      handler(val) {
+        if (this.setPageTitle) this.setPageTitle(val);
+      }
+    },
     hosts() { this.syncSelections(); },
     instructors() { this.syncSelections(); },
     rooms() { this.syncSelections(); },
@@ -453,8 +464,10 @@ export default {
           location: { id: this.form.location.id || '', email: locationEmail },
         };
 
-        await this.eventService.saveEvent(payload);
-        this.$router.push({ path: '/event', query: { mode: this.fromMode, type: this.fromType } });
+        await this.appService.withSpinner(async () => {
+            await this.eventService.saveEvent(payload);
+            await this.$router.push({ path: '/event', query: { mode: this.fromMode, type: this.fromType } });
+        });
       } catch (e) {
         this.error = e?.message || 'Failed to save event';
         this.logger?.error?.('EventEditor save failed', e);
@@ -462,7 +475,7 @@ export default {
     },
 
     onCancel() {
-      this.$router.push({ path: '/event', query: { mode: this.fromMode, type: this.fromType } });
+      this.appService.withSpinner(() => this.$router.push({ path: '/event', query: { mode: this.fromMode, type: this.fromType } }));
     },
 
     triggerImageInput() {

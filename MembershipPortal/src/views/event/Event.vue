@@ -1,11 +1,7 @@
 <template>
-  <div :class="rootClass">
-    <!-- Page header only in full page variant -->
-    <header v-if="isPage" class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold">
-        {{ event?.getTitle() || 'Event' }}
-      </h2>
-      <div class="flex gap-2">
+  <div class="rootClass">
+    <header v-if="isPage" class="flex flex-col sm:flex-row sm:items-center sm:justify-end mb-6 gap-2">
+      <div class="flex gap-2 self-start sm:self-auto">
         <Button icon="arrow-left" label="Back" @click="goBack" />
       </div>
     </header>
@@ -136,6 +132,7 @@ export default {
   name: 'EventView',
   emits: ['updated'],
   components: { Button, Message, EventButtonPanel },
+  inject: ['setPageTitle'],
   props: {
     id: { type: String, required: true },
     mode: { type: String, default: 'list' },
@@ -280,6 +277,7 @@ export default {
     },
   },
   created() {
+    this.appService = inject('appService');
     this.eventService = inject('eventService');
     this.session = inject('session');
     this.logger = inject('logger');
@@ -295,6 +293,21 @@ export default {
     id() {
       if (!this.initial) this.loadEvent();
     },
+    event() {
+      if (this.isPage && this.setPageTitle) {
+        this.setPageTitle(this.event?.getTitle() || 'Event');
+      }
+    },
+  },
+  mounted() {
+    if (this.isPage && this.setPageTitle) {
+      this.setPageTitle(this.event?.getTitle() || (this.initial ? EventModel.fromObject(this.initial).getTitle() : 'Event'));
+    }
+  },
+  unmounted() {
+    if (this.isPage && this.setPageTitle) {
+      this.setPageTitle('');
+    }
   },
   methods: {
     async loadEvent() {
@@ -325,16 +338,16 @@ export default {
       if (this.event) this.$emit('updated', this.event);
     },
     goBack() {
-      this.$router.push({ path: '/event', query: { mode: this.fromMode } });
+      this.appService.withSpinner(() => this.$router.push({ path: '/event', query: { mode: this.fromMode } }));
     },
     openDetails() {
-      this.$router.push({ name: 'EventView', query: { id: this.id, mode: this.fromMode } });
+      this.appService.withSpinner(() => this.$router.push({ name: 'EventView', query: { id: this.id, mode: this.fromMode } }));
     },
     onVerify() {
       // Send user to login/verification, then back to this event
       const target = { path: '/event/view', query: { id: this.id, mode: this.fromMode } };
       const redirect = encodeURIComponent(JSON.stringify(target));
-      this.$router.push({ path: '/member', query: { redirect } });
+      this.appService.withSpinner(() => this.$router.push({ path: '/member', query: { redirect } }));
     },
 
     // Require VERIFIED to register/unregister
@@ -408,7 +421,7 @@ export default {
     openEditor() {
       const eventId = this.id || this.event?.id;
       if (!eventId) return;
-      this.$router.push({ name: 'EventEditor', params: { id: eventId } });
+      this.appService.withSpinner(() => this.$router.push({ name: 'EventEditor', params: { id: eventId } }));
     },
   },
 };

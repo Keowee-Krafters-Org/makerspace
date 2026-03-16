@@ -75,22 +75,24 @@ export default {
       this.error = '';
       this.message = '';
       this.loading = true;
-      try {
-        // Refresh member from backend to pick up status change after form submission
-        const email = this.session?.member?.emailAddress || this.session?.member?.email || '';
-        if (email && this.memberService?.getMemberByEmail) {
-          const refreshed = await this.memberService.getMemberByEmail(email);
-          if (refreshed && typeof refreshed === 'object') this.session.member = refreshed;
+      await this.appService.withSpinner(async () => {
+        try {
+          // Refresh member from backend to pick up status change after form submission
+          const email = this.session?.member?.emailAddress || this.session?.member?.email || '';
+          if (email && this.memberService?.getMemberByEmail) {
+            const refreshed = await this.memberService.getMemberByEmail(email);
+            if (refreshed && typeof refreshed === 'object') this.session.member = refreshed;
+          }
+          // Return to Member view; it will redirect back to the event if canSignup and redirect is present
+          const target = { path: '/member' };
+          if (this.redirectParam) target.query = { redirect: this.redirectParam };
+          this.$router.push(target);
+        } catch (e) {
+          this.error = e?.message || 'Could not refresh member status';
+        } finally {
+          this.loading = false;
         }
-        // Return to Member view; it will redirect back to the event if canSignup and redirect is present
-        const target = { path: '/member' };
-        if (this.redirectParam) target.query = { redirect: this.redirectParam };
-        this.$router.push(target);
-      } catch (e) {
-        this.error = e?.message || 'Could not refresh member status';
-      } finally {
-        this.loading = false;
-      }
+      });
     },
   },
 };

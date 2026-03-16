@@ -1,8 +1,6 @@
 <!-- filepath: /home/csmith/Development/makerspace/MembershipPortal/src/views/admin/Admin.vue -->
 <template>
   <div class="p-4 max-w-6xl mx-auto">
-    <h2 class="text-2xl font-semibold mb-4">Admin</h2>
-
     <p v-if="error" class="text-sm text-red-600 mb-2">{{ error }}</p>
 
     <UserTable
@@ -64,6 +62,7 @@ import UserTable from '@/components/UserTable.vue';
 export default {
   name: 'AdminView',
   components: { UserTable },
+  inject: ['setPageTitle', 'logger', 'memberService', 'appService'],
   data() {
     return {
       rows: [],
@@ -83,10 +82,11 @@ export default {
     };
   },
   created() {
-    this.logger = inject('logger');
-    this.memberService = inject('memberService');
-    this.appService = inject('appService');
+    if (this.setPageTitle) this.setPageTitle('Manage Members');
     this.loadMembers();
+  },
+  unmounted() {
+    if (this.setPageTitle) this.setPageTitle('');
   },
   computed: {
     registrationStatuses() {
@@ -94,11 +94,6 @@ export default {
     },
   },
   methods: {
-    async withSpinner(fn) {
-      const svc = this.appService;
-      if (svc && typeof svc.withSpinner === 'function') return svc.withSpinner(fn);
-      return fn();
-    },
     async loadMembers(target) {
       // Prepare pagination parameters
       let marker = this.page.currentPageMarker || '1';
@@ -115,7 +110,7 @@ export default {
       this.loading = true;
       this.error = '';
       try {
-        await this.withSpinner(async () => {
+        await this.appService.withSpinner(async () => {
           // IMPORTANT: Create a clean page object for the API call
           const pageParam = {
             pageSize: pageSize,
@@ -184,13 +179,15 @@ export default {
       this.loadMembers(target);
     },
     onEdit(member) {
-      if (member?.id) {
-        this.$router.push({ name: 'MemberEditor', params: { id: member.id } });
-      } else if (member?.emailAddress) {
-        this.$router.push({ name: 'MemberEditor', query: { email: member.emailAddress } });
-      } else {
-        this.logger?.warn?.('No id or email to edit', member);
-      }
+      this.appService.withSpinner(() => {
+        if (member?.id) {
+          this.$router.push({ name: 'MemberEditor', params: { id: member.id } });
+        } else if (member?.emailAddress) {
+          this.$router.push({ name: 'MemberEditor', query: { email: member.emailAddress } });
+        } else {
+          this.logger?.warn?.('No id or email to edit', member);
+        }
+      });
     },
   },
 };

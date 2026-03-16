@@ -33,9 +33,10 @@ export default {
   inset: 0;
   background: rgba(255, 255, 255, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 9999;
+  padding-top: 20vh;
 }
 
 .spinner {

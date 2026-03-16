@@ -3,7 +3,7 @@
     <header class="toolbar">
       <h3 class="text-xl font-semibold">Attendees</h3>
       <div class="toolbar-actions">
-        <Button label="Back" @click="$router.back()" />
+        <Button label="Back" @click="goBack" />
       </div>
     </header>
 
@@ -36,32 +36,35 @@
 </template>
 
 <script>
-import { inject } from 'vue';
 import Button from '@/components/Button.vue';
 import Message from '@/components/Message.vue';
 
 export default {
   name: 'EventAttendees',
   components: { Button, Message },
+  inject: ['appService', 'eventService', 'logger'],
   data() {
     return {
       attendees: [],
       error: '',
     };
   },
+  methods: {
+    goBack() {
+      this.appService.withSpinner(() => this.$router.back());
+    }
+  },
   async created() {
-    const eventService = inject('eventService');
-    const logger = inject('logger');
     const eventId = this.$route.query.id;
     if (!eventId) {
       this.error = 'Missing event id';
       return;
     }
     try {
-      this.attendees = await eventService.getEventAttendees(eventId);
+      this.attendees = await this.eventService.getEventAttendees(eventId);
     } catch (e) {
       this.error = e?.message || 'Failed to load attendees';
-      logger?.error?.('getEventAttendees failed', e);
+      this.logger?.error?.('getEventAttendees failed', e);
     }
   },
 };

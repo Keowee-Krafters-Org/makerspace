@@ -97,6 +97,7 @@ __pycache__/
 .clasp.json
 
 # dist folder
-dist/
+/**/dist/
 index.html
 package-lock.json
+dist/

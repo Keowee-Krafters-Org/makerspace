@@ -12,7 +12,7 @@
       <template #footer>
         <div class="flex gap-2">
            <Button v-if="!session?.member" label="Sign Up / Login" @click="onLogin" />
-           <Button v-if="isAdmin" label="Admin Dashboard" @click="$router.push('/admin')" />
+           <Button v-if="isAdmin" label="Admin Dashboard" @click="goToAdmin" />
         </div>
       </template>
     </Card>
@@ -26,7 +26,13 @@ import Card from '@/components/Card.vue';
 export default {
   name: 'MemberLanding',
   components: { Button, Card },
-  inject: ['session'],
+  inject: ['session', 'setPageTitle', 'appService'],
+  created() {
+    if (this.setPageTitle) this.setPageTitle('Member');
+  },
+  unmounted() {
+    if (this.setPageTitle) this.setPageTitle('');
+  },
   computed: {
     memberName() {
       const m = this.session?.member;
@@ -50,10 +56,10 @@ export default {
   },
   methods: {
     onLogin() {
-      // Logic for login or redirect to auth page
-      // For now, reload or trigger auth flow if needed
-      // Assuming App handles auth via Google/Node connector automatically or via a specific login route
-      console.log('Login requested');
+      this.appService.withSpinner(() => this.$router.push('/member'));
+    },
+    goToAdmin() {
+      this.appService.withSpinner(() => this.$router.push('/admin'));
     }
   }
 };

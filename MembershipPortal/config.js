@@ -7,8 +7,8 @@
 
 config = {
   dev: {
-    version: 'SNAPSHOT-1.1.5',
-    deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
+    version: 'SNAPSHOT-1.1.8',
+    deploymentId: 'AKfycbxM_gvdUF8wmuxIyS-2T6E-NstBT6vjPwC05hruhouo9Ar_jc8_8-wouKASEXYtXDGA',
   },
   prod: {
     // Production configuration
@@ -20,7 +20,7 @@ config = {
     // Note: The deploymentId should be the one from the latest deployment
     // This is a placeholder and should be replaced
     // with the actual deployment ID after deployment
-    version: 'RELEASE-1.2.9',
+    version: 'RELEASE-1.2.10',
     deploymentId: 'AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR',
   }
 

@@ -1,8 +1,6 @@
 <!-- filepath: /home/csmith/Development/makerspace/MembershipPortal/src/views/member/Member.vue -->
 <template>
   <div class="max-w-xl mx-auto p-4">
-    <h2 class="text-2xl font-semibold mb-4">Member</h2>
-
     <p v-if="error" class="mb-3 text-sm text-red-600">{{ error }}</p>
     <p v-if="message" class="mb-3 text-sm text-green-700">{{ message }}</p>
 
@@ -82,7 +80,8 @@ import { inject, nextTick } from 'vue';
 
 export default {
   name: 'MemberView',
-  inject: ['session'],
+  // Inject session + setPageTitle for nav management
+  inject: ['session', 'setPageTitle', 'memberService', 'logger', 'appService'],
   data() {
     return {
       email: '',
@@ -113,9 +112,7 @@ export default {
     },
   },
   created() {
-    this.memberService = inject('memberService');
-    this.logger = inject('logger');
-    this.appService = inject('appService');
+    if (this.setPageTitle) this.setPageTitle('Member');
 
     if (this.currentMember?.emailAddress || this.currentMember?.email) {
       this.email = this.currentMember.emailAddress || this.currentMember.email;
@@ -129,6 +126,9 @@ export default {
     if (this.redirectTarget && this.isVerified && this.canSignUp) { this.redirectBack?.(true); return; }
     if (!this.redirectTarget && this.isVerified && this.canSignUp) { this.routeToMemberLanding?.(true); }
   },
+  unmounted() {
+    if (this.setPageTitle) this.setPageTitle('');
+  },
   watch: {
     currentMember() {
       // React to status changes (e.g., after submitting registration form)
@@ -141,15 +141,15 @@ export default {
   methods: {
     routeToMemberLanding(replace = false) {
       const named = { name: 'MemberLanding' };
-      return replace ? this.$router.replace(named) : this.$router.push(named);
+      return this.appService.withSpinner(() => replace ? this.$router.replace(named) : this.$router.push(named));
     },
     routeToMemberRegistration(replace = false) {
       const named = { name: 'MemberRegistration' };
-      return replace ? this.$router.replace(named) : this.$router.push(named);
+      return this.appService.withSpinner(() => replace ? this.$router.replace(named) : this.$router.push(named));
     },
     routeToMemberWaiver(replace = false) {
       const named = { name: 'MemberWaiver', query: this.$route?.query?.redirect ? { redirect: this.$route.query.redirect } : undefined };
-      return replace ? this.$router.replace(named) : this.$router.push(named);
+      return this.appService.withSpinner(() => replace ? this.$router.replace(named) : this.$router.push(named));
     },
     parseRedirect(raw) {
       if (!raw) return null;
@@ -167,42 +167,44 @@ export default {
     },
     redirectBack(replace = false) {
       if (!this.redirectTarget) return;
-      return replace ? this.$router.replace(this.redirectTarget) : this.$router.push(this.redirectTarget);
+      return this.appService.withSpinner(() => replace ? this.$router.replace(this.redirectTarget) : this.$router.push(this.redirectTarget));
     },
 
     async onRequestToken() {
       this.error = '';
       this.message = '';
-      this.loading = true;
+      this.loading = true; // keep local loading for disabling inputs
       this.showNewAccountPrompt = false;
-      try {
-        const email = (this.email || '').trim();
-        if (!email) throw new Error('Email is required');
+      await this.appService.withSpinner(async () => {
+        try {
+          const email = (this.email || '').trim();
+          if (!email) throw new Error('Email is required');
 
-        // Pre-check existence unless user confirmed new-account flow
-        if (!this.allowAutoCreate) {
-          const existing = await this.memberService.findMemberByEmail(email);
-          if (!existing) {
-            this.showNewAccountPrompt = true;
-            this.showVerificationInputs = false; // ensure code input stays hidden for new account prompt
-            this.message = '';
-            return;
+          // Pre-check existence unless user confirmed new-account flow
+          if (!this.allowAutoCreate) {
+            const existing = await this.memberService.findMemberByEmail(email);
+            if (!existing) {
+              this.showNewAccountPrompt = true;
+              this.showVerificationInputs = false; // ensure code input stays hidden for new account prompt
+              this.message = '';
+              return;
+            }
           }
-        }
 
-        const member = await this.memberService.requestToken(email);
-        if (member && typeof member === 'object') {
-          this.session.member = member;
+          const member = await this.memberService.requestToken(email);
+          if (member && typeof member === 'object') {
+            this.session.member = member;
+          }
+          this.message = 'If the email exists, a sign-in link or code has been sent.';
+          this.showVerificationInputs = true; // show code input after sending
+          this.allowAutoCreate = false; // reset after use
+        } catch (e) {
+          this.error = e?.message || 'Failed to request token';
+          this.logger?.error?.('requestToken failed', e);
+        } finally {
+          this.loading = false;
         }
-        this.message = 'If the email exists, a sign-in link or code has been sent.';
-        this.showVerificationInputs = true; // show code input after sending
-        this.allowAutoCreate = false; // reset after use
-      } catch (e) {
-        this.error = e?.message || 'Failed to request token';
-        this.logger?.error?.('requestToken failed', e);
-      } finally {
-        this.loading = false;
-      }
+      });
     },
 
     onCorrectEmail() {
@@ -220,85 +222,93 @@ export default {
       this.error = '';
       this.message = '';
       this.loading = true;
-      try {
-        await this.memberService.resendToken(this.email);
-        this.message = 'Verification email resent.';
-        this.showVerificationInputs = true; // keep code input visible
-      } catch (e) {
-        this.error = e?.message || 'Failed to resend token';
-        this.logger?.error?.('resendToken failed', e);
-      } finally {
-        this.loading = false;
-      }
+      await this.appService.withSpinner(async () => {
+        try {
+          await this.memberService.resendToken(this.email);
+          this.message = 'Verification email resent.';
+          this.showVerificationInputs = true; // keep code input visible
+        } catch (e) {
+          this.error = e?.message || 'Failed to resend token';
+          this.logger?.error?.('resendToken failed', e);
+        } finally {
+          this.loading = false;
+        }
+      });
     },
 
     async onVerifyCode() {
       this.error = '';
       this.message = '';
       this.loading = true;
-      try {
-        const res = await this.memberService.verifyCode(this.email, this.token);
+      // Note: we use withSpinner here, and nested calls to route/redirect also use withSpinner. 
+      // This is fine as the counter handles recursive calls.
+      await this.appService.withSpinner(async () => {
+        try {
+          const res = await this.memberService.verifyCode(this.email, this.token);
 
-        if (res && res.success === false) {
-          this.error = 'Invalid Code - Please check email code and try again';
-          return;
-        }
+          if (res && res.success === false) {
+            this.error = 'Invalid Code - Please check email code and try again';
+            return;
+          }
 
-        if (res?.redirectToForm && res.url) {
-          window.location.assign(res.url);
-          return;
-        }
-        if (res?.member) {
-          this.session.member = res.member;
-          await nextTick();
-          this.message = 'Signed in successfully.';
-          this.token = '';
-          this.showVerificationInputs = false; // hide after successful verification
-          if (this.redirectTarget && this.canSignUp) {
-            this.redirectBack();
-          } else if (this.isVerified && this.isAppliedRegistration) {
-            this.routeToMemberWaiver();
-          } else if (this.isVerified && this.isNewRegistration) {
-            this.routeToMemberRegistration();
-          } else if (this.isVerified && this.canSignUp) {
-            this.routeToMemberLanding();
+          if (res?.redirectToForm && res.url) {
+            window.location.assign(res.url); // Navigation away from app
+            return;
           }
-        } else {
-          this.message = 'Verification complete.';
-          // keep/hide based on your UX preference; hiding here:
-          this.showVerificationInputs = false;
-          if (this.redirectTarget && this.canSignUp) {
-            this.redirectBack();
-          } else if (this.isVerified && this.isAppliedRegistration) {
-            this.routeToMemberWaiver();
-          } else if (this.isVerified && this.isNewRegistration) {
-            this.routeToMemberRegistration();
-          } else if (this.isVerified && this.canSignUp) {
-            this.routeToMemberLanding();
+          if (res?.member) {
+            this.session.member = res.member;
+            await nextTick();
+            this.message = 'Signed in successfully.';
+            this.token = '';
+            this.showVerificationInputs = false; // hide after successful verification
+            if (this.redirectTarget && this.canSignUp) {
+              this.redirectBack();
+            } else if (this.isVerified && this.isAppliedRegistration) {
+              this.routeToMemberWaiver();
+            } else if (this.isVerified && this.isNewRegistration) {
+              this.routeToMemberRegistration();
+            } else if (this.isVerified && this.canSignUp) {
+              this.routeToMemberLanding();
+            }
+          } else {
+            this.message = 'Verification complete.';
+            // keep/hide based on your UX preference; hiding here:
+            this.showVerificationInputs = false;
+            if (this.redirectTarget && this.canSignUp) {
+              this.redirectBack();
+            } else if (this.isVerified && this.isAppliedRegistration) {
+              this.routeToMemberWaiver();
+            } else if (this.isVerified && this.isNewRegistration) {
+              this.routeToMemberRegistration();
+            } else if (this.isVerified && this.canSignUp) {
+              this.routeToMemberLanding();
+            }
           }
+        } catch (e) {
+          this.error = e?.message || 'Failed to verify token';
+          this.logger?.error?.('verifyCode failed', e);
+        } finally {
+          this.loading = false;
         }
-      } catch (e) {
-        this.error = e?.message || 'Failed to verify token';
-        this.logger?.error?.('verifyCode failed', e);
-      } finally {
-        this.loading = false;
-      }
+      });
     },
 
     async onLogout() {
       this.error = '';
       this.message = '';
       this.loading = true;
-      try {
-        await this.memberService.logout(this.currentMember?.emailAddress || this.currentMember?.email || this.email);
-      } catch {
-        // ignore backend logout failures
-      } finally {
-        this.session.member = null;
-        this.message = 'Logged out.';
-        this.showVerificationInputs = false; // reset UI
-        this.loading = false;
-      }
+      await this.appService.withSpinner(async () => {
+        try {
+          await this.memberService.logout(this.currentMember?.emailAddress || this.currentMember?.email || this.email);
+        } catch {
+          // ignore backend logout failures
+        } finally {
+          this.session.member = null;
+          this.message = 'Logged out.';
+          this.showVerificationInputs = false; // reset UI
+          this.loading = false;
+        }
+      });
     },
   },
 };
