@@ -100,4 +100,5 @@ __pycache__/
 /**/dist/
 index.html
 package-lock.json
-dist/
+dist/*
+MembershipPortal/dist/appsscript.json
