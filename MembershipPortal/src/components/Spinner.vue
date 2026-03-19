@@ -36,7 +36,7 @@ export default {
   align-items: flex-start;
   justify-content: center;
   z-index: 9999;
-  padding-top: 20vh;
+  padding-top: 60px;
 }
 
 .spinner {
