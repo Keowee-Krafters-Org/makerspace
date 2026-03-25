@@ -95,19 +95,8 @@ class ZohoMember extends Member {
    * @returns {Object} The Zoho CRM record object.
    */
   toRecord() {
-    const primaryContact = new ZohoContact ({
-      firstName: this.firstName, 
-      lastName: this.lastName, 
-      emailAddress: this.emailAddress,
-      phoneNumber: this.phoneNumber,
-//      address: this.address
-    }); 
-    // Append contacts items past index 1 to the contacts array
-    if (Array.isArray(this.contacts) && this.contacts.length > 1) {
-      this.contacts = [primaryContact, ...this.contacts.slice(1)];
-    } else {
-      this.contacts = [primaryContact];
-    }
+    
+   
     this.name = `${this.firstName} ${this.lastName}`;
     const record = this.convertDataToRecord(this.constructor.getToRecordMap());
 
@@ -115,6 +104,15 @@ class ZohoMember extends Member {
     record.contact_type = 'customer';
     record.customer_sub_type = 'individual';
 
+    if (!this.primaryContactId) {
+      // Add new primary contact to the contacts array if it doesn't exist
+    const primaryContact = new ZohoContact ({
+      firstName: this.firstName, 
+      lastName: this.lastName, 
+      emailAddress: this.emailAddress,
+      phoneNumber: this.phoneNumber,
+//      address: this.address
+    }); 
     // Use the root data to create the contacts list
     // Append contacts items past index 1 to the contacts array
     if (Array.isArray(this.contacts) && this.contacts.length > 1) {
@@ -123,6 +121,7 @@ class ZohoMember extends Member {
       this.contacts = [primaryContact];
     }
     record.contact_persons = this.contacts.map(c => c.toRecord())
+  }
     Object.assign(record, this.login ? this.login.toRecord() : {});
     Object.assign(record, this.registration ? this.registration.toRecord() : {});
     return record;

@@ -28,7 +28,7 @@
         
         <!-- Login / Logout Icons -->
         <button
-          v-if="!currentMember"
+          v-if="!isVerifiedStatus"
           class="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full focus:outline-none"
           @click="go({ path: '/member' })"
           title="Login"
@@ -39,7 +39,7 @@
         </button>
 
         <button
-          v-else
+          v-if="isVerifiedStatus"
           class="p-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-full focus:outline-none"
           @click="onLogout"
           title="Logout"

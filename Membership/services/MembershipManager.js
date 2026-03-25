@@ -75,13 +75,7 @@ class MembershipManager {
         member.login.authentication = this.generateAuthentication();
         member.login.status = "VERIFYING";
         member = this.storageManager.update(member.id, member).data;
-      }
-
-
-      if (member.login && (member.login.status === 'VERIFYING' || member.login.status === 'UNVERIFIED')) {
         
-        member.login.authentication = this.generateAuthentication();        
-        member = this.storageManager.update(member.id, member).data;
         this.sendEmail({
           emailAddress: emailAddress,
           title: 'Your MakeKeowee Login Code',

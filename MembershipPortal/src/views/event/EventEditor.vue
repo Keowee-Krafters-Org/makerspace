@@ -356,6 +356,11 @@ export default {
         enabled: !!item.enabled,
         duration: Number(item.duration ?? 0),
       });
+
+      const imgUrl = item.image?.url || '';
+      this.form.eventItem.image = { data: '', url: imgUrl };
+      this.previewUrl = imgUrl;
+
       const hostId = this.resolveId(item.host, this.hosts);
       if (hostId) {
         this.selectedHostId = hostId;

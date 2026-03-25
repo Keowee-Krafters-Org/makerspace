@@ -55,6 +55,7 @@ export class MemberService {
       resendToken: 'login',
       verifyCode: 'verifyToken',
       logout: 'logout',
+      getMemberByEmail: 'getMemberByEmail',
     };
     return gasMap[name] || name;
   }

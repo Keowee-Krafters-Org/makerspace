@@ -25,21 +25,29 @@ import NavBar from '@/components/NavBar.vue';
 export default {
   name: 'App',
   components: { Spinner, NavBar },
-  inject: ['appService'],
+  inject: ['appService', 'session'],
   data() {
     return {
       version: this.appService?.config?.version || '',
       brand: this.appService?.config?.organization?.name || 'Makerspace',
       pageTitle: '',
-      navLinks: [
+    };
+  },
+  computed: {
+    navLinks() {
+      const member = this.session?.member;
+      const isVerified = (member?.login?.status || '').toUpperCase() === 'VERIFIED';
+      const memberName = [member?.firstName, member?.lastName].filter(Boolean).join(' ') || member?.name || 'Member';
+
+      return [
         { label: 'Classes', to: { path: '/event', query: { mode: 'list', type: 'Class' } } },
         { label: 'Events', to: { path: '/event', query: { mode: 'list', type: 'Event' }} },
         { label: 'Manage Members', to: { path: '/admin' }, role: 'admin' },
         { label: 'Manage Classes', to: { path: '/event', query: { mode: 'table', type: 'Class' } }, role: 'admin' },
         { label: 'Manage Events', to: { path: '/event', query: { mode: 'table', type: 'Event' } }, role: 'admin' },
-        { label: 'Member', to: { path: '/member' } },
-      ],
-    };
+        { label: isVerified ? memberName : 'Guest', to: { path: '/member' } },
+      ];
+    }
   },
   provide() {
     return {
