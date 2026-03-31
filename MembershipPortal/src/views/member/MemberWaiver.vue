@@ -17,7 +17,7 @@
         :disabled="loading"
         @click="onCompleted"
       >
-        I completed the form
+        I have completed the form
       </button>
     </div>
 

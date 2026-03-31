@@ -104,7 +104,7 @@ class ZohoMember extends Member {
     record.contact_type = 'customer';
     record.customer_sub_type = 'individual';
 
-    if (!this.primaryContactId) {
+    
       // Add new primary contact to the contacts array if it doesn't exist
     const primaryContact = new ZohoContact ({
       firstName: this.firstName, 
@@ -113,6 +113,9 @@ class ZohoMember extends Member {
       phoneNumber: this.phoneNumber,
 //      address: this.address
     }); 
+    if (this.primaryContactId) {
+      primaryContact.id = this.primaryContactId;
+    }
     // Use the root data to create the contacts list
     // Append contacts items past index 1 to the contacts array
     if (Array.isArray(this.contacts) && this.contacts.length > 1) {
@@ -121,7 +124,6 @@ class ZohoMember extends Member {
       this.contacts = [primaryContact];
     }
     record.contact_persons = this.contacts.map(c => c.toRecord())
-  }
     Object.assign(record, this.login ? this.login.toRecord() : {});
     Object.assign(record, this.registration ? this.registration.toRecord() : {});
     return record;
