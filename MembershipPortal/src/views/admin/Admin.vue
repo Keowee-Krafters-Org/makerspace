@@ -9,6 +9,7 @@
       :page="page"
       @request-page="loadMembers"
       @edit="onEdit"
+      @invoices="onInvoices"
     >
       <template #search>
         <div class="relative flex items-center">
@@ -188,6 +189,11 @@ export default {
           this.logger?.warn?.('No id or email to edit', member);
         }
       });
+    },
+    onInvoices(member) {
+      if (member?.id) {
+        this.$router.push({ name: 'MemberInvoices', params: { id: member.id } });
+      }
     },
   },
 };

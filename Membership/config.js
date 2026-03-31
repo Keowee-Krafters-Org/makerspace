@@ -18,7 +18,7 @@ const config = {
 }
 
 var SharedConfig = {
-  mode: 'prod',
+  mode: 'dev', 
   appName: 'MakeKeowee Portal',
   organization: {name: 'MakeKeowee', address: '4 Eagle Lane, Salem, SC 29676', phone: '864-123-4567'},
   eventHorizon: 30, // days

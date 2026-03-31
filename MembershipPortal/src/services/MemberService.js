@@ -110,6 +110,14 @@ export class MemberService {
     return { list, page, nextMarker, hasMore };
   }
 
+  async getInvoicesForMember(memberId, open = true) {
+    return this.withSpinner(async () => {
+      const fn = this.mapFn('getInvoicesForMember');
+      const args = this.isGAS ? [memberId, open] : [{ memberId, open }];
+      return await this.connector.invoke(fn, ...args);
+    });
+  }
+
   // Refactored to use Page and Filters
   async listMembers(options = { page: { currentPageMarker: '1', pageSize: 10 } }) {
     const page = options?.page || { currentPageMarker: '1', pageSize: 10 };

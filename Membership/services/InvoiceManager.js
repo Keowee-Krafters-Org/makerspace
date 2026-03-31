@@ -34,6 +34,21 @@ class InvoiceManager {
   }
 
   /**
+   * Retrieves invoices for a specific member from the storage.
+   * @param {string} memberId - The ID of the member.
+   * @param {boolean} open - Whether to filter for open invoices only.
+   * @returns {Array} An array of invoices.
+   */
+  getInvoicesForMember(memberId, open = true) {
+    const params = { customer_id: memberId };
+    if (open) {
+      params['status'] = 'open';
+    }
+    const result = this.storageManager.getAll(params);
+    return result.data;
+  }
+
+  /**
    * Creates a new invoice.
    * @param {Object} invoiceData - The data for the new invoice.
    * @returns {Object} The created invoice.

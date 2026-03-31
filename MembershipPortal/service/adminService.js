@@ -45,6 +45,12 @@ function getMemberById(id) {
   return memberResponse.toString();
 }
 
+function getInvoicesForMember(memberId, open) {
+  const invoiceManager = Membership.newModelFactory().invoiceManager();
+  const invoices = invoiceManager.getInvoicesForMember(memberId, open);
+  return JSON.stringify(invoices); 
+}
+
 /**
  * Returns all instructors (vendors) for admin listing.
  */
