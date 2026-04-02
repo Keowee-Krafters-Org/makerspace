@@ -8,7 +8,7 @@ const config = {
     logLevel: 'DEBUG'
   },
   prod: {
-    version: 'RELEASE-1.2.10',
+    version: 'RELEASE-1.2.13',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',    
     calendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com',
@@ -141,7 +141,6 @@ var SharedConfig = {
     login: { status: 'UNVERIFIED' }
   }
 };
-
 export function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }
