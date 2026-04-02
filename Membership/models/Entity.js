@@ -5,7 +5,7 @@
  * 
  */
 
- class Entity {
+ export class Entity {
     constructor(data = {}) {
         Object.keys(data).forEach(key => {
             let value = data[key]; 
@@ -211,3 +211,6 @@
          return this.convertDataToRecord(this.constructor.getToRecordMap())
     }
 }
+
+// Make the class globally accessible in Google Apps Script
+globalThis.Entity = Entity;

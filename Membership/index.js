@@ -1,5 +1,5 @@
-export * from './models/Contact.js';
 export * from './models/Entity.js';
+export * from './models/Contact.js';
 export * from './models/Event.js';
 export * from './models/File.js';
 export * from './models/Form.js';

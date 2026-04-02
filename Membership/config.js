@@ -1,4 +1,4 @@
-const config = {
+export const config = {
   dev: {
     version: 'SNAPSHOT-1.2.15',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
@@ -17,7 +17,7 @@ const config = {
   }
 }
 
-var SharedConfig = {
+export var SharedConfig = {
   mode: 'dev', 
   appName: 'MakeKeowee Portal',
   organization: {name: 'MakeKeowee', address: '4 Eagle Lane, Salem, SC 29676', phone: '864-123-4567'},
@@ -142,6 +142,6 @@ var SharedConfig = {
   }
 };
 
-function getConfig() {
+export function getConfig() {
   return { ...SharedConfig, ...config[SharedConfig.mode] };
 }

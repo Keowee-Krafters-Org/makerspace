@@ -1,3 +1,4 @@
+import {Entity} from './Entity.js';
 /**
  * Event class representing an event with attendees, host, location, and other details.
  * Extends the base Entity class for common entity functionality.   
@@ -7,7 +8,7 @@
  * Data transport is handled in the subclasses (e.g., ZohoEvent) 
  * Most use cases involve using the subclass directly. 
  */
-class Event extends Entity {
+export default class Event extends Entity {
     constructor(data = {}) {
         super(data);
     }

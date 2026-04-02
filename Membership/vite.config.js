@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       copy({
         targets: [
           { src: 'appsscript.json', dest: 'dist' },
-          ...(isProd ? [] : [{ src: 'tests/**/*', dest: 'dist/tests' }]),
+          ...(isProd ? [] : [{ src: 'tests/**/*.js', dest: 'dist/tests' }]),
         ],
         hook: 'writeBundle',
         verbose: true,
