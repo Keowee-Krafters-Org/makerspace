@@ -8,7 +8,7 @@ const config = {
     logLevel: 'DEBUG'
   },
   prod: {
-    version: 'RELEASE-1.2.8',
+    version: 'RELEASE-1.2.10',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',    
     calendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com',
@@ -96,18 +96,18 @@ var SharedConfig = {
   levels: {
     'Guest': {value: 0, discount: 0, description: 'Guest - Not a member', itemId: ''},
     'Interested Party': {value: 1, discount: 0  , description: 'Interested Party - Not a member', itemId: '5636475000001511102'    },
-    'Active': {value: 2, discount: 10 , description: 'Active Member - Access to most tools and classes', itemId: '5636475000000148799'},
-    'Full Access': {value: 3, discount: 15 , description: 'Full Access Member - Access to all tools and workshops', itemId: '5636475000001511056'},
-    'Lifetime': {value: 4, discount: 20, description: 'Lifetime Member - Full access for life', itemId: '' },
-    'Host': {value: 5, discount: 25, description: 'Host Member - Full access plus ability to host classes and events', itemId: ''  },
-    'Instructor': {value: 6, discount: 20, description: 'Instructor Member - Full access plus ability to teach classes', itemId: ''    },
-    'Board': {value: 10, discount: 20, description: 'Board Member - Full access plus ability to vote in board elections', itemId: ''      },
-    'President': {value: 11, discount: 20, description: 'President - Full access plus ability to lead the board', itemId: ''          },
-    'Vice President': {value: 12, discount: 20, description: 'Vice President - Full access plus ability to assist the President', itemId: ''},
-    'Secretary': {value: 13, discount: 20, description: 'Secretary - Full access plus ability to manage records', itemId: ''},
-    'Treasurer': {value: 14, discount: 20, description: 'Treasurer - Full access plus ability to manage finances', itemId: ''},
-    'Advisor': {value: 15, discount: 20, description: 'Advisor - Full access plus ability to provide guidance', itemId: ''},
-    'Administrator': {value: 30, discount: 20, description: 'Administrator - Full access with administrative privileges', itemId: ''}
+    'Active': {value: 2, discount: 0 , description: 'Active Member - Access to most tools and classes', itemId: '5636475000000148799'},
+    'Full Access': {value: 3, discount: 0 , description: 'Full Access Member - Access to all tools and workshops', itemId: '5636475000001511056'},
+    'Lifetime': {value: 4, discount: 0, description: 'Lifetime Member - Full access for life', itemId: '' },
+    'Host': {value: 5, discount: 0, description: 'Host Member - Full access plus ability to host classes and events', itemId: ''  },
+    'Instructor': {value: 6, discount: 0, description: 'Instructor Member - Full access plus ability to teach classes', itemId: ''    },
+    'Board': {value: 10, discount: 0, description: 'Board Member - Full access plus ability to vote in board elections', itemId: ''      },
+    'President': {value: 11, discount: 0, description: 'President - Full access plus ability to lead the board', itemId: ''          },
+    'Vice President': {value: 12, discount: 0, description: 'Vice President - Full access plus ability to assist the President', itemId: ''},
+    'Secretary': {value: 13, discount: 0, description: 'Secretary - Full access plus ability to manage records', itemId: ''},
+    'Treasurer': {value: 14, discount: 0, description: 'Treasurer - Full access plus ability to manage finances', itemId: ''},
+    'Advisor': {value: 15, discount: 0, description: 'Advisor - Full access plus ability to provide guidance', itemId: ''},
+    'Administrator': {value: 30, discount: 0, description: 'Administrator - Full access with administrative privileges', itemId: ''}
   },
   interests: {
     'General Arts and Crafts': {value: 1},
