@@ -6,7 +6,9 @@
     "description": "Membership Management System for Makerspace",
   "scripts": {
     "clean": "rimraf dist",
-    "build": "vite build",
+    "build:app": "vite build",
+    "build:tests": "vite build -c vite.config.tests.js",
+    "build": "npm run clean && npm run build:app && npm run build:tests",
     "pull": "clasp pull",
     "push": "npm run build && clasp push",
     "deploy:dev": "npm run push && node ./scripts/redeploy.mjs dev",

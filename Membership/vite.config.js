@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import clean from 'vite-plugin-clean';
 import copy from 'rollup-plugin-copy';
 
 export default defineConfig(({ mode }) => {
@@ -8,7 +7,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      clean(),
       copy({
         targets: [
           { src: 'appsscript.json', dest: 'dist' },
@@ -23,13 +21,13 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       minify: isProd,
       lib: {
-        entry: resolve(__dirname, 'gas.entry.js'),
+        entry: resolve(__dirname, 'index.js'),
         formats: ['iife'],
         name: 'MembershipBundle',
         fileName: () => 'Code.js',
       },
       // Use V8-compatible target; GAS supports modern syntax
-      target: 'es2018',
+      target: 'es2017',
       rollupOptions: {
         output: { inlineDynamicImports: true },
         treeshake: true,

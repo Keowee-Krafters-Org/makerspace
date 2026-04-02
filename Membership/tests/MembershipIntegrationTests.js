@@ -215,28 +215,6 @@ function test_getAllMembers_by_page_returns_members() {
   assert('Page 2 marker = 2', 2, Number(resp2.page.currentPageMarker));
 }
 
-function test_when_a_page_is_requested__then_page_token_is_returned() {
-  const response = membershipManager.getAllMembers({ page: { pageSize: 2 } });
-  assert("Page object present", true, !!response.page);
-
-  // Back-compat token present when more pages
-  if (response.page.hasMore === true) {
-    assert("Page token provided when hasMore", true, response.page.pageToken != null);
-
-    // Fetch next page using common marker; fall back to token if needed
-    const nextMarker = response.page.nextPageMarker;
-    const nextParams = nextMarker != null
-      ? { page: { pageSize: 2, currentPageMarker: nextMarker } }
-      : { page: { pageSize: 2, pageToken: response.page.pageToken } };
-
-    const nextResponse = membershipManager.getAllMembers(nextParams);
-    assert("Next page object present", true, !!nextResponse.page);
-
-    const firstPageFirstMember = response.data[0];
-    const secondPageFirstMember = nextResponse.data[0];
-    assert("Different members on different pages", true, firstPageFirstMember.id !== secondPageFirstMember.id);
-  }
-}
 
 function test_whenAuthenticationIsRequested_thenAuthenticationIsVerified() {
   membershipManager.addMemberRegistration(Member.fromObject(testMember));
@@ -380,7 +358,7 @@ function test_when_get_config__then_key_parameters_are_set() {
 
 // Legacy page token test retained with normalized params
 
-function test_when_a_page_is_requested__then_page_token_is_returned() {
+function test_when_a_page_is_requested__then_page_token_is_returned_legacy() {
   const response = membershipManager.getAllMembers({ page: { pageSize: 2 } });
   const nextPageMarker = response.page.nextPageMarker;
   assert("Page token is returned", true, nextPageMarker != null);
@@ -417,7 +395,7 @@ function runAllTests() {
   test_verifyToken_transitions_user_to_VERIFIED();
   test_getAllMembers_returns_members();
   test_getAllMembers_by_page_returns_members();
-  test_when_a_page_is_requested__then_page_token_is_returned();
+  test_when_a_page_is_requested__then_page_token_is_returned_legacy();
   test_whenAuthenticationIsRequested_thenAuthenticationIsVerified();
   test_whenMemberIsUpdated_thenMemberData_is_changed();
   test_whenMemberIsCreatedFromData_thenAllFieldsAreThere();
