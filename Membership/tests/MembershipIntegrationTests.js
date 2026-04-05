@@ -7,7 +7,8 @@ import { getConfig } from '../config.js';
 
 export class MembershipIntegrationTests {
     constructor() {
-        this.membershipManager = ModelFactory.membershipManager();
+        this.modelFactory = new ModelFactory();
+        this.membershipManager = this.modelFactory.membershipManager();
         this.testEmailAddress = 'testuser@keoweekrafters.org';
         this.existingEmailAddress = 'christopher.smith@oopscope.com';
 

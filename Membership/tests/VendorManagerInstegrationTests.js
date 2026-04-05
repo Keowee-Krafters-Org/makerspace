@@ -3,7 +3,7 @@ import { Instructor } from '../models/Instructor.js';
 
 export class VendorManagerIntegrationTests {
     constructor() {
-        this.modelFactory = ModelFactory;
+        this.modelFactory = new ModelFactory();
     }
 
     run() {

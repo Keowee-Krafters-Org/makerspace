@@ -142,6 +142,60 @@ export var SharedConfig = {
   }
 };
 
+function cloneConfig(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+export class ConfigProvider {
+  constructor(options = {}) {
+    const {
+      mode,
+      sharedConfig,
+      environmentConfig,
+    } = options;
+
+    this._sharedConfig = sharedConfig ? cloneConfig(sharedConfig) : cloneConfig(SharedConfig);
+    this._environmentConfig = environmentConfig ? cloneConfig(environmentConfig) : cloneConfig(config);
+
+    if (mode) {
+      this.mode = mode;
+    }
+  }
+
+  get mode() {
+    return this._sharedConfig.mode;
+  }
+
+  set mode(value) {
+    if (!this._environmentConfig[value]) {
+      throw new Error(`Unknown configuration mode: ${value}`);
+    }
+    this._sharedConfig.mode = value;
+  }
+
+  get sharedConfig() {
+    return this._sharedConfig;
+  }
+
+  get environmentConfig() {
+    return this._environmentConfig;
+  }
+
+  getConfig() {
+    const mode = this._sharedConfig.mode;
+    const envConfig = this._environmentConfig[mode] || {};
+    return { ...this._sharedConfig, ...envConfig };
+  }
+
+  toJSON() {
+    return this.getConfig();
+  }
+}
+
+export function createConfig(options = {}) {
+  return new ConfigProvider(options);
+}
+
 export function getConfig() {
-  return { ...SharedConfig, ...config[SharedConfig.mode] };
+  return createConfig().getConfig();
 }

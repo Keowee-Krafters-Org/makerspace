@@ -7,7 +7,7 @@ import { getConfig } from '../config.js';
  * It also integrates with a calendar system to manage event scheduling.  
  */
 export class EventManager {
-  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService, vendorManager) {
+  constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService, vendorManager, config = null) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
     this.membershipManager = membershipManager;
@@ -15,7 +15,7 @@ export class EventManager {
     this.fileManager = fileManager;      // legacy single-image handling
     this.driveService = driveService;    // new multiple image handling
     this.vendorManager = vendorManager;
-    this.config = getConfig();
+    this.config = config || getConfig();
   }
 
   getEventItemList(params = {}) {
@@ -51,7 +51,7 @@ export class EventManager {
    * or enriching the events with event item data.
    */
   getUpcomingEvents(params = {}) {
-    const eventHorizon = params.horizon || getConfig().eventHorizon;
+    const eventHorizon = params.horizon || this.config.eventHorizon;
     const calendarEventsResponse = this.calendarManager.getUpcomingEvents(eventHorizon);
     const calendarEvents = this.enrichCalendarEvents(calendarEventsResponse.data ?? []);
     if (!params.eventType) {

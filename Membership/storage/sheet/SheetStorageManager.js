@@ -1,8 +1,14 @@
-class SheetStorageManager extends StorageManager {
-    constructor(storageName, clazz) {
+import { getConfig } from '../../config.js';
+import { Member } from '../../models/Member.js';
+import { StorageManager } from '../StorageManager.js';
+
+export class SheetStorageManager extends StorageManager {
+    constructor(storageName, clazz, config = null) {
         super();
-        const sheetId = SharedConfig[storageName].sheet.id;
-        const sheetName = SharedConfig[storageName].sheet.name;
+        this.config = config || getConfig();
+        const storageConfig = this.config?.[storageName]?.sheet || {};
+        const sheetId = storageConfig.id;
+        const sheetName = storageConfig.name;
         if (!sheetId) {
             throw new Error('Sheet ID is required to initialize SheetStorageManager.');
         }

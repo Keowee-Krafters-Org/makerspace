@@ -1,4 +1,7 @@
-class FormWaiver extends Waiver{
+import { getConfig } from '../../config.js';
+import { Waiver } from '../../models/Waiver.js';
+
+export class FormWaiver extends Waiver {
   constructor(waiverData = {}) {
     super(waiverData);
   }
@@ -6,8 +9,9 @@ class FormWaiver extends Waiver{
   static getResourceNameSingular() { return 'waiver'; }
   static getResourceNamePlural() { return 'waivers'; }  
 
-  static getFormId() {
-    return SharedConfig.forms.waiver.formId; 
+  static getFormId(config = null) {
+    const cfg = config || getConfig();
+    return cfg.forms?.waiver?.formId || cfg.forms?.waiver?.id;
   }
     /**
    * Maps Zoho CRM record fields to ZohoMember data fields.
@@ -27,6 +31,6 @@ class FormWaiver extends Waiver{
 
   static fromRecord(record = {}) {
     const data = super.convertRecordToData(record, this.getFromRecordMap());
-    return new Waiver(data);
+    return new FormWaiver(data);
   }
 }

@@ -15,6 +15,22 @@ import { MembershipIntegrationTests } from './MembershipIntegrationTests.js';
 import { VendorManagerIntegrationTests } from './VendorManagerIntegrationTests.js';
 import { ZohoIntegrationTests } from './ZohoIntegrationTests.js';
 
+const DEFAULT_TEST_CONFIG = {
+    defaultSuiteEnabled: false,
+    unlistedTestsEnabled: false,
+    suites: {},
+};
+
+function getRuntimeTestConfig() {
+    try {
+        const cfg = (typeof globalThis !== 'undefined' && globalThis.TEST_CONFIG) ? globalThis.TEST_CONFIG : null;
+        if (cfg && typeof cfg === 'object') return cfg;
+    } catch {
+        // ignore and use default
+    }
+    return DEFAULT_TEST_CONFIG;
+}
+
 export class TestRunner {
     constructor() {
         this.suites = {
@@ -25,9 +41,65 @@ export class TestRunner {
             VendorManager: new VendorManagerIntegrationTests(),
             Zoho: new ZohoIntegrationTests(),
         };
+        this.testConfig = getRuntimeTestConfig();
+    }
+
+    getSuiteTests(suite) {
+        return Object.getOwnPropertyNames(Object.getPrototypeOf(suite))
+            .filter(name => name.startsWith('test_') && typeof suite[name] === 'function');
+    }
+
+    isSuiteEnabled(suiteName) {
+        const suiteCfg = this.testConfig?.suites?.[suiteName];
+        if (suiteCfg && Object.prototype.hasOwnProperty.call(suiteCfg, 'enabled')) {
+            return suiteCfg.enabled !== false;
+        }
+        return this.testConfig?.defaultSuiteEnabled !== false;
+    }
+
+    isTestEnabled(suiteName, testName) {
+        const suiteCfg = this.testConfig?.suites?.[suiteName] || {};
+        const tests = suiteCfg.tests || {};
+        if (Object.prototype.hasOwnProperty.call(tests, testName)) {
+            return tests[testName] !== false;
+        }
+        return this.testConfig?.unlistedTestsEnabled !== false;
+    }
+
+    runSuiteWithConfig(suiteName) {
+        const suite = this.suites[suiteName];
+        if (!suite || typeof suite.run !== 'function') {
+            Logger.log(`Suite '${suiteName}' not found.`);
+            return;
+        }
+
+        if (!this.isSuiteEnabled(suiteName)) {
+            Logger.log(`Skipping suite '${suiteName}' (disabled in testConfig).`);
+            return;
+        }
+
+        const allTests = this.getSuiteTests(suite);
+        const enabledTests = allTests.filter(testName => this.isTestEnabled(suiteName, testName));
+
+        if (enabledTests.length === 0) {
+            Logger.log(`No enabled tests found for suite '${suiteName}'.`);
+            return;
+        }
+
+        Logger.log(`Running ${enabledTests.length}/${allTests.length} enabled tests in suite '${suiteName}'...`);
+        enabledTests.forEach(testName => this.run(suiteName, testName));
+        Logger.log(`Enabled tests in suite '${suiteName}' completed.`);
     }
 
     run(suiteName, testName) {
+        if (!this.isSuiteEnabled(suiteName)) {
+            Logger.log(`Suite '${suiteName}' is disabled in testConfig.`);
+            return;
+        }
+        if (!this.isTestEnabled(suiteName, testName)) {
+            Logger.log(`Test '${testName}' in suite '${suiteName}' is disabled in testConfig.`);
+            return;
+        }
         if (this.suites[suiteName] && typeof this.suites[suiteName].run === 'function') {
             Logger.log(`Running test '${testName}' in suite '${suiteName}'...`);
             this.suites[suiteName].run(testName);
@@ -39,32 +111,15 @@ export class TestRunner {
 
     runAll(suiteName) {
         if (suiteName) {
-            if (this.suites[suiteName] && typeof this.suites[suiteName].runAll === 'function') {
-                Logger.log(`Running all tests in suite '${suiteName}'...`);
-                this.suites[suiteName].runAll();
-                Logger.log(`All tests in suite '${suiteName}' completed.`);
-            } else {
-                Logger.log(`Suite '${suiteName}' not found.`);
-            }
+            this.runSuiteWithConfig(suiteName);
         } else {
-            Logger.log('Running all test suites...');
+            Logger.log('Running enabled tests in all suites...');
             for (const name in this.suites) {
-                if (typeof this.suites[name].runAll === 'function') {
-                    Logger.log(`Running all tests in suite '${name}'...`);
-                    this.suites[name].runAll();
-                    Logger.log(`All tests in suite '${name}' completed.`);
-                }
+                this.runSuiteWithConfig(name);
             }
-            Logger.log('All test suites completed.');
+            Logger.log('All enabled test suites completed.');
         }
     }
 }
 
-/**
- * Global function to be called from the Google Apps Script editor to run all tests.
- */
-globalThis.runTests = function() {
-    const runner = new TestRunner();
-    runner.runAll();
-};
 

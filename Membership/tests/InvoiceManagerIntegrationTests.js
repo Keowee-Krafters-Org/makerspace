@@ -5,9 +5,10 @@ import { ModelFactory } from '../services/ModelFactory.js';
 
 export class InvoiceManagerIntegrationTests {
     constructor() {
+        this.modelFactory = new ModelFactory();
         this.storageManager = new ZohoStorageManager(ZohoInvoice);
-        this.membershipManager = ModelFactory.membershipManager();
-        this.eventManager = ModelFactory.eventManager();
+        this.membershipManager = this.modelFactory.membershipManager();
+        this.eventManager = this.modelFactory.eventManager();
         this.invoiceManager = new InvoiceManager(this.storageManager, this.membershipManager, this.eventManager);
         this.testMember = {
             emailAddress: 'testuser@keoweekrafters.org',

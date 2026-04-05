@@ -1,5 +1,5 @@
 import { StorageManager } from '../StorageManager.js';
-import { SharedConfig } from '../../config.js';
+import { getConfig } from '../../config.js';
 
 /**
  * FormStorageManager is responsible for managing the storage of form data.
@@ -7,16 +7,17 @@ import { SharedConfig } from '../../config.js';
  * This class is designed to work with Google FormsApp
  */
 export class FormStorageManager extends StorageManager {
-    constructor(formClass) {
+    constructor(formClass, config = null) {
         super(formClass);
-        this.form = FormApp.openById(formClass.getFormId());
+        this.config = config || getConfig();
+        this.form = FormApp.openById(formClass.getFormId(this.config));
     }
     /**
      * Retrieves all form records.
      * @returns {Array} An array of form records.
      */
     async getAll() {
-        const configForms = SharedConfig.forms;
+        const configForms = Object.values(this.config.forms || {});
         const forms = configForms.map(cf => {
             return this.getById(cf.id);
         });
@@ -102,8 +103,9 @@ export class FormStorageManager extends StorageManager {
 }
 
 export class FormWaiver {
-    static getFormId() {
-        return SharedConfig.forms.waiver.id;
+    static getFormId(config = null) {
+        const cfg = config || getConfig();
+        return cfg.forms?.waiver?.formId || cfg.forms?.waiver?.id;
     }
     static fromRecord(record) {
         const waiver = new FormWaiver();

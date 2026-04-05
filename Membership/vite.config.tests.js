@@ -1,8 +1,19 @@
 // vite.config.tests.js
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import copy from 'rollup-plugin-copy';
 
 export default defineConfig({
+  plugins: [
+    copy({
+      targets: [
+        { src: 'test.js', dest: 'dist' },
+        { src: 'testConfig.js', dest: 'dist' },
+      ],
+      hook: 'writeBundle',
+      verbose: true,
+    }),
+  ],
   build: {
     target: 'es2017',
     minify: false,
@@ -15,16 +26,9 @@ export default defineConfig({
       formats: ['iife'],
     },
     rollupOptions: {
-      // Make sure to externalize deps that are provided by the main 'Code.js' bundle
       external: [/^\.\.\/(models|services|storage)\/.*\.js$/],
       output: {
-        globals: (id) => {
-          // This function converts an external module ID into a global variable expression.
-          // e.g., '../models/Member.js' becomes 'Membership.Member'
-          // e.g., '../services/ModelFactory.js' becomes 'Membership.ModelFactory'
-          const name = id.split('/').pop().replace('.js', '');
-          return `Membership.${name}`;
-        },
+        globals: () => 'Membership',
       },
     },
   },

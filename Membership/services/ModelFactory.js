@@ -12,7 +12,7 @@ import { InvoiceManager } from './InvoiceManager.js';
 import { GoogleDriveService } from '../storage/google/drive/GoogleDriveService.js';
 import { ZohoStorageManager, ZohoEvent, ZohoMember, ZohoInstructor, ZohoInvoice } from '../storage/zoho/ZohoStorageManager.js';
 import { FormStorageManager, FormWaiver } from '../storage/form/FormStorageManager.js';
-import { getConfig } from '../config.js';
+import { ConfigProvider, createConfig } from '../config.js';
 
 /**
  * Factory class for creating and managing various models and services within the Membership application.
@@ -27,8 +27,29 @@ import { getConfig } from '../config.js';
  * const member = factory.member({ name: 'John Doe' });
  */
 export class ModelFactory {
-  constructor(config) {
-    this._config = config || {};
+  constructor(configSource) {
+    this._configProvider = this.normalizeConfigProvider(configSource);
+    this._config = this._configProvider.getConfig();
+  }
+
+  normalizeConfigProvider(configSource) {
+    if (!configSource) {
+      return createConfig();
+    }
+
+    if (configSource instanceof ConfigProvider) {
+      return configSource;
+    }
+
+    if (typeof configSource.getConfig === 'function') {
+      return {
+        getConfig: () => configSource.getConfig(),
+      };
+    }
+
+    return {
+      getConfig: () => configSource,
+    };
   }
   response(success, data = {}, message, error) {
     return new Response(success, data, message, error);
@@ -48,7 +69,7 @@ export class ModelFactory {
 
   calendarManager() {
     const calendarId = this._config.calendarId;
-    return new CalendarManager(calendarId);
+    return new CalendarManager(calendarId, this._config);
   }
 
   eventManager() {
@@ -58,12 +79,13 @@ export class ModelFactory {
     this.googleDriveService(),
     this.invoiceManager(),
     this.googleDriveService(),
-    this.vendorManager()
+    this.vendorManager(),
+    this._config
     );
   }
 
   membershipManager() {
-    return new MembershipManager(new ZohoStorageManager(ZohoMember), this.invoiceManager());
+    return new MembershipManager(new ZohoStorageManager(ZohoMember), this.invoiceManager(), this._config);
   }
 
   vendorManager() {
@@ -75,11 +97,11 @@ export class ModelFactory {
   }
 
   waiverManager() {
-    return new WaiverManager(new FormStorageManager(FormWaiver), this.membershipManager());
+    return new WaiverManager(new FormStorageManager(FormWaiver, this._config), this.membershipManager(), this._config);
   }
 
   invoiceManager() {
-    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice), new ZohoStorageManager(ZohoEvent));
+    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice), new ZohoStorageManager(ZohoEvent), this._config);
   }
   googleDriveService() {
     return new GoogleDriveService(this._config); 
@@ -93,12 +115,13 @@ export class ModelFactory {
   }
 
   set config(config ) {
-    this._config = config;
+    this._configProvider = this.normalizeConfigProvider(config);
+    this._config = this._configProvider.getConfig();
   }
 }
 
 function newModelFactory() {
-  return new ModelFactory(getConfig());
+  return new ModelFactory(createConfig());
 }
 
 

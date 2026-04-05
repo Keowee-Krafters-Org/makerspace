@@ -1,4 +1,4 @@
-import { FormWaiver } from '../models/Form.js';
+import { FormWaiver } from '../storage/form/FormStorageManager.js';
 import { ModelFactory } from '../services/ModelFactory.js';
 import { FormStorageManager } from '../storage/form/FormStorageManager.js';
 import { WaiverManager } from '../services/WaiverManager.js';
@@ -6,7 +6,7 @@ import { SharedConfig } from '../config.js';
 
 export class FormIntegrationTests {
     constructor() {
-        this.modelFactory = ModelFactory;
+        this.modelFactory = new ModelFactory();
         this.testMember = {
             emailAddress: 'test.user@example.com'
         };

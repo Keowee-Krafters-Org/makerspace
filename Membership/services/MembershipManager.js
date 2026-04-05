@@ -1,5 +1,4 @@
 import { Response } from '../models/Response.js';
-import { SharedConfig } from '../config.js';
 import { ZohoLogin } from '../storage/zoho/ZohoStorageManager.js';
 import { getConfig } from '../config.js';
 
@@ -10,9 +9,10 @@ export class MembershipManager {
   /**
    * @param {StorageManager} storageManager - An instance of a storage manager (e.g., SheetStorageManager)
    */
-  constructor(storageManager, invoiceManager) {
+  constructor(storageManager, invoiceManager, config = null) {
     this.storageManager = storageManager;
     this.invoiceManager = invoiceManager;
+    this.config = config || getConfig();
   }
 
   getAllMembers(params = {}) {
@@ -84,16 +84,17 @@ export class MembershipManager {
         this.sendEmail({
           emailAddress: emailAddress,
           title: 'Your MakeKeowee Login Code',
-          message: `Your verification code is: ${member.login.authentication.token}\nIt expires in ${SharedConfig.loginTokenExpirationMinutes} minutes.`
+          message: `Your verification code is: ${member.login.authentication.token}\nIt expires in ${this.config.loginTokenExpirationMinutes} minutes.`
         });
       }
     
     return new Response(true, member);
   }
 
-  generateAuthentication(durationMinutes = SharedConfig.loginTokenExpirationMinutes) {
+  generateAuthentication(durationMinutes = null) {
+    const minutes = Number(durationMinutes ?? this.config.loginTokenExpirationMinutes ?? 15);
     const token = Math.floor(100000 + Math.random() * 900000).toString();
-    const expirationTime = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+    const expirationTime = new Date(Date.now() + minutes * 60 * 1000).toISOString();
     return { token, expirationTime };
   }
 
@@ -103,7 +104,7 @@ export class MembershipManager {
 
     // Default response - no access
     let response = new Response(false,
-      this.storageManager.createNew(getConfig().defaultMember),
+      this.storageManager.createNew(this.config.defaultMember),
       'Member not found');
     if (!member) {
       return response;
@@ -251,7 +252,7 @@ export class MembershipManager {
 
     console.info(`Sending email ${emailPacket.title} to: ${emailPacket.emailAddress}`);
     GmailApp.sendEmail(emailPacket.emailAddress, emailPacket.title, emailPacket.message, {
-      from: 'noreply@keoweekrafters.org',
+      from: this.config?.emailAddress?.from || 'noreply@keoweekrafters.org',
       name: 'KeoweeKrafters',
       attachments: emailPacket.attachments || [],
       noReply: true
@@ -285,14 +286,14 @@ export class MembershipManager {
 
   createNew(data = {}) {
     const member = this.storageManager.createNew(data);
-    member.discount = MembershipManager.calculateDiscount(member);
+    member.discount = MembershipManager.calculateDiscount(member, this.config);
     return member;
   }
   
-  static calculateDiscount(member) {
+  static calculateDiscount(member, config = getConfig()) {
     if (!member || !member.registration) return 0;
     const level = member.registration.level;
-    return SharedConfig.levels[level]?.discount || 0;
+    return config?.levels?.[level]?.discount || 0;
   }
 
   /**

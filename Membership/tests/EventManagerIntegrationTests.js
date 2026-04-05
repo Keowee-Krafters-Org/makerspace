@@ -17,9 +17,10 @@ import { SharedConfig } from '../config.js';
 export class EventManagerIntegrationTests {
     constructor() {
         // Access managers and factories from the global Membership object
-        this.eventManager = ModelFactory.eventManager();
-        this.modelFactory = ModelFactory;
-        this.membershipManager = ModelFactory.membershipManager();
+       this.modelFactory = new ModelFactory();
+ 
+        this.eventManager = this.modelFactory.eventManager();
+        this.membershipManager = this.modelFactory.membershipManager();
 
         this.eventData = {
             date: new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000)), // One week from now

@@ -1,10 +1,11 @@
-import { SharedConfig } from '../config.js';
+import { getConfig } from '../config.js';
 import { FormWaiver } from '../storage/form/FormStorageManager.js';
 
 class WaiverManager {
-    constructor(storageManageManager, membershipManager) {
-        this.destinationFolderId = SharedConfig.forms.waiver.destinationFolderId;
-        this.templateId = SharedConfig.forms.waiver.templateId;
+    constructor(storageManageManager, membershipManager, config = null) {
+        this.config = config || getConfig();
+        this.destinationFolderId = this.config.forms.waiver.destinationFolderId;
+        this.templateId = this.config.forms.waiver.templateId;
         this.membershipManager = membershipManager;
         this.storageManager = storageManageManager;
     }
@@ -54,7 +55,7 @@ class WaiverManager {
         );
 
         this.membershipManager.sendEmail({
-            emailAddress: SharedConfig.emailAddress.admin,
+            emailAddress: this.config.emailAddress.admin,
             title: `New Waiver Submitted by ${firstName} ${lastName}`,
             message: `Name: ${firstName} ${lastName}\nEmail: ${email}\nDate: ${formattedDate}\nPDF: ${pdfUrl}`
         }

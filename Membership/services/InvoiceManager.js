@@ -8,10 +8,10 @@ import { getConfig } from '../config.js';
  * 
  */
 export class InvoiceManager {
-  constructor(storageManager, eventStorageManager) {
+  constructor(storageManager, eventStorageManager, config = null) {
     this.storageManager = storageManager; // Handles ZohoInvoice storage
     this.eventStorageManager = eventStorageManager;
-    this.config = getConfig();
+    this.config = config || getConfig();
   }
 
   /**

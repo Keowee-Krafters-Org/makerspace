@@ -1,4 +1,5 @@
 import { Entity } from './Entity.js';
+import { getConfig } from '../config.js';
 
 export class Registration extends Entity {
   constructor(data = {}) {
@@ -54,7 +55,7 @@ export class Registration extends Entity {
     return new this(data);
   }
 
-  static getLevel(levelString) {
-    return SharedConfig.levels[levelString].value;
+  static getLevel(levelString, config = getConfig()) {
+    return config?.levels?.[levelString]?.value;
   }
 }

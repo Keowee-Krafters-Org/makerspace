@@ -3,6 +3,7 @@ import { getConfig } from '../../../config.js';
 import { CalendarEvent } from './CalendarEvent.js';
 import { CalendarLocation } from './CalendarLocation.js';
 import { CalendarPage } from './CalendarPage.js';
+import { Page } from '../../../models/Page.js';
 import { Response } from '../../../models/Response.js';
 
 /**
@@ -12,15 +13,16 @@ import { Response } from '../../../models/Response.js';
  */
 
 export class CalendarManager extends StorageManager {
-  constructor(calendarId = null) {
+  constructor(calendarId = null, config = null) {
     super();
+    this.config = config || getConfig();
     // Prefer configured ID; fall back to default calendar id
     this.calendarId =
       calendarId ||
-      (typeof getConfig === 'function' && getConfig()?.calendarId) ||
+      this.config?.calendarId ||
       CalendarApp.getDefaultCalendar().getId(); // only used to fetch id string
     this.tz =
-      (typeof getConfig === 'function' && getConfig()?.timeZone) ||
+      this.config?.timeZone ||
       Session.getScriptTimeZone() ||
       'UTC';
   }
