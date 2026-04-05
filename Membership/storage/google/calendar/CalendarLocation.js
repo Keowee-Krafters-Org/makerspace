@@ -1,3 +1,5 @@
+import { Location } from '../../../models/Location.js';
+
 /**
  * Represents a location in the Google Calendar system.
  * This class extends the base Location class to include additional properties
@@ -5,7 +7,7 @@
  * It includes methods for creating a new location, converting to a record,
  * and mapping fields to Google Calendar record fields.     
  */
-class CalendarLocation extends Location {
+export class CalendarLocation extends Location {
   constructor(data = {}) {
     super(data);
   }
@@ -35,5 +37,5 @@ class CalendarLocation extends Location {
       id: record.email || ''
     };
     return new CalendarLocation(data);
-    }
   }
+}

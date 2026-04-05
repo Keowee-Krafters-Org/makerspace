@@ -1,3 +1,6 @@
+import { SharedConfig } from '../config.js';
+import { FormWaiver } from '../storage/form/FormStorageManager.js';
+
 class WaiverManager {
     constructor(storageManageManager, membershipManager) {
         this.destinationFolderId = SharedConfig.forms.waiver.destinationFolderId;
@@ -88,4 +91,7 @@ class WaiverManager {
 
 
 }
+
+export { WaiverManager };
+
 

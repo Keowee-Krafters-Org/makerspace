@@ -1,10 +1,17 @@
+import { StorageManager } from '../../StorageManager.js';
+import { getConfig } from '../../../config.js';
+import { CalendarEvent } from './CalendarEvent.js';
+import { CalendarLocation } from './CalendarLocation.js';
+import { CalendarPage } from './CalendarPage.js';
+import { Response } from '../../../models/Response.js';
+
 /**
  * Service managing calendars (Google)
  * Provides the CRUD operations to sync Events to the Calendar
  * 
  */
 
-class CalendarManager extends StorageManager {
+export class CalendarManager extends StorageManager {
   constructor(calendarId = null) {
     super();
     // Prefer configured ID; fall back to default calendar id

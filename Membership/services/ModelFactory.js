@@ -1,3 +1,19 @@
+import { Response } from '../models/Response.js';
+import { Member } from '../models/Member.js';
+import { Login } from '../models/Login.js';
+import { Registration } from '../models/Registration.js';
+import { Event } from '../models/Event.js';
+import { CalendarManager } from '../storage/google/calendar/CalendarManager.js';
+import { EventManager } from './EventManager.js';
+import { MembershipManager } from './MembershipManager.js';
+import { VendorManager } from './VendorManager.js';
+import { WaiverManager } from './WaiverManager.js';
+import { InvoiceManager } from './InvoiceManager.js';
+import { GoogleDriveService } from '../storage/google/drive/GoogleDriveService.js';
+import { ZohoStorageManager, ZohoEvent, ZohoMember, ZohoInstructor, ZohoInvoice } from '../storage/zoho/ZohoStorageManager.js';
+import { FormStorageManager, FormWaiver } from '../storage/form/FormStorageManager.js';
+import { getConfig } from '../config.js';
+
 /**
  * Factory class for creating and managing various models and services within the Membership application.
  * 
@@ -10,7 +26,7 @@
  * const factory = new ModelFactory(appConfig);
  * const member = factory.member({ name: 'John Doe' });
  */
-class ModelFactory {
+export class ModelFactory {
   constructor(config) {
     this._config = config || {};
   }
@@ -85,4 +101,4 @@ function newModelFactory() {
   return new ModelFactory(getConfig());
 }
 
-const modelFactory = newModelFactory() ;
+

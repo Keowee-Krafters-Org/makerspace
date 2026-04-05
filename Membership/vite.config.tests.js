@@ -1,43 +1,31 @@
-// vite.config.tests.ts
+// vite.config.tests.js
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import * as fs from 'fs';
 
 export default defineConfig({
-  plugins: [
-    {
-      name: 'append-footer',
-      closeBundle() {
-        const filePath = resolve(__dirname, 'dist/tests.js');
-        if (fs.existsSync(filePath)) {
-          fs.appendFileSync(filePath, '\nfunction test() { return runTestInternal(); }');
-        }
-      }
-    }
-  ],
   build: {
     target: 'es2017',
     minify: false,
     outDir: 'dist',
-    emptyOutDir: false,
+    emptyOutDir: false, // Do not clear the dist folder, as other builds might be there
     lib: {
-      entry: resolve(__dirname, 'tests/gas.test.js'),
-      name: 'TestLib',
+      entry: resolve(__dirname, 'tests/TestRunner.js'),
+      name: 'TestRunner',
       fileName: () => 'tests.js',
       formats: ['iife'],
     },
     rollupOptions: {
-        external: (id) => {
-            if (id === resolve(__dirname, 'index.js')) return true;
-            return id.includes('models/') || id.includes('services/');
-          },
-          output: {
-            globals: (id) => {
-                if (id === resolve(__dirname, 'index.js')) return 'MembershipBundle';
-                if (id.includes('models/') || id.includes('services/')) return 'MembershipBundle';
-                return id;
-            },
-          },
-    }
+      // Make sure to externalize deps that are provided by the main 'Code.js' bundle
+      external: [/^\.\.\/(models|services|storage)\/.*\.js$/],
+      output: {
+        globals: (id) => {
+          // This function converts an external module ID into a global variable expression.
+          // e.g., '../models/Member.js' becomes 'Membership.Member'
+          // e.g., '../services/ModelFactory.js' becomes 'Membership.ModelFactory'
+          const name = id.split('/').pop().replace('.js', '');
+          return `Membership.${name}`;
+        },
+      },
+    },
   },
 });

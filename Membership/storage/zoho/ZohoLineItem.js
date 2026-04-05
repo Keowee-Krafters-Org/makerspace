@@ -1,4 +1,6 @@
-class ZohoLineItem extends LineItem {
+import { LineItem } from '../../models/LineItem.js';
+
+export class ZohoLineItem extends LineItem {
   constructor(data = {}) {
     super(data);
   }

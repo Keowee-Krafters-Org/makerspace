@@ -1,3 +1,5 @@
+import { Entity } from './Entity.js';
+
 /**
  * Invoice class representing an invoice with line items, total amount, and other details.
  * Extends the base Entity class for common entity functionality.
@@ -8,7 +10,8 @@
  * @property {string} status - Status of the invoice (e.g., "PAID", "UNPAID")
  * @property {Date} dueDate - Due date for the invoice
  */
-class Invoice extends Entity {
+export class Invoice extends Entity {
+
     constructor(data = {}) {
         super(data);
         this.lineItems = Array.isArray(data.lineItems) ? data.lineItems : [];
@@ -106,5 +109,3 @@ class Invoice extends Entity {
     }
 }
 
-// Make the class globally accessible in Google Apps Script
-this.Invoice = Invoice;

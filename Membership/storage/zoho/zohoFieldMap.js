@@ -1,4 +1,4 @@
-class ZohoFieldMap {
+export class ZohoFieldMap {
   constructor(map) {
     this.map = map;
   }

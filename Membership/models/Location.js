@@ -1,10 +1,12 @@
+import { Entity } from './Entity.js';
+
 /**
  * Model of a Location.
  * This model represents a location where events can be held.
  * It includes properties such as name, address, and capacity.
  */
 
-class Location extends Entity{
+export class Location extends Entity{
     constructor(data = {}) {
         super(data);
     }
@@ -16,5 +18,4 @@ class Location extends Entity{
         location.capacity = data.capacity || 0;
         return location;
     }
-    
 }

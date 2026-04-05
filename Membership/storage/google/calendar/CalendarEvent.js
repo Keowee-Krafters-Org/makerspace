@@ -3,7 +3,12 @@
  * Represents a calendar event with additional properties for event items.
  * Extends the base Event class to include event item details.
  */
-class CalendarEvent extends Event {
+import { Event } from "../../../models/Event.js"; 
+import { CalendarLocation } from "./CalendarLocation.js";
+import { CalendarContact } from "./CalendarContact.js";
+import { CalendarManager } from "./CalendarManager.js";
+
+export class CalendarEvent extends Event {
   constructor(eventData = {}) {
     if (!eventData.eventItem) {
       eventData.eventItem = {};

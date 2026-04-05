@@ -1,9 +1,11 @@
+import { Entity } from './Entity.js';
+
 /**
  * Waiver class representing a waiver entity.
  * Extends the base Entity class for common entity functionality.
  * @extends Entity
  */
-class Waiver extends Entity{
+export class Waiver extends Entity{
   constructor(waiverData = {}) {
     super(waiverData);
   }

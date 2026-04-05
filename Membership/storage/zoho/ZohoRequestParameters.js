@@ -1,11 +1,15 @@
+import { Page } from '../../models/Page.js';
+import { ZohoPage } from './ZohoPage.js';
+
 /**
  * ZohoRequestParameters
  * 
  * Represents request parameters for Zoho API requests.
  * Contains a Page object for handling pagination parameters.
  */
+import {Entity} from '../../models/Entity.js'; 
 
-class ZohoRequestParameters extends Entity {
+export class ZohoRequestParameters extends Entity {
   constructor(clazz, params = {}) {
     super(params);
     this.clazz = clazz;

@@ -1,209 +1,233 @@
-/**
- * Integration tests for the InvoiceManager class.
- * These tests use the actual InvoiceManager and its dependencies.
- */
+import { ZohoStorageManager } from '../storage/zoho/ZohoStorageManager.js';
+import { ZohoInvoice } from '../storage/zoho/ZohoInvoice.js';
+import { InvoiceManager } from '../services/InvoiceManager.js';
+import { ModelFactory } from '../services/ModelFactory.js';
 
-// Initialize dependencies
-const storageManager = new ZohoStorageManager(ZohoInvoice);
-// const membershipManager = new MembershipManager(new ZohoStorageManager(ZohoMember));
-const invoiceManager = new InvoiceManager(storageManager, membershipManager, eventManager);
-
-/**
- * Test that invoices exist in the system.
- * This test checks if the invoice list is not empty.
- */
-function test_when_invoice_list_is_requested_then_invoices_exist() {
-  console.log('Test: when_invoice_list_is_requested_then_invoices_exist');
-  const invoiceListResponse = invoiceManager.getInvoiceList();
-  const invoiceList = invoiceListResponse.data;
-  assert('Invoice list should be an array', true, Array.isArray(invoiceList));
-  assert('Invoice list should not be empty', true, invoiceList.length > 0);
-  console.log('Invoice List:', invoiceList);
-}
-
-/** 
- * Test that a specific invoice can be retrieved by ID.
- * This test checks if the invoice with the given ID exists and is returned correctly.
- */
-function test_when_invoice_is_requested_by_id_then_invoice_exists() {
-  console.log('Test: when_invoice_is_requested_by_id_then_invoice_exists');
-  const invoiceListResponse = invoiceManager.getInvoiceList();
-  const invoiceList = invoiceListResponse.data;
-  assert('Invoice list should be an array', true, Array.isArray(invoiceList));
-  assert('Invoice list should not be empty', true, invoiceList.length > 0);
-
-  const firstInvoice = invoiceList[0];
-  const invoiceId = firstInvoice.id;
-  const createResponse = invoiceManager.getInvoiceById(invoiceId);
-  assert('Invoice should be returned by ID', true, createResponse.id === invoiceId);
-  console.log('Retrieved Invoice:', createResponse);
-}
-
-/**
- * Test that a new invoice can be created using TestyUser and Test Item. Testy User is a constant in MembershipIntegrationTests.js and Test Item is a constant in EventManagementIntegrationTests.js
- * This test checks if the invoice is created successfully and contains the expected data.
- */
-function test_when_invoice_is_created_then_invoice_exists() {
-  let invoiceId;
-  try {
-    const createResponse = create_test_invoice(true);
-
-    assert('Invoice creation should be successful', true, createResponse.success);
-    const createdInvoice = createResponse.data;
-    invoiceId = createdInvoice.id;
-    assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
-    console.log('Created Invoice:', createdInvoice);
-  } catch (e) {
-    console.error("Create Invoice Failed");
-  } finally {
-    if (createResponse && createResponse.success) {
-      const invoiceId = createResponse.data.id;
-      invoiceManager.deleteInvoice(invoiceId);
+export class InvoiceManagerIntegrationTests {
+    constructor() {
+        this.storageManager = new ZohoStorageManager(ZohoInvoice);
+        this.membershipManager = ModelFactory.membershipManager();
+        this.eventManager = ModelFactory.eventManager();
+        this.invoiceManager = new InvoiceManager(this.storageManager, this.membershipManager, this.eventManager);
+        this.testMember = {
+            emailAddress: 'testuser@keoweekrafters.org',
+            firstName: 'Testy',
+            lastName: 'User',
+        };
+        this.eventData = {
+            eventItem: {
+                title: 'Test Event'
+            }
+        };
     }
-  }
+
+    run(testName, runAll = false) {
+        if (runAll) {
+            return this.runAll();
+        }
+        if (typeof this[testName] === 'function') {
+            Logger.log(`Running test: ${testName}`);
+            try {
+                this[testName]();
+                Logger.log(`Test '${testName}' passed.`);
+            } catch (e) {
+                Logger.log(`Test '${testName}' failed: ${e.message}`);
+            }
+        } else {
+            Logger.log(`Test '${testName}' not found in suite.`);
+        }
+    }
+
+    runAll() {
+        Logger.log('Starting InvoiceManager integration tests...');
+        const tests = Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+            .filter(prop => prop.startsWith('test_') && typeof this[prop] === 'function');
+
+        tests.forEach(testName => this.run(testName));
+
+        Logger.log('InvoiceManager integration tests completed.');
+    }
+
+    test_when_invoice_list_is_requested_then_invoices_exist() {
+        console.log('Test: when_invoice_list_is_requested_then_invoices_exist');
+        const invoiceListResponse = this.invoiceManager.getInvoiceList();
+        const invoiceList = invoiceListResponse.data;
+        assert('Invoice list should be an array', true, Array.isArray(invoiceList));
+        assert('Invoice list should not be empty', true, invoiceList.length > 0);
+        console.log('Invoice List:', invoiceList);
+    }
+
+    test_when_invoice_is_requested_by_id_then_invoice_exists() {
+        console.log('Test: when_invoice_is_requested_by_id_then_invoice_exists');
+        const invoiceListResponse = this.invoiceManager.getInvoiceList();
+        const invoiceList = invoiceListResponse.data;
+        assert('Invoice list should be an array', true, Array.isArray(invoiceList));
+        assert('Invoice list should not be empty', true, invoiceList.length > 0);
+
+        const firstInvoice = invoiceList[0];
+        const invoiceId = firstInvoice.id;
+        const createResponse = this.invoiceManager.getInvoiceById(invoiceId);
+        assert('Invoice should be returned by ID', true, createResponse.id === invoiceId);
+        console.log('Retrieved Invoice:', createResponse);
+    }
+
+    test_when_invoice_is_created_then_invoice_exists() {
+        let invoiceId;
+        try {
+            const createResponse = this.create_test_invoice(true);
+
+            assert('Invoice creation should be successful', true, createResponse.success);
+            const createdInvoice = createResponse.data;
+            invoiceId = createdInvoice.id;
+            assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
+            console.log('Created Invoice:', createdInvoice);
+        } catch (e) {
+            console.error("Create Invoice Failed");
+        } finally {
+            if (createResponse && createResponse.success) {
+                const invoiceId = createResponse.data.id;
+                this.invoiceManager.deleteInvoice(invoiceId);
+            }
+        }
+    }
+
+    test_when_invoice_is_created_then_invoice_exists_for_customer() {
+        let invoiceId;
+        let createResponse;
+        let member;
+        try {
+            const testMemberData = this.testMember;
+            member = this.membershipManager.addMember(testMemberData);
+            assert('Member exists', true, (member != undefined && member.id != undefined));
+
+            createResponse = this.create_test_invoice(true);
+
+            assert('Invoice creation should be successful', true, createResponse.success);
+            const createdInvoice = createResponse.data;
+            invoiceId = createdInvoice.id;
+            assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
+            console.log('Created Invoice:', createdInvoice);
+
+            const invoicesResponse = this.invoiceManager.getInvoicesByMember(member.id);
+            assert('Invoices found', true, invoicesResponse.success);
+            const invoices = invoicesResponse.data;
+            assert('Invoices for member should be an array', true, Array.isArray(invoices));
+            assert('Invoices for member should not be empty', true, invoices.length > 0);
+            console.log(`Invoices for member ${member.id}:`, invoices);
+            const invoice = invoices.find(inv => inv.id === invoiceId);
+            assert('Invoice should be found for member', true, invoice != undefined);
+
+        } catch (e) {
+            console.error("Create Invoice Failed");
+        } finally {
+            if (createResponse && createResponse.success) {
+                Logger.log('Deleting invoice');
+                const invoiceId = createResponse.data.id;
+                this.invoiceManager.deleteInvoice(invoiceId);
+
+            }
+            if (member) {
+                this.membershipManager.deleteMember(member);
+            }
+        }
+    }
+
+    test_memberRegisters_then_invoice_exists_for_customer() {
+        let invoiceId;
+        let createResponse;
+        try {
+
+            const testMemberData = this.testMember;
+            const member = this.membershipManager.memberLookup(testMemberData.emailAddress);
+            assert('Member exists', true, (member != undefined && member.id != undefined));
+            member.registration.level = 'Active';
+
+            createResponse = this.invoiceManager.createMembershipInvoice(member);
+
+            assert('Invoice creation should be successful', true, createResponse.success);
+            const createdInvoice = createResponse.data;
+            invoiceId = createdInvoice.id;
+            assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
+            console.log('Created Invoice:', createdInvoice);
+
+            const invoicesResponse = this.invoiceManager.getInvoicesByMember(member.id);
+            assert('Invoices found', true, invoicesResponse.success);
+            const invoices = invoicesResponse.data;
+            assert('Invoices for member should be an array', true, Array.isArray(invoices));
+            assert('Invoices for member should not be empty', true, invoices.length > 0);
+            console.log(`Invoices for member ${member.id}:`, invoices);
+            const invoice = invoices.find(inv => inv.id === invoiceId);
+            assert('Invoice should be found for member', true, invoice != undefined);
+
+        } catch (e) {
+            console.error("Create Invoice Failed");
+        } finally {
+            if (createResponse && createResponse.success) {
+                Logger.log('Deleting invoice');
+                const invoiceId = createResponse.data.id;
+                this.invoiceManager.deleteInvoice(invoiceId);
+            }
+        }
+    }
+
+    create_test_invoice(send = false) {
+
+        console.log('Test: when_invoice_is_created_then_invoice_exists');
+        const testMemberData = this.testMember; // Defined in MembershipIntegrationTests.js
+        const testItemData = this.eventData.eventItem; // Defined in EventManagementIntegrationTests.js
+        // Retrieve the test user and item data using the constants and the service methods. 
+        const member = this.membershipManager.memberLookup(testMemberData.emailAddress);
+        assert('Test User should be found', true, member != undefined);
+        assert('Test User should have an ID', true, member.id != undefined);
+        let testItem = this.eventManager.getEventItemByTitle(testItemData.title);
+        if (!testItem) {
+            testItem = this.eventManager.addEventItem(testItemData);
+        }
+        assert('Test Item should be found', true, testItem != undefined);
+        assert('Test Item should have a price', true, testItem.price > 0);
+        const invoiceData = {
+            customerId: member.id,
+            date: new Date(),
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
+            status: 'UNPAID',
+            totalAmount: testItem.price,
+            lineItems: [
+                {
+                    itemId: testItem.id,
+                    description: testItem.description,
+                    quantity: 1,
+                    rate: testItem.price,
+                },
+            ],
+            contacts: [{ id: member.primaryContactId }]
+        };
+
+        const createResponse = this.invoiceManager.createInvoice(invoiceData, send);
+        return createResponse;
+
+    }
+
+    test_when_invoice_is_created_and_sent__then_invoice_is_received() {
+        let createResponse;
+        try {
+            createResponse = this.create_test_invoice(true);
+            assert('Invoice creation should be successful', true, createResponse.success);
+            const createdInvoice = createResponse.data;
+            const invoiceId = createdInvoice.id;
+            assert('Created invoice should have a valid ID', true, invoiceId != undefined);
+            console.log('Created Invoice:', createdInvoice);
+        } catch (e) {
+            console.error("Create Invoice Failed");
+        } finally {
+            if (createResponse && createResponse.success) {
+                const invoiceId = createResponse.data.id;
+                this.invoiceManager.deleteInvoice(invoiceId);
+            }
+        }
+
+    }
 }
 
-/**
- * Test that a new invoice can be created using TestyUser and Test Item. Testy User is a constant in MembershipIntegrationTests.js and Test Item is a constant in EventManagementIntegrationTests.js
- * This test checks if the invoice is created successfully and contains the expected data.
- */
-function test_when_invoice_is_created_then_invoice_exists_for_customer() {
-  let invoiceId;
-  let createResponse;
-  let member; 
-  try {
-    const testMemberData = testMember;
-    member = membershipManager.addMember(testMemberData); 
-    assert('Member exists', true, (member != undefined && member.id != undefined));
-
-    createResponse = create_test_invoice(true);
-
-    assert('Invoice creation should be successful', true, createResponse.success);
-    const createdInvoice = createResponse.data;
-    invoiceId = createdInvoice.id;
-    assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
-    console.log('Created Invoice:', createdInvoice);
-
-    const invoicesResponse = invoiceManager.getInvoicesByMember(member.id);
-    assert('Invoices found', true, invoicesResponse.success); 
-    const invoices = invoicesResponse.data; 
-    assert('Invoices for member should be an array', true, Array.isArray(invoices));
-    assert('Invoices for member should not be empty', true, invoices.length > 0);
-    console.log(`Invoices for member ${member.id}:`, invoices);
-    const invoice = invoices.find(inv => inv.id === invoiceId);
-    assert('Invoice should be found for member', true, invoice != undefined);
-
-  } catch (e) {
-    console.error("Create Invoice Failed");
-  } finally {
-    if (createResponse && createResponse.success) {
-      Logger.log('Deleting invoice'); 
-      const invoiceId = createResponse.data.id;
-      invoiceManager.deleteInvoice(invoiceId);
-      
-    }
-    if (member) {
-      membershipManager.deleteMember(member);
-    }
-  }
-}
-
-
-/**
- * Test that a new invoice can be created using TestyUser and Test Item. Testy User is a constant in MembershipIntegrationTests.js and Test Item is a constant in EventManagementIntegrationTests.js
- * This test checks if the invoice is created successfully and contains the expected data.
- */
-function test_memberRegisters_then_invoice_exists_for_customer() {
-  let invoiceId;
-  let createResponse;
-  try {
-
-    const testMemberData = testMember;
-    const member = membershipManager.memberLookup(testMemberData.emailAddress);
-    assert('Member exists', true, (member != undefined && member.id != undefined));
-    member.registration.level = 'Active'; 
-
-    createResponse = invoiceManager.createMembershipInvoice(member);
-
-    assert('Invoice creation should be successful', true, createResponse.success);
-    const createdInvoice = createResponse.data;
-    invoiceId = createdInvoice.id;
-    assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
-    console.log('Created Invoice:', createdInvoice);
-
-    const invoicesResponse = invoiceManager.getInvoicesByMember(member.id);
-    assert('Invoices found', true, invoicesResponse.success); 
-    const invoices = invoicesResponse.data; 
-    assert('Invoices for member should be an array', true, Array.isArray(invoices));
-    assert('Invoices for member should not be empty', true, invoices.length > 0);
-    console.log(`Invoices for member ${member.id}:`, invoices);
-    const invoice = invoices.find(inv => inv.id === invoiceId);
-    assert('Invoice should be found for member', true, invoice != undefined);
-
-  } catch (e) {
-    console.error("Create Invoice Failed");
-  } finally {
-    if (createResponse && createResponse.success) {
-      Logger.log('Deleting invoice'); 
-      const invoiceId = createResponse.data.id;
-      invoiceManager.deleteInvoice(invoiceId);
-    }
-  }
-}
-
-function create_test_invoice(send = false) {
-
-  console.log('Test: when_invoice_is_created_then_invoice_exists');
-  const testMemberData = testMember; // Defined in MembershipIntegrationTests.js
-  const testItemData = eventData.eventItem; // Defined in EventManagementIntegrationTests.js
-  // Retrieve the test user and item data using the constants and the service methods. 
-  const member = membershipManager.memberLookup(testMemberData.emailAddress);
-  assert('Test User should be found', true, member != undefined);
-  assert('Test User should have an ID', true, member.id != undefined);
-  let testItem = eventManager.getEventItemByTitle(testItemData.title);
-  if (!testItem) {
-    testItem = eventManager.addEventItem(testItemData);
-  }
-  assert('Test Item should be found', true, testItem != undefined);
-  assert('Test Item should have a price', true, testItem.price > 0);
-  const invoiceData = {
-    customerId: member.id,
-    date: new Date(),
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
-    status: 'UNPAID',
-    totalAmount: testItem.price,
-    lineItems: [
-      {
-        itemId: testItem.id,
-        description: testItem.description,
-        quantity: 1,
-        rate: testItem.price,
-      },
-    ],
-    contacts: [{ id: member.primaryContactId }]
-  };
-
-  const createResponse = invoiceManager.createInvoice(invoiceData, send);
-  return createResponse;
-
-}
-
-function test_when_invoice_is_created_and_sent__then_invoice_is_received() {
-  let createResponse;
-  try {
-    createResponse = create_test_invoice(true);
-    assert('Invoice creation should be successful', true, createResponse.success);
-    const createdInvoice = createResponse.data;
-    invoiceId = createdInvoice.id;
-    assert('Created invoice should have a valid ID', true, createdInvoice.id != undefined);
-    console.log('Created Invoice:', createdInvoice);
-  } catch (e) {
-    console.error("Create Invoice Failed");
-  } finally {
-    if (createResponse && createResponse.success) {
-      const invoiceId = createResponse.data.id;
-      invoiceManager.deleteInvoice(invoiceId);
-    }
-  }
-
+function runInvoiceManagerIntegrationTests() {
+    new InvoiceManagerIntegrationTests().runAll();
 }

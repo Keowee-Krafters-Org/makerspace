@@ -1,3 +1,9 @@
+import { StorageManager } from '../StorageManager.js';
+import { ZohoAPI } from './ZohoAPI.js';
+import { ZohoRequestParameters} from './ZohoRequestParameters.js';
+import { ZohoResponse } from './ZohoResponse.js'; 
+import { Response } from '../../models/Response.js';
+
 /** 
  * Storage manager for Zoho Books and Zoho CRM.
  * This class handles the storage and retrieval of entity data in Zoho Books and Zoho CRM.
@@ -10,7 +16,7 @@
  * @param {string} storageName - The name of the storage to use.
  */
 
-class ZohoStorageManager extends StorageManager {
+export class ZohoStorageManager extends StorageManager {
   constructor(clazz) {
     super(clazz);
     this.zohoAPI = ZohoAPI.newZohoAPI();
@@ -139,5 +145,101 @@ class ZohoStorageManager extends StorageManager {
     return new this.clazz(data);
   }
 
+}
+
+export class ZohoMember {
+  static getResourceNamePlural() {
+    return 'contacts';
+  }
+  static getResourceNameSingular() {
+    return 'contact';
+  }
+  static createNew(data) {
+    return Member.createNew(data);
+  }
+  static fromRecord(record) {
+    return Member.fromRecord(record);
+  }
+  static getFilter() {
+    return {
+      cf_entity_type: 'Member'
+    }
+  }
+}
+
+export class ZohoInvoice {
+  static getResourceNamePlural() {
+    return 'invoices';
+  }
+  static getResourceNameSingular() {
+    return 'invoice';
+  }
+  static createNew(data) {
+    return Invoice.createNew(data);
+  }
+  static fromRecord(record) {
+    return Invoice.fromRecord(record);
+  }
+  static getFilter() {
+    return {}
+  }
+}
+
+export class ZohoEvent {
+  static getResourceNamePlural() {
+    return 'items';
+  }
+  static getResourceNameSingular() {
+    return 'item';
+  }
+  static createNew(data) {
+    return EventItem.createNew(data);
+  }
+  static fromRecord(record) {
+    return EventItem.fromRecord(record);
+  }
+  static getFilter() {
+    return {
+      cf_entity_type: 'Event'
+    }
+  }
+}
+
+export class ZohoInstructor {
+  static getResourceNamePlural() {
+    return 'vendors';
+  }
+  static getResourceNameSingular() {
+    return 'vendor';
+  }
+  static createNew(data) {
+    return Instructor.createNew(data);
+  }
+  static fromRecord(record) {
+    return Instructor.fromRecord(record);
+  }
+  static getFilter() {
+    return {
+      cf_entity_type: 'Instructor'
+    }
+  }
+}
+
+export class ZohoLogin {
+  static getResourceNamePlural() {
+    return 'logins';
+  }
+  static getResourceNameSingular() {
+    return 'login';
+  }
+  static createNew(data) {
+    return Login.createNew(data);
+  }
+  static fromRecord(record) {
+    return Login.fromRecord(record);
+  }
+  static getFilter() {
+    return {}
+  }
 }
 

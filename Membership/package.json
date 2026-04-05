@@ -8,14 +8,13 @@
     "clean": "rimraf dist",
     "build:app": "vite build",
     "build:tests": "vite build -c vite.config.tests.js",
-    "build:tests:ts": "vite build -c vite.config.tests.ts.js",
-    "build:dev": "npm run clean && npm run build:app -- --mode development && npm run build:tests -- --mode development && npm run build:tests:ts -- --mode development",
-    "build:prod": "npm run clean && npm run build:app -- --mode production && npm run build:tests -- --mode production && npm run build:tests:ts -- --mode production",
-    "build": "npm run build:dev",
+    "build:dev": "npm run clean && npm run build:app -- --mode development && npm run build:tests -- --mode development",
+    "build:prod": "npm run clean && npm run build:app -- --mode production && npm run build:tests -- --mode production",
+    "build": "npm run clean && npm run build:app -- --mode development && npm run build:tests -- --mode development",
     "pull": "clasp pull",
     "push": "npm run build && clasp push",
-    "deploy:dev": "node ../deploy.js dev",
-    "deploy:prod": "node ../deploy.js prod"
+    "deploy:dev": "node ../deploy.mjs dev",
+    "deploy:prod": "node ../deploy.mjs prod"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

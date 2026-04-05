@@ -1,36 +1,37 @@
-const { execSync } = require('child_process');
-const path = require('path');
-const config = require('./config.cjs');
+import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const env = process.argv[2];
 const callingDir = process.cwd();
 const projectName = path.basename(callingDir);
 
 if (!env || !['dev', 'prod'].includes(env)) {
-  console.error("Usage: node deploy.js <dev|prod>");
+  console.error("Usage: node deploy.mjs <dev|prod>");
   process.exit(1);
 }
 
-const envMap = {
-  'dev': 'development',
-  'prod': 'production'
-};
-
-const configKey = envMap[env];
-
-if (!config[projectName] || !config[projectName][configKey]) {
-    console.error(`Error: Configuration for project '${projectName}' and environment '${env}' not found.`);
+// Dynamically import the config from the project directory
+const projectConfigPath = path.join(callingDir, 'config.js');
+if (!fs.existsSync(projectConfigPath)) {
+    console.error(`Error: config.js not found in ${callingDir}`);
     process.exit(1);
 }
+const { config } = await import(projectConfigPath);
 
-const deployConfig = config[projectName][configKey];
+
+const deployConfig = config[env];
 
 if (!deployConfig) {
   console.error(`Error: Configuration for environment '${env}' not found.`);
   process.exit(1);
 }
 
-const deploymentId = deployConfig.platform?.deploymentId;
+const deploymentId = deployConfig.deploymentId;
 if (!deploymentId) {
   console.error(`Error: Deployment ID not found for environment '${env}'.`);
   process.exit(1);

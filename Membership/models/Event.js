@@ -8,7 +8,7 @@ import {Entity} from './Entity.js';
  * Data transport is handled in the subclasses (e.g., ZohoEvent) 
  * Most use cases involve using the subclass directly. 
  */
-export default class Event extends Entity {
+export  class Event extends Entity {
     constructor(data = {}) {
         super(data);
     }
@@ -128,5 +128,4 @@ export default class Event extends Entity {
 
 }
 
-// Make the class globally accessible in Google Apps Script
-this.Event = Event;
+

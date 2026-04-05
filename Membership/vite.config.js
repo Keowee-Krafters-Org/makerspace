@@ -10,7 +10,6 @@ export default defineConfig(({ mode }) => {
       copy({
         targets: [
           { src: 'appsscript.json', dest: 'dist' },
-          ...(isProd ? [] : [{ src: 'tests/**/*.js', dest: 'dist/tests' }]),
         ],
         hook: 'writeBundle',
         verbose: true,
@@ -22,9 +21,9 @@ export default defineConfig(({ mode }) => {
       minify: isProd,
       lib: {
         entry: resolve(__dirname, 'index.js'),
+        name: 'Membership',
+        fileName: 'Code',
         formats: ['iife'],
-        name: 'MembershipBundle',
-        fileName: () => 'Code.js',
       },
       // Use V8-compatible target; GAS supports modern syntax
       target: 'es2017',

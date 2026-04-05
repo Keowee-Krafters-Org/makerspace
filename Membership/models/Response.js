@@ -1,5 +1,6 @@
+import { Entity } from './Entity.js';
 
-class Response extends Entity{
+export class Response extends Entity{
   constructor(success, data = {}, message, error, page) {
     super(); 
     this.success = success || false;
@@ -8,5 +9,5 @@ class Response extends Entity{
     this.error = error || '';
     this.page = page || null;  
   }
- 
 }
+

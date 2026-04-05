@@ -1,7 +1,9 @@
+import { File } from '../../../models/File.js';
+
 /**
  * DriveFile implements File interface
  */
-class DriveFile extends File{
+export class DriveFile extends File{
   constructor(data = {}) {
     super(data); 
   }

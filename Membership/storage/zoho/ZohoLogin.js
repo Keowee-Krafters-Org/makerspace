@@ -1,8 +1,10 @@
+import { Login } from '../../models/Login.js';
+
 /**
  * ZohoLogin class extends Login and represents a login entity in Zoho CRM.
  * Provides mapping between Zoho CRM records and ZohoLogin instances.
  */
-class ZohoLogin extends Login {
+export class ZohoLogin extends Login {
   constructor(data = {}) {
     super(data);
   }

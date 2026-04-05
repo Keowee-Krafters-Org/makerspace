@@ -1,4 +1,6 @@
-class LineItem extends Entity {
+import { Entity } from './Entity.js';
+
+export class LineItem extends Entity {
   constructor(data = {}) {
     super(data);
     this.name = data.name || '';

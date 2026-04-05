@@ -1,7 +1,12 @@
+import { Response } from '../models/Response.js';
+import { SharedConfig } from '../config.js';
+import { ZohoLogin } from '../storage/zoho/ZohoStorageManager.js';
+import { getConfig } from '../config.js';
+
 // Membership.gs — Core membership logic shared by web app and form triggers
 // Uses Member, Login, and Registration classes
 
-class MembershipManager {
+export class MembershipManager {
   /**
    * @param {StorageManager} storageManager - An instance of a storage manager (e.g., SheetStorageManager)
    */
@@ -27,7 +32,7 @@ class MembershipManager {
    * This method creates a new Member instance from the provided object and updates it in the storage.
    * @param {Object} memberObject - The member object containing updated data.
    * @returns {Response} The response object containing the success status and updated member data.
-  * @throws {Error} If the member object is invalid or the update fails.
+   * @throws {Error} If the member object is invalid or the update fails.
    */
   updateMemberFromObject(memberObject) {
     const member = this.storageManager.createNew(memberObject);
@@ -39,7 +44,7 @@ class MembershipManager {
    * @param {Member} member - The member instance to update.
    * @returns {Response} The response object containing the success status and updated member data.
    * @throws {Error} If the member is not found or the update fails.
-   * 
+   *
    */
   updateMember(member) {
 

@@ -1,4 +1,4 @@
-
+import { Page } from '../../../models/Page.js';
 
 /**
  * CalendarPage
@@ -11,7 +11,7 @@
  * - pageSize: maxResults
  * - hasMore: Boolean(nextPageToken)
  */
- class CalendarPage extends Page {
+ export class CalendarPage extends Page {
   constructor(data = {}) {
     super({
       currentPageMarker: data.currentPageMarker ?? (data.pageToken ?? '1'),

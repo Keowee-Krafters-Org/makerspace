@@ -4,7 +4,7 @@
  * Specific entities (e.g., Member, Event) should extend this class.
  * 
  */
-
+ 
  export class Entity {
     constructor(data = {}) {
         Object.keys(data).forEach(key => {
@@ -212,5 +212,3 @@
     }
 }
 
-// Make the class globally accessible in Google Apps Script
-globalThis.Entity = Entity;

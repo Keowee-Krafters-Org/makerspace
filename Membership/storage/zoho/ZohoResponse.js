@@ -1,3 +1,5 @@
+import { Entity } from '../../models/Entity.js';
+import { ZohoPage } from './ZohoPage.js';
 
 class ZohoResponse extends Entity{
   constructor(responseData = {}) {
@@ -24,3 +26,5 @@ class ZohoResponse extends Entity{
   }
 
 }
+
+export { ZohoResponse };

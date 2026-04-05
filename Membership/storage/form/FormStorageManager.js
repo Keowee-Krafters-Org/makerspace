@@ -1,9 +1,12 @@
+import { StorageManager } from '../StorageManager.js';
+import { SharedConfig } from '../../config.js';
+
 /**
  * FormStorageManager is responsible for managing the storage of form data.
  * It provides methods to retrieve form records.
  * This class is designed to work with Google FormsApp
  */
-class FormStorageManager extends StorageManager {
+export class FormStorageManager extends StorageManager {
     constructor(formClass) {
         super(formClass);
         this.form = FormApp.openById(formClass.getFormId());
@@ -96,4 +99,18 @@ class FormStorageManager extends StorageManager {
         return itemResponses;
     }
 
+}
+
+export class FormWaiver {
+    static getFormId() {
+        return SharedConfig.forms.waiver.id;
+    }
+    static fromRecord(record) {
+        const waiver = new FormWaiver();
+        waiver.firstName = record['First Name'];
+        waiver.lastName = record['Last Name'];
+        waiver.signature = record['Signature'];
+        waiver.timestamp = record.timestamp;
+        return waiver;
+    }
 }

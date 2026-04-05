@@ -1,8 +1,13 @@
+import { Invoice } from '../../models/Invoice.js';
+import { ZohoContact } from './ZohoContact.js';
+import { ZohoLineItem } from './ZohoLineItem.js';
+import { ZohoPaymentGateway } from './ZohoPaymentGateway.js';
+
 /**
  * ZohoInvoice class for managing invoices in Zoho Books.
  * Extends the Invoice class and integrates with Zoho's API for invoice storage and management.
  */
-class ZohoInvoice extends Invoice {
+export class ZohoInvoice extends Invoice {
   /**
    * Constructor for ZohoInvoice.
    * @param {Object} data - The data to initialize the invoice.

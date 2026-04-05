@@ -1,3 +1,5 @@
+import { Page } from '../../models/Page.js';
+
 /**
  * Page model for handling pagination in responses.
  * This class is used to encapsulate pagination details such as current page,
@@ -5,7 +7,7 @@
  * It is typically used in conjunction with the Response class to provide
  * structured pagination information in API responses.  
  */
-class ZohoPage extends Page{
+export class ZohoPage extends Page{
     constructor(data = {}) {
         super(data);
         this._currentPageMarker = data.currentPageMarker || 1;

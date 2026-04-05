@@ -1,4 +1,6 @@
-class Registration extends Entity {
+import { Entity } from './Entity.js';
+
+export class Registration extends Entity {
   constructor(data = {}) {
     super(data);
   }

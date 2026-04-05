@@ -1,10 +1,13 @@
+import { Response } from '../models/Response.js';
+import { getConfig } from '../config.js';
+
 /**
  * InvoiceManager class to manage invoices in the membership system.
  * It handles invoice creation, retrieval, updates, and deletions.
  * It integrates with Zoho for invoice storage and management.
  * 
  */
-class InvoiceManager {
+export class InvoiceManager {
   constructor(storageManager, eventStorageManager) {
     this.storageManager = storageManager; // Handles ZohoInvoice storage
     this.eventStorageManager = eventStorageManager;

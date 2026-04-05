@@ -1,8 +1,10 @@
+import { DriveFile } from './DriveFile.js';
+
 /**
  * GoogleDriveService handles file storage in a configured Drive folder.
  * It provides methods to add, retrieve, and delete files.
  */
-class GoogleDriveService {
+export class GoogleDriveService {
   constructor(config) {
     this.folderId = config?.imageFolderId;
     if (!this.folderId) throw new Error('Missing imageFolderId in config.');

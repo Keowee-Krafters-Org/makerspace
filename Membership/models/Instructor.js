@@ -1,10 +1,12 @@
+import { Contact } from './Contact.js';
+
 /**
  * Instructor.js
  * Represents an instructor who is a vendor in Zoho.
  * Extends the base Contact class.
  * @extends Contact
  */
-class Instructor extends Contact {
+export class Instructor extends Contact {
   constructor(data = {}) {
     super(data);
   }
@@ -29,3 +31,4 @@ class Instructor extends Contact {
     });
   }
 }
+

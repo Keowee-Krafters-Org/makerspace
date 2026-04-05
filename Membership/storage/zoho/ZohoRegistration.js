@@ -1,8 +1,10 @@
+import { Registration } from '../../models/Registration.js';
+
 /**
  * ZohoRegistration class extends Registration and represents a registration entity in Zoho CRM.
  * Provides mapping between Zoho CRM records and ZohoRegistration instances.
  */
-class ZohoRegistration extends Registration {
+export class ZohoRegistration extends Registration {
   constructor(data = {}) {
     super(data);
   }

@@ -1,10 +1,12 @@
+import { Contact } from '../../models/Contact.js';
+
 /**
  * Class to store contact information for members in Zoho books 
  *  - primary contact is the member
  *  - other contacts are spouse, parent etc
  */
 
-class ZohoContact extends Contact {
+export class ZohoContact extends Contact {
     constructor(data = {}) {
         super(data);
     }

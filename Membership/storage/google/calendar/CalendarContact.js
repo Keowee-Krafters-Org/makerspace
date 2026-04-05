@@ -1,9 +1,11 @@
+import { Contact } from '../../../models/Contact.js';
+
 /**
  * Represents a contact (attendee) in the Google Calendar system.
  * This class extends the base Contact class to include additional properties
  * and methods specific to Google Calendar attendees.
  */
-class CalendarContact extends Contact {
+export class CalendarContact extends Contact {
   constructor(data = {}) {
     super(data);
   }

@@ -1,10 +1,12 @@
+import { Contact } from './Contact.js';
+
 /**
  * Member.js
  * Represents a member with personal details, login, and registration info.
  * Extends the base Entity class.
  * @extends Entity
  */
-class Member extends Contact {
+export class Member extends Contact {
   constructor(data = {}) {
     super(data)
   }

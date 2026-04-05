@@ -1,4 +1,6 @@
-class Login extends Entity {
+import { Entity } from './Entity.js';
+
+export class Login extends Entity {
   constructor(data = {}) {
     super(data);
     // Do not fully initialize here; allow partial instantiation for flexibility
@@ -84,8 +86,8 @@ class Login extends Entity {
   }
 }
 
-// Make the class globally accessible in Google Apps Script
-this.Login = Login;
+
+
 
 
 

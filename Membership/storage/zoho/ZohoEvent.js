@@ -1,5 +1,8 @@
+import { Event } from '../../models/Event.js';
+import { Member } from '../../models/Member.js';
+import { Instructor } from '../../models/Instructor.js';
 
-class ZohoEvent extends Event {
+export class ZohoEvent extends Event {
   constructor(data = {}) {
     super(data);
   }

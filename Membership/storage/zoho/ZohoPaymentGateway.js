@@ -1,6 +1,6 @@
+import { Entity } from '../../models/Entity.js';
 
-
-class ZohoPaymentGateway extends Entity {
+export class ZohoPaymentGateway extends Entity {
     /**
      * Constructor for ZohoPaymentGateway.
      * @param {Object} data - The data to initialize the payment gateway.

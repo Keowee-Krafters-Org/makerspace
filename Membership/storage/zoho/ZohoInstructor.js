@@ -1,7 +1,9 @@
+import { Instructor } from '../../models/Instructor.js';
+
 /**
  * Class to store instructor information from Zoho Vendors.
  */
-class ZohoInstructor extends Instructor {
+export class ZohoInstructor extends Instructor {
   constructor(data = {}) {
     super(data);
   }

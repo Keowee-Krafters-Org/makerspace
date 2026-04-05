@@ -1,7 +1,9 @@
+import { Entity } from './Entity.js';
+
 /**
  * DriveFile implements File interface
  */
-class File extends Entity{
+export class File extends Entity{
   constructor(data = {}) {
     super(data);
   }

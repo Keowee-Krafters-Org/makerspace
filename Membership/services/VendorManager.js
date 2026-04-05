@@ -5,7 +5,7 @@
  * and retrieving vendor data from the storage system.
  * Instructors are considered vendors in this context.
  */
-class VendorManager {
+export class VendorManager {
   /**
    * @param {StorageManager} storageManager - An instance of a storage manager (e.g., ZohoStorageManager)
    */
@@ -23,5 +23,5 @@ class VendorManager {
   createNew(data = {}) {
     return this.storageManager.createNew(data);
   }
-  
 }
+

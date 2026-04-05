@@ -1,10 +1,16 @@
+import { Member } from '../../models/Member.js';
+import { ZohoLogin } from './ZohoLogin.js';
+import { ZohoRegistration } from './ZohoRegistration.js';
+import { MembershipManager } from '../../services/MembershipManager.js';
+import { ZohoContact } from './ZohoContact.js';
+
 // ZohoMember class extends Member and represents a member entity in Zoho CRM
 /**
  * Represents a member in Zoho CRM, extending the base Member class.
  * Provides functionality to map Zoho CRM records to ZohoMember instances and vice versa.
  * Includes methods for resource naming, filtering, and record conversion.
  */
-class ZohoMember extends Member {
+export class ZohoMember extends Member {
   /**
    * Initializes a ZohoMember instance with the provided data.
    * @param {Object} [data={}] - The data to initialize the ZohoMember instance.
@@ -12,8 +18,6 @@ class ZohoMember extends Member {
   constructor(data = {}) {
     super(data);
   }
-
-
 
   static createNew(data = {}) {
     const member = super.createNew(data);

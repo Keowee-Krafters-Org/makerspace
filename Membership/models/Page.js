@@ -1,3 +1,5 @@
+import { Entity } from './Entity.js';
+
 /**
  * Page model for handling pagination in responses.
  * This class is used to encapsulate pagination details such as current page,
@@ -5,7 +7,7 @@
  * It is typically used in conjunction with the Response class to provide
  * structured pagination information in API responses.  
  */
-class Page extends Entity {
+export class Page extends Entity {
   constructor(data = {}) {
     super(data);
   }
@@ -58,15 +60,7 @@ class Page extends Entity {
   set previousPageMarker(value) {
     throw new Error('Implemented in subclass');
   }
-
-  // Remove duplicate setter (this block was duplicated)
-  // set previousPageMarker(value) {
-  //   throw new Error('Implemented in subclass');
-  // }
-
-  set previousPageMarker(value) {
-    throw new Error('Implemented in subclass');
-  }
   
 }
+
 

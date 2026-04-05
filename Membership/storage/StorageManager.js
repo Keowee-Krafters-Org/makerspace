@@ -3,7 +3,7 @@
  * @description Base class for storage managers (ZohoStorageManager, SheetStorageManager, etc).
  * Provides common interface and utility methods for entity storage.
  */
-class StorageManager {
+export class StorageManager {
     /**
      * @param {Function} clazz - The class constructor for the entity type managed by this storage manager.
      */

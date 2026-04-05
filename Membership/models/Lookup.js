@@ -3,7 +3,7 @@
  * It stores the LookupState and Member objects, along with any additional
  * fields returned by the memberLookup method in Membership.
  */
-class Lookup {
+export class Lookup {
   constructor(found, rowIndex, columnIndexByName, sheet, member) {
     this.found = found; 
     this.rowIndex = rowIndex; 
@@ -24,4 +24,5 @@ class Lookup {
     hasAdminAccess(requiredLevel) {
     return this.level >= requiredLevel;
   }
-} 
+}
+

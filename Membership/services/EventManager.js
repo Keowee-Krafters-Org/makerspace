@@ -1,9 +1,12 @@
+import { Response } from '../models/Response.js';
+import { getConfig } from '../config.js';
+
 /**
  * EventManager class to manage events in a membership system.
  * It handles event creation, retrieval, updates, and deletions.
  * It also integrates with a calendar system to manage event scheduling.  
  */
-class EventManager {
+export class EventManager {
   constructor(storageManager, calendarManager, membershipManager, fileManager, invoiceManager, driveService, vendorManager) {
     this.storageManager = storageManager;
     this.calendarManager = calendarManager;
@@ -551,3 +554,4 @@ class EventManager {
     return this.calendarManager.fromRecord(first);
   }
 }
+
