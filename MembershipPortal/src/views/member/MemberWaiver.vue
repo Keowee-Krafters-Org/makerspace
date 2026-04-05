@@ -56,9 +56,6 @@ export default {
       const m = this.session?.member || {};
       return this.memberService?.buildPrefilledFormUrl('waiver', m) || '';
     },
-    redirectParam() {
-      return this.$route?.query?.redirect || '';
-    },
   },
   methods: {
     openInNewTab() {
@@ -83,10 +80,8 @@ export default {
             const refreshed = await this.memberService.getMemberByEmail(email);
             if (refreshed && typeof refreshed === 'object') this.session.member = refreshed;
           }
-          // Return to Member view; it will redirect back to the event if canSignup and redirect is present
-          const target = { path: '/member' };
-          if (this.redirectParam) target.query = { redirect: this.redirectParam };
-          this.$router.push(target);
+          // Send member to the standard Classes listing after waiver completion.
+          this.$router.push({ path: '/event', query: { mode: 'list', type: 'Class' } });
         } catch (e) {
           this.error = e?.message || 'Could not refresh member status';
         } finally {

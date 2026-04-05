@@ -31,9 +31,8 @@
         class="rounded border border-amber-300 bg-amber-50 text-amber-900 p-3 mb-3 text-sm"
       >
         <p class="mb-2">
-          We couldn't find an account for <span class="font-medium">{{ email }}</span>.
-          If this was a typo, please correct your email and try again.
-          Otherwise, confirm you’re new to {{ orgName }} and we’ll create an account.
+          We are about to create an account {{ email }} in {{ orgName }}.
+          Just to be sure please double check that the email address you entered is correct.
         </p>
         <div class="flex gap-2">
           <button
@@ -41,14 +40,14 @@
             @click="onCorrectEmail"
             :disabled="loading"
           >
-            Correct Email
+            Oops I mistyped my email
           </button>
           <button
             class="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
             @click="onConfirmCreateNew"
             :disabled="loading"
           >
-            Create account with {{orgName}}
+            Yes, Create a new Account with {{ orgName }}
           </button>
         </div>
       </div>
