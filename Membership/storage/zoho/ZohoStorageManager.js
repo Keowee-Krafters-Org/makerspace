@@ -1,5 +1,4 @@
 import { StorageManager } from '../StorageManager.js';
-import { ZohoAPI } from './ZohoAPI.js';
 import { ZohoRequestParameters} from './ZohoRequestParameters.js';
 import { ZohoResponse } from './ZohoResponse.js'; 
 import { Response } from '../../models/Response.js';
@@ -17,9 +16,12 @@ import { Response } from '../../models/Response.js';
  */
 
 export class ZohoStorageManager extends StorageManager {
-  constructor(clazz) {
+  constructor(clazz, runtimeZohoApi = null) {
     super(clazz);
-    this.zohoAPI = ZohoAPI.newZohoAPI();
+    if (!runtimeZohoApi || typeof runtimeZohoApi.newZohoAPI !== 'function') {
+      throw new Error('ZohoAPI runtime provider is required and must implement newZohoAPI().');
+    }
+    this.zohoAPI = runtimeZohoApi.newZohoAPI();
     this.resourceName = this.clazz.getResourceNamePlural();
     this.resourceNameSingular = this.clazz.getResourceNameSingular();
     this.filter = this.clazz.getFilter();

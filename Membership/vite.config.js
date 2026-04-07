@@ -4,6 +4,7 @@ import copy from 'rollup-plugin-copy';
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
+  const isZohoApiModule = (id) => /(^|\/)ZohoAPI\.js$/.test(id || '');
 
   return {
     plugins: [
@@ -28,7 +29,11 @@ export default defineConfig(({ mode }) => {
       // Use V8-compatible target; GAS supports modern syntax
       target: 'es2017',
       rollupOptions: {
-        output: { inlineDynamicImports: true },
+        external: (id) => isZohoApiModule(id),
+        output: {
+          inlineDynamicImports: true,
+          globals: (id) => (isZohoApiModule(id) ? 'ZohoAPI' : undefined),
+        },
         treeshake: true,
       },
     },

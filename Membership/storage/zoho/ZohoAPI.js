@@ -5,7 +5,7 @@
  * is expected to be provided in the final runtime environment.
  */
 
-export class ZohoAPI {
+export class IZohoAPI {
     constructor() {
         // Placeholder constructor
     }

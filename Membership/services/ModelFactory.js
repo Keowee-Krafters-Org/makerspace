@@ -27,9 +27,28 @@ import { ConfigProvider, createConfig } from '../config.js';
  * const member = factory.member({ name: 'John Doe' });
  */
 export class ModelFactory {
-  constructor(configSource) {
+  constructor(configSource, dependencies = {}) {
     this._configProvider = this.normalizeConfigProvider(configSource);
     this._config = this._configProvider.getConfig();
+    this._dependencies = dependencies || {};
+    this._zohoApiRuntime = this.resolveZohoApiRuntime(this._dependencies.zohoApiRuntime || this._dependencies.zohoAPI);
+  }
+
+  resolveZohoApiRuntime(explicitProvider) {
+    if (explicitProvider) return explicitProvider;
+
+    // Preferred GAS library namespace usage.
+    if (globalThis?.ZohoAPI && typeof globalThis.ZohoAPI.newZohoAPI === 'function') {
+      return globalThis.ZohoAPI;
+    }
+
+    // Some GAS deployments expose a global factory function.
+    if (typeof globalThis?.newZohoAPI === 'function') {
+      return { newZohoAPI: globalThis.newZohoAPI };
+    }
+
+    // Fallback: raw class/object from global symbol (handled downstream).
+    return globalThis?.ZohoAPI || null;
   }
 
   normalizeConfigProvider(configSource) {
@@ -73,7 +92,7 @@ export class ModelFactory {
   }
 
   eventManager() {
-    return new EventManager(new ZohoStorageManager(ZohoEvent), 
+    return new EventManager(new ZohoStorageManager(ZohoEvent, this._zohoApiRuntime), 
     this.calendarManager(),
     this.membershipManager(), 
     this.googleDriveService(),
@@ -85,11 +104,11 @@ export class ModelFactory {
   }
 
   membershipManager() {
-    return new MembershipManager(new ZohoStorageManager(ZohoMember), this.invoiceManager(), this._config);
+    return new MembershipManager(new ZohoStorageManager(ZohoMember, this._zohoApiRuntime), this.invoiceManager(), this._config);
   }
 
   vendorManager() {
-    return new VendorManager(new ZohoStorageManager(ZohoInstructor));
+    return new VendorManager(new ZohoStorageManager(ZohoInstructor, this._zohoApiRuntime));
   }
 
   event(data = {}) {
@@ -101,7 +120,7 @@ export class ModelFactory {
   }
 
   invoiceManager() {
-    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice), new ZohoStorageManager(ZohoEvent), this._config);
+    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice, this._zohoApiRuntime), new ZohoStorageManager(ZohoEvent, this._zohoApiRuntime), this._config);
   }
   googleDriveService() {
     return new GoogleDriveService(this._config); 
