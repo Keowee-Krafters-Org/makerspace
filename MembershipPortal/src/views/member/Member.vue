@@ -6,7 +6,7 @@
 
     <!-- Login / Verification -->
     <div class="rounded border border-gray-200 p-3 bg-white">
-      <label class="block text-sm font-medium mb-1">Email</label>
+      <label class="block text-sm font-medium mb-1">Welcome, Please Enter Your Email</label>
       <input
         v-model.trim="email"
         type="email"
@@ -15,7 +15,7 @@
         :disabled="loading || showVerificationInputs"
       />
 
-      <div class="flex gap-2 mb-3">
+      <div v-if="!showNewAccountPrompt" class="flex gap-2 mb-3">
         <button
           class="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50"
           @click="showVerificationInputs ? onResendToken() : onRequestToken()"
@@ -31,10 +31,20 @@
         class="rounded border border-amber-300 bg-amber-50 text-amber-900 p-3 mb-3 text-sm"
       >
         <p class="mb-2">
-          We are about to create an account {{ email }} in {{ orgName }}.
-          Just to be sure please double check that the email address you entered is correct.
+          We could not find account {{ email }} in {{ orgName }}.
         </p>
+        <p class="mb-2">
+          Would you like to create a new account?
+        </p>
+
         <div class="flex gap-2">
+          <button
+            class="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
+            @click="onConfirmCreateNew"
+            :disabled="loading"
+          >
+             Yes, create a new account
+          </button>
           <button
             class="px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
             @click="onCorrectEmail"
@@ -42,13 +52,7 @@
           >
             Oops I mistyped my email
           </button>
-          <button
-            class="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
-            @click="onConfirmCreateNew"
-            :disabled="loading"
-          >
-            Yes, Create a new Account with {{ orgName }}
-          </button>
+          
         </div>
       </div>
 

@@ -13,6 +13,7 @@ export class Event extends Entity{
     this.attendees = Array.isArray(data.attendees) ? data.attendees : []; // array of Member or { id, firstName, lastName, email }
     this.sizeLimit = data.sizeLimit || 0; // 0 means no limit
     this.eventItem = data.eventItem || null; // linked event item with more details
+    this.enabled = data.enabled !== false;
     // copy any other properties from data to this object
     Object.assign(this, data || {});
   }

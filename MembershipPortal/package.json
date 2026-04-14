@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "push": "clasp push",
+    "push": "npm run build && clasp push",
     "deploy:dev": "npm run build:dev && npm run push",
     "deploy:prod": "npm run build && npm run push",
     "test": "vitest",

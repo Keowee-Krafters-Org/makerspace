@@ -86,7 +86,7 @@ function test_get_event_by_id() {
 function test_getUpcomingEvents() {
   const eventManager = modelFactory.eventManager();
   try {
-    const eventsResponse = eventManager.getUpcomingEvents();
+    const eventsResponse = eventManager.getUpcomingEvents({eventType: 'Open Workshop'});
     const events = eventsResponse.data;
     Logger.log(`Retrieved ${events.length} upcoming events.`);
     Logger.log('getUpcomingEvents response: ' + JSON.stringify(events));
