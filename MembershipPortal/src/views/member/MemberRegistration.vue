@@ -9,11 +9,11 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium mb-1">First Name</label>
-          <input v-model.trim="member.firstName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" required />
+          <input v-model.trim="member.firstName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" :required="isNewMember" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Last Name</label>
-          <input v-model.trim="member.lastName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" required />
+          <input v-model.trim="member.lastName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" :required="isNewMember" />
         </div>
       </div>
 
@@ -80,8 +80,8 @@ export default {
       return this.appService?.config?.rateSheetLink || '';
     },
     levelOptions() {
-      // Only show these three choices, with annual fees in the label
-      const allowed = ['Interested Party', 'Active', 'Full Access'];
+      // Only show these two choices, with annual fees in the label
+      const allowed = ['Active', 'Full Access'];
       const levels = this.appService?.config?.levels || {};
       return allowed
         .filter(label => levels[label] !== undefined)
@@ -99,10 +99,19 @@ export default {
     currentMember() {
       return this.session?.member || {};
     },
+    isNewMember() {
+      return String(this.member?.registration?.status || '').toUpperCase() === 'NEW';
+    },
   },
   created() {
     // Start from current session member but edit a clone to avoid partial writes
     const base = Member.ensure(this.currentMember);
+    if (String(base?.registration?.status || '').toUpperCase() === 'NEW') {
+      // Force new members to provide real names rather than default placeholders.
+      base.firstName = '';
+      base.lastName = '';
+      base.name = '';
+    }
     // Default level if empty
     if (!base.registration.level && this.levelOptions.length) {
       base.registration.level = this.levelOptions[0].value;
@@ -123,6 +132,9 @@ export default {
           const current = this.session?.member || {};
           const edits = this.member || {};
           const regMember = Member.forRegistration(current, edits);
+          if (this.isNewMember && (!regMember.firstName || !regMember.lastName)) {
+            throw new Error('Please enter your first and last name.');
+          }
 
           // Post minimal registration
           const result = await this.memberService.addMemberRegistration(regMember);

@@ -102,10 +102,10 @@ export default {
         },
         {
           id: 'signup',
-          label: this.soldOut ? 'Sold Out' : (this.pending ? 'Working...' : 'Sign Me Up'),
+          label: !this.isEnabled ? 'Not Available' : (this.soldOut ? 'Sold Out' : (this.pending ? 'Working...' : 'Sign Me Up')),
           icon: 'user-plus',
           show: this.showSignup && !this.isRegistered,
-          disabled: this.soldOut || this.pending,
+          disabled: !this.isEnabled || this.soldOut || this.pending,
           handler: () => this.$emit('signup', this.event),
         },
         {
@@ -141,6 +141,10 @@ export default {
       const limit = Number(this.event?.eventItem?.sizeLimit || 0);
       const count = Array.isArray(this.event?.attendees) ? this.event.attendees.length : 0;
       return limit > 0 && count >= limit;
+    },
+    isEnabled() {
+      // Check if event is explicitly disabled (default is enabled if not specified)
+      return this.event?.enabled !== false;
     },
   },
   methods: {
