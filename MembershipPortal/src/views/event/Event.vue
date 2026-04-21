@@ -293,9 +293,12 @@ export default {
     id() {
       if (!this.initial) this.loadEvent();
     },
-    event() {
+    event(newEvent, oldEvent) {
       if (this.isPage && this.setPageTitle) {
         this.setPageTitle(this.event?.getTitle() || 'Event');
+      }
+      if (newEvent && !oldEvent && this.$route.query.action === 'signup') {
+        this.onSignup();
       }
     },
   },
@@ -355,7 +358,7 @@ export default {
       return this.loginStatus !== 'VERIFIED';
     },
     redirectToLogin() {
-      const target = { path: '/event/view', query: { id: this.id, mode: this.fromMode } };
+      const target = { path: '/event/view', query: { id: this.id, mode: this.fromMode, action: 'signup' } };
       const redirect = encodeURIComponent(JSON.stringify(target));
       this.$router.push({ path: '/member', query: { redirect } });
     },
@@ -363,13 +366,19 @@ export default {
     async onSignup() {
       this.error = '';
       this.message = '';
+
+      if (this.requireVerified()) {
+        this.redirectToLogin();
+        return;
+      }
+
       this.pending = true;
       try {
         const eventId = this.event?.id || this.$route?.query?.id;
         const memberId = this.session?.member?.id;
         const res = await this.eventService.signup(eventId, memberId); // no start arg
         if (res.success) {
-          this.message = res.message;
+          this.message = `${res.message} Please check your email for an invoice. You can pay online using the 'Pay Now' button or in person at the time of the class with cash or check.`;
           await this.refreshAfterChange();
         } else {
           this.error = res.message;

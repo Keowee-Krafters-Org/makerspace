@@ -487,6 +487,18 @@ class EventManager {
     }
   }
 
+  getEventsByEventItemId(eventItemId) {
+    const eventItemResponse = this.getEventItemById(eventItemId);
+    if (!eventItemResponse.success) {
+      return new Response(false, null, 'Event item not found.');
+    }
+    const eventItem = eventItemResponse.data;
+    const eventsResponse = this.calendarManager.getAll({ eventItemId });
+    const events = this.enrichCalendarEvents(eventsResponse.data || []);
+    
+    return new Response(true, { eventItem, events });
+  }
+
   /**
    * Return the first occurrence (instance) of a recurring series.
    * Accepts the seriesId (recurring event id or iCalUID).

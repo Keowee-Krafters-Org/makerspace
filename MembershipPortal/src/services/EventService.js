@@ -42,6 +42,17 @@ export class EventService {
     });
   }
 
+  getEventsByEventItemId(id) {
+    if (!id) throw new Error('getEventsByEventItemId requires id');
+    const key = `eventItem:${id}`;
+    return this.appService.withSpinner(async () => {
+      return this.cache.fetchOrGet(key, async () => {
+        const res = await this.connector.invoke('getEventsByEventItemId', id);
+        return (res && res.success && 'data' in res) ? res.data : res;
+      });
+    });
+  }
+
   saveEvent(event) {
     if (!event) throw new Error('saveEvent requires event');
     const payload = event; // connector will stringify for GAS

@@ -147,7 +147,7 @@ export default {
       return this.appService.withSpinner(() => replace ? this.$router.replace(named) : this.$router.push(named));
     },
     routeToMemberRegistration(replace = false) {
-      const named = { name: 'MemberRegistration' };
+      const named = { name: 'MemberRegistration', query: this.$route?.query?.redirect ? { redirect: this.$route.query.redirect } : undefined };
       return this.appService.withSpinner(() => replace ? this.$router.replace(named) : this.$router.push(named));
     },
     routeToMemberWaiver(replace = false) {
