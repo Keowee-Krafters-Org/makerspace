@@ -106,11 +106,15 @@ class EventManager {
       }
       const eventItem = result.data;
 
+      // Preserve the Google Calendar event ID
+      const googleEventId = calendarEvent.id;
+
       if (eventItem.image && eventItem.image.id) {
         const imageFile = this.fileManager.get(eventItem.image.id);
         eventItem.image = imageFile;
       }
       calendarEvent.eventItem = eventItem;
+      calendarEvent.id = googleEventId; // Ensure the top-level ID is the calendar event ID
     }
 
     // Ensure calendarEvent.location is a CalendarLocation object

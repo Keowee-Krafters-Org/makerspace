@@ -25,6 +25,7 @@ class ZohoEvent extends Event {
       type: 'cf_type',
       eventType: 'cf_event_type',
       enabled: 'cf_enabled',
+      category: 'cf_category',
       _imageUrl: 'cf_image_url'
     }
   };

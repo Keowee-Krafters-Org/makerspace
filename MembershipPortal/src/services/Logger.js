@@ -5,6 +5,7 @@ export class Logger {
         if (!Logger.instance) {
             Logger.instance = this;
         }
+        console.log(`Logger initialized with level: ${this.level}`);
         return Logger.instance; 
     }
     static instance= null;

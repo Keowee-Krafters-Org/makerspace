@@ -33,6 +33,7 @@ export class EventService {
   getEventById(id) {
     if (!id) throw new Error('getEventById requires id');
     const key = `event:${id}`;
+    Logger.debug(`Fetching event by ID: ${id} with cache key: ${key}`);
     return this.appService.withSpinner(async () => {
       // Use short TTL or fetchOrGet
       return this.cache.fetchOrGet(key, async () => {
@@ -168,7 +169,7 @@ export class EventService {
 
   async getEventHosts(options = { page: { pageSize: 100 }, role: 'instructor', cache: true }) {
     const endpoint = 'getEventHosts';
-    const useCache = options?.cache !== false && !options?.search && !options?.role; // avoid caching filtered role/search variants
+    const useCache = options?.cache !== false && !options?.search; // avoid caching filtered role/search variants
     const fetchFn = async () => {
       const responseString = await this.connector.invoke(endpoint, options);
       const response = (responseString && typeof responseString === 'string') ? JSON.parse(responseString) : responseString;

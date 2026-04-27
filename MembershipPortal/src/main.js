@@ -29,10 +29,12 @@ async function initializeApp() {
   const url = new URL(window.location.href);
   const view = (readInjected('view') ?? url.searchParams.get('view') ?? 'event').toString().toLowerCase();
   const viewMode = (readInjected('view-mode') ?? url.searchParams.get('viewMode') ?? 'list').toString().toLowerCase();
+  const id = readInjected('id') ?? url.searchParams.get('id');
 
   const appService = new AppService().initialize();
   appService.session.view = view;
   appService.session.viewMode = viewMode;
+  appService.session.id = id;
 
   const eventService = new EventService(connector, appService);
   const memberService = new MemberService(connector, appService);

@@ -1,3 +1,4 @@
+import { Logger } from '../Logger.js';
 import { ServiceConnector } from './ServiceConnector.js';
 
 export class GoogleServiceConnector extends ServiceConnector {
@@ -43,6 +44,7 @@ export class GoogleServiceConnector extends ServiceConnector {
 
   invoke(fnName, ...args) {
     return new Promise((resolve, reject) => {
+      Logger.debug(`Invoking GAS function '${fnName}' with args:`, args);
       if (!(typeof google !== 'undefined' && google?.script?.run)) {
         reject(new Error('google.script.run not available'));
         return;

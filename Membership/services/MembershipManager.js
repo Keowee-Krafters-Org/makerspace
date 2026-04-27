@@ -27,7 +27,7 @@ class MembershipManager {
    * This method creates a new Member instance from the provided object and updates it in the storage.
    * @param {Object} memberObject - The member object containing updated data.
    * @returns {Response} The response object containing the success status and updated member data.
-  * @throws {Error} If the member object is invalid or the update fails.
+   * @throws {Error} If the member object is invalid or the update fails.
    */
   updateMemberFromObject(memberObject) {
     const member = this.storageManager.createNew(memberObject);
@@ -39,7 +39,7 @@ class MembershipManager {
    * @param {Member} member - The member instance to update.
    * @returns {Response} The response object containing the success status and updated member data.
    * @throws {Error} If the member is not found or the update fails.
-   * 
+   *
    */
   updateMember(member) {
 
@@ -277,7 +277,7 @@ class MembershipManager {
       { host: 'true', page: { pageSize: 200 } });
   }
  
-
+ 
   createNew(data = {}) {
     const member = this.storageManager.createNew(data);
     member.discount = MembershipManager.calculateDiscount(member);

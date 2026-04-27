@@ -15,3 +15,21 @@ function test_when_member_is_searched_by_email__then_member_is_returned() {
   const response = getMemberByEmail(email); 
   console.info("Received: " + response); 
 }
+
+function test_get_event_by_id() {
+  eventId = '7jkruckacr4j24t5e0o70mkoro';
+
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+
+  const event = eventManager.getEventById(eventId);
+}
+
+function test_get_event_by_id() {
+  eventId = '7jkruckacr4j24t5e0o70mkoro';
+
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+
+  const event = eventManager.getEventById(eventId);
+}
