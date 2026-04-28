@@ -108,7 +108,7 @@ class CalendarManager extends StorageManager {
     const resource = this.buildResource_(calendarEvent, eventItem);
     const created = this.retry(() => Calendar.Events.insert(resource, this.calendarId), 'Calendar.Events.insert');
 
-    const description = CalendarManager.updateDescription(created.id, eventItem.id);
+    const description = CalendarManager.updateDescription(created.id, eventItem);
     this.retry(() => Calendar.Events.patch({ description }, this.calendarId, created.id), 'Calendar.Events.patch');
 
     const item = this.retry(() => Calendar.Events.get(this.calendarId, created.id), 'Calendar.Events.get');
@@ -127,7 +127,7 @@ class CalendarManager extends StorageManager {
     const start = rec.start || new Date(current.start.dateTime || current.start.date);
     const end = rec.end || new Date(current.end.dateTime || current.end.date);
     const summary = calendarEvent.title || current.summary || 'Untitled Class';
-    const description = CalendarManager.updateDescription(current.id, calendarEvent.eventItem.id);
+    const description = CalendarManager.updateDescription(current.id, calendarEvent.eventItem);
 
     const currentAttendees = Array.isArray(current.attendees) ? current.attendees.slice() : [];
     const roomEmails = (this.getCalendarResources() || []).map(r => r.email);
@@ -384,9 +384,22 @@ class CalendarManager extends StorageManager {
   }
 
   // Keep updateDescription unchanged
-  static updateDescription(eventId, eventItemId) {
-    const updatedDescription = `<a href="${getConfig().baseUrl}?view=event&eventId=${eventId}&eventItemId=${eventItemId}">View Details</a>`;
-    return updatedDescription;
+  static updateDescription(eventId, eventItem) {
+    const config = typeof getConfig === 'function' ? getConfig() : {};
+    const webUrl = config.webUrl;
+    if (!webUrl) {
+      // Fallback to old URL if webUrl is not configured
+      return `<p>Missing WebUrl</p>`;
+    }
+
+    const interests = config.interests || {};
+    const category = eventItem?.category || '';
+    const categoryInfo = interests[category]
+    const categoryKey = categoryInfo?.key;
+
+    const url = `${webUrl}classes/${categoryKey}/${eventId}?${eventItem ? `eventItemId=${eventItem.id}` : ''}`;
+
+    return `<a href="${url}">View Details</a>`;
   }
 
   // Location helpers

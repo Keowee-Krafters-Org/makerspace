@@ -51,6 +51,7 @@ async function initializeApp() {
   app.provide('memberService', memberService);
 
   app.mount('#app');
+
 }
 
 initializeApp();

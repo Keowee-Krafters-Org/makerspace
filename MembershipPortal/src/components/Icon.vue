@@ -23,6 +23,7 @@ import {
   EllipsisVerticalIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
+  ShareIcon,
 } from '@heroicons/vue/24/outline';
 
 const registry = {
@@ -40,6 +41,7 @@ const registry = {
   menu: EllipsisVerticalIcon,
   currency: CurrencyDollarIcon,
   document: DocumentTextIcon,
+  share: ShareIcon,
 };
 
 export default {

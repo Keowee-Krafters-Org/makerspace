@@ -122,8 +122,8 @@ export default {
         },
         {
           id: 'share',
-          label: 'Embed',
-          icon: 'share-alt',
+          label: 'Share',
+          icon: 'share',
           show: this.showShare,
           handler: () => this.showEmbed = true,
         },
