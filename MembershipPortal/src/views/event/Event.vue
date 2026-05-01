@@ -1,8 +1,11 @@
 <template>
   <div class="rootClass">
-    <header v-if="isPage" class="flex flex-col sm:flex-row sm:items-center sm:justify-end mb-6 gap-2">
+    <header v-if="isPage" class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-2">
       <div class="flex gap-2 self-start sm:self-auto">
         <Button icon="arrow-left" label="Back" @click="goBack" />
+      </div>
+      <div v-if="canEditEvent" class="flex gap-2 self-start sm:self-auto">
+        <Button icon="share" label="Share" @click="openShare" />
       </div>
     </header>
 
@@ -12,10 +15,6 @@
     <div v-if="error" class="mb-3 p-3 rounded border border-red-300 bg-red-50 text-red-800 text-sm">
       {{ error }}
     </div>
-
-    <h3 v-if="isCard && event" class="text-xl font-bold text-center mb-3">
-      {{ event?.getTitle() }}
-    </h3>
 
     <div v-if="event" :class="bodyClass">
       <!-- Image/Gallery (left) -->
@@ -48,6 +47,7 @@
       <!-- Details (right) -->
       <div :class="detailsColClass">
         <div class="text-gray-700 space-y-1">
+          <div><span class="font-semibold">Title:</span> <span class="font-bold wrap-anywhere">{{ event.getTitle() }}</span></div>
           <div><span class="font-semibold">Date:</span> {{ formatDate(event.getDate()) }}</div>
           <div><span class="font-semibold">Duration:</span> {{ event.getDurationHours() }} hours</div>
           <div><span class="font-semibold">Price:</span> ${{ price }}</div>
@@ -295,7 +295,7 @@ export default {
     },
     event(newEvent, oldEvent) {
       if (this.isPage && this.setPageTitle) {
-        this.setPageTitle(this.event?.getTitle() || 'Event');
+        this.setPageTitle('Event');
       }
       if (newEvent && !oldEvent && this.$route.query.action === 'signup') {
         this.onSignup();
@@ -304,7 +304,7 @@ export default {
   },
   mounted() {
     if (this.isPage && this.setPageTitle) {
-      this.setPageTitle(this.event?.getTitle() || (this.initial ? EventModel.fromObject(this.initial).getTitle() : 'Event'));
+      this.setPageTitle('Event');
     }
   },
   unmounted() {
@@ -426,6 +426,11 @@ export default {
       } catch {
         return String(value);
       }
+    },
+    openShare() {
+      const eventId = this.id || this.event?.id;
+      if (!eventId) return;
+      this.appService.withSpinner(() => this.$router.push({ name: 'EmbedInstructions', params: { id: eventId } }));
     },
     openEditor() {
       const eventId = this.id || this.event?.id;

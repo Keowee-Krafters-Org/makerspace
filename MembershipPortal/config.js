@@ -7,7 +7,7 @@
 
 config = {
   dev: {
-    version: 'SNAPSHOT-1.2.25',
+    version: 'SNAPSHOT-1.2.26',
     deploymentId: 'AKfycbxM_gvdUF8wmuxIyS-2T6E-NstBT6vjPwC05hruhouo9Ar_jc8_8-wouKASEXYtXDGA',
   },
   prod: {

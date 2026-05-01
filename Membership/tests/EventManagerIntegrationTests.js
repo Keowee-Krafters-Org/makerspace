@@ -674,3 +674,27 @@ function test_get_event_rooms__returns_rooms_with_capacity() {
   });
 }
 
+function test_getEventListByCategory() {
+  const eventManager = modelFactory.eventManager();
+  try {
+
+    const eventCategory = 'fiber'; 
+    const eventsResponse = eventManager.getUpcomingEvents(365, { page: { pageSize: 5 }, category: eventCategory });
+    Logger.log('getEventList response: ' + JSON.stringify(eventsResponse));
+    assert('Event list should not be null or undefined', eventsResponse != undefined, true);
+    assert('Event list should be an array', Array.isArray(eventsResponse.data), true);
+    assert('Event list should have at least one event', eventsResponse.data.length > 0, true);
+    eventsResponse.data.forEach((event, idx) => {
+      assert(`Event ${idx} has id`, typeof event.id !== 'undefined', true);
+      assert(`Event ${idx} has title`, typeof event.eventItem.title !== 'undefined', true);
+      assert(`Event ${idx} has date`, event.date instanceof Date, true);
+      assert(`Event ${idx} has location`, event.location instanceof CalendarLocation, true);
+      assert(`Event ${idx} has category`, event.eventItem.category !== 'undefined', true); 
+      assert('Event category is correct',  eventCategory, event.eventItem.category); 
+    });
+    Logger.log('Event list verification passed.');
+
+  } catch (error) {
+    Logger.log(`getEventList failed: ${error.message}`);
+  }
+}

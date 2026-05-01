@@ -33,3 +33,9 @@ function test_get_event_by_id() {
 
   const event = eventManager.getEventById(eventId);
 }
+
+function test_getEventListByCategory() {
+  const eventsJson = getEventList(JSON.stringify({category:'wood-turning'})); 
+  const events = JSON.parse(eventsJson); 
+  console.log(`Found ${events.data.length} events`); 
+}
