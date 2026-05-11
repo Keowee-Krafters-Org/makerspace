@@ -1,18 +1,5 @@
 <template>
   <div class="embed-instructions p-4 bg-gray-100 rounded-lg">
-    <h3 class="text-lg font-semibold mb-2">Embed this Event</h3>
-    <p class="text-sm text-gray-600 mb-4">
-      Use the following URL to embed a view of just this event on a page on your website.
-    </p>
-    <div class="flex items-center gap-2 mb-4">
-      <textarea
-        ref="embedUrlInput"
-        :value="embedUrl"
-        readonly
-        class="flex-grow p-2 border rounded bg-gray-50 text-sm font-mono"
-        rows="3"
-      ></textarea>
-    </div>
     <h3 class="text-lg font-semibold mb-2">Event Page URL</h3>
     <p class="text-sm text-gray-600 mb-4">
       Use the following URL to link directly to the event page on your website.
@@ -26,6 +13,7 @@
         rows="3"
       ></textarea>
     </div>
+
     <h3 class="text-lg font-semibold mb-2">Google Site Page Details</h3>
     <p class="text-sm text-gray-600 mb-4">
       Use these values to create a new page in Google Sites for this event.
@@ -53,6 +41,22 @@
         <li>Click on "Advanced" and enter the "Page Custom Path".</li>
         <li>Create the page under the correct "Category Path".</li>
       </ol>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Embed this Event</h3>
+    <p class="text-sm text-gray-600 mb-4">
+      Use the following URL to embed a view of just this event on a page on your website.
+    </p>
+    <div class="flex items-center gap-2 mb-4">
+      <textarea
+        ref="embedUrlInput"
+        :value="embedUrl"
+        readonly
+        class="flex-grow p-2 border rounded bg-gray-50 text-sm font-mono"
+        rows="3"
+      ></textarea>
+    </div>
+    <div class="instructions">
       <h4 class="font-semibold mb-2 mt-4">How to embed in Google Sites:</h4>
       <ol class="list-decimal list-inside text-sm space-y-1">
         <li>Go to the page where you want to add the event.</li>
@@ -106,7 +110,7 @@ export default {
       return interests[this.event.eventItem?.category]?.key || 'Category not found';
     },
     pageName() {
-      return this.event.eventItem?.name || 'Event name not found';
+      return this.event.eventItem?.title || 'Event name not found';
     },
     pageCustomPath() {
       return this.event.id;
