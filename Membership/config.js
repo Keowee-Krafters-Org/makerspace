@@ -1,19 +1,21 @@
 export const config = {
   dev: {
-    version: 'SNAPSHOT-1.2.15',
+    version: 'SNAPSHOT-1.3.0',
     deploymentId: 'AKfycby_LA4aGgzhix8-fIzsC1w7JolfUuQZRJXNIvAkPT0ON8_1MhHNaasg7MAC3-4OF8pcFw',
-    baseUrl: 'https://script.google.com/macros/s/AKfycbyM65yuXJ-rei-tj1352ceHXtJeYbx0btXOng4ov1w/dev',
+    baseUrl: 'https://script.google.com/macros/s/AKfycbxM_gvdUF8wmuxIyS-2T6E-NstBT6vjPwC05hruhouo9Ar_jc8_8-wouKASEXYtXDGA/exec',
     calendarId: 'c_c9ac4bc31b22e9a6e15052c53064118f252e4e5559b82af3fe49378559fbb672@group.calendar.google.com',
     imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
-    logLevel: 'DEBUG'
+    logLevel: 'DEBUG',
+    webUrl: 'https://sites.google.com/keoweekrafters.org/makekeoweetest/'
   },
   prod: {
-    version: 'RELEASE-1.2.15',
+    version: 'RELEASE-1.3.0',
     deploymentId: 'AKfycbxw_iLSR_-JizgF6rzrDBMD1l-t84m0dIycKc20uA_BZQLdsiVS7NcppS72ygOSasZMuA',
     baseUrl: 'https://script.google.com/macros/s/AKfycbywslFpBHt1OcsTyaE_gCRFrd3wjGhaOtbwr7mpO-hTMyyurJBM2tAiKX8cksRfmySR/exec',    
     calendarId: 'c_eac08aea19fae1f3f40d6cff7c2f027b28693fefca8a37381d47185a2c24fc0c@group.calendar.google.com',
     imageFolderId: '1GBamyfVCCltpLC_rB70D4unHTcJQUFdY',
-    logLevel: 'INFO'
+    logLevel: 'INFO',
+    webUrl: 'https://sites.google.com/keoweekrafters.org/makekeowee/'
   }
 }
 
@@ -110,21 +112,21 @@ export var SharedConfig = {
     'Administrator': {value: 30, discount: 0, description: 'Administrator - Full access with administrative privileges', itemId: ''}
   },
   interests: {
-    'General Arts and Crafts': {value: 1},
-    'Fabric Arts': {value: 2},
-    'Woodworking': {value: 3},
-    'Painting': {value: 4},
-    'Paper Crafts': {value:   6},
-    '3D Printing': {value: 7},
-    '2D Cutting/Engraving': {value: 8},
-    'Jewelry': {value: 9},
-    'Pottery and Ceramics': {value: 10},
-    'Metalwork': {value: 11},
-    'Wood Turning': {value: 12},
-    'Glassworking': {value: 13},
-    'Leatherworking': {value: 16},
-    'Photography': {value: 18},
-    'Robotics': {value: 19},
+    'General Arts and Crafts': { value: 1, key: 'general-arts-and-crafts' },
+    'Fabric Arts': { value: 2, key: 'fabric-arts' },
+    'Woodworking': { value: 3, key: 'woodworking' },
+    'Painting': { value: 4, key: 'painting' },
+    'Paper Crafts': { value: 6, key: 'paper-crafts' },
+    '3D Printing': { value: 7, key: '3d-printing' },
+    '2D Cutting/Engraving': { value: 8, key: '2d-cutting-engraving' },
+    'Jewelry': { value: 9, key: 'jewelry' },
+    'Pottery and Ceramics': { value: 10, key: 'pottery-and-ceramics' },
+    'Metalwork': { value: 11, key: 'metalwork' },
+    'Wood Turning': { value: 12, key: 'wood-turning' },
+    'Glassworking': { value: 13, key: 'glassworking' },
+    'Leatherworking': { value: 16, key: 'leatherworking' },
+    'Photography': { value: 18, key: 'photography' },
+    'Robotics': { value: 19, key: 'robotics' },
   },
   locations: ['Eagles Nest Arts Center,4 Eagle Lane, Salem, SC 29676',
     'Keowee Key Clubhouse, Stamp Creek Road, Salem, SC 29676',

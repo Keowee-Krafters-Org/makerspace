@@ -4,7 +4,7 @@
       <div class="toolbar-actions self-start sm:self-auto">
         <Button icon="refresh" label="Reload" @click="loadAll" />
         <Button icon="trash" label="Cancel" @click="onCancel" />
-        <Button icon="pencil" :label="isNew ? 'Create' : 'Save'" @click="onSave" />
+        <Button icon="pencil" :label="isNew ? 'Create' : 'Save'" @click="onSave" :disabled="!isFormValid" />
       </div>
     </header>
 
@@ -12,7 +12,7 @@
 
     <form @submit.prevent="onSave">
       <div class="form-group">
-        <label class="form-label">Event Item</label>
+        <label class="form-label required-field">Event Item</label>
         <DropdownList
           v-model="selectedEventItemId"
           :list-items="eventItems"
@@ -20,36 +20,49 @@
           :label-prop="'label'"
           empty-message="Select Event Item"
           @change="applyEventItem"
+          required
         />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Title</label>
-        <input v-model="form.eventItem.title" type="text" class="form-input" />
+        <label class="form-label required-field">Title</label>
+        <input v-model="form.eventItem.title" type="text" class="form-input" required />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea v-model="form.eventItem.description" rows="4" class="form-textarea class-desc"></textarea>
+        <label class="form-label required-field">Category</label>
+        <DropdownList
+          v-model="form.eventItem.category"
+          :list-items="categories"
+          :value-prop="'value'"
+          :label-prop="'label'"
+          empty-message="Select Category"
+          required
+        />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Date</label>
-        <input v-model="dateInput" type="datetime-local" class="form-input" />
+        <label class="form-label required-field">Description</label>
+        <textarea v-model="form.eventItem.description" rows="4" class="form-textarea class-desc" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label required-field">Date</label>
+        <input v-model="dateInput" type="datetime-local" class="form-input" required />
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Duration (hours)</label>
-          <input v-model.number="form.eventItem.duration" type="number" min="0" step="0.25" class="form-input" />
+          <label class="form-label required-field">Duration (hours)</label>
+          <input v-model.number="form.eventItem.duration" type="number" min="0" step="0.25" class="form-input" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Price</label>
-          <input v-model.number="form.eventItem.price" type="number" min="0" step="0.01" class="form-input" />
+          <label class="form-label required-field">Price</label>
+          <input v-model.number="form.eventItem.price" type="number" min="0" step="0.01" class="form-input" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Attendee Limit</label>
-          <input v-model.number="form.eventItem.sizeLimit" type="number" min="0" class="form-input" />
+          <label class="form-label required-field">Attendee Limit</label>
+          <input v-model.number="form.eventItem.sizeLimit" type="number" min="0" class="form-input" required />
         </div>
       </div>
 
@@ -61,18 +74,19 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Location</label>
+        <label class="form-label required-field">Location</label>
         <DropdownList
           v-model="form.location.id"
           :list-items="rooms"
           :value-prop="'value'"
           :label-prop="'label'"
           empty-message="Select Location"
+          required
         />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Host</label>
+        <label class="form-label required-field">Host</label>
         <DropdownList
           v-model="selectedHostId"
           :list-items="hosts"
@@ -80,11 +94,12 @@
           :label-prop="'label'"
           empty-message="Select Host"
           @change="applyHost"
+          required
         />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Instructor</label>
+        <label class="form-label required-field">Instructor</label>
         <DropdownList
           v-model="selectedInstructorId"
           :list-items="instructors"
@@ -92,13 +107,14 @@
           :label-prop="'label'"
           empty-message="Select Instructor"
           @change="applyInstructor"
+          required
         />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Image</label>
+        <label class="form-label required-field">Image</label>
         <div class="flex items-center gap-2">
-          <input v-model="form.eventItem.image.url" type="text" class="form-input" placeholder="Image URL" />
+          <input v-model="form.eventItem.image.url" type="text" class="form-input" placeholder="Image URL" required />
           <Button @click="triggerImageInput">Choose File</Button>
         </div>
         <input ref="imageInput" type="file" accept="image/*" @change="onImageChange" class="hidden" />
@@ -131,6 +147,7 @@ export default {
       rooms: [],
       hosts: [],
       instructors: [],
+      categories: [],
       form: this.emptyForm(),
       selectedEventItemId: '',
       selectedHostId: '',
@@ -146,6 +163,23 @@ export default {
     },
     isNew() {
       return !this.id;
+    },
+    isFormValid() {
+      const { eventItem, date, location } = this.form;
+      const isEventItemValid = eventItem.title &&
+        eventItem.category &&
+        eventItem.description &&
+        eventItem.duration > 0 &&
+        eventItem.price >= 0 &&
+        eventItem.sizeLimit > 0;
+      
+      const isDateValid = date !== null;
+      const isLocationValid = location.id !== '';
+      const isHostValid = this.selectedHostId !== '';
+      const isInstructorValid = this.selectedInstructorId !== '';
+      const isImageValid = eventItem.image.url !== '' || this.previewUrl !== '';
+
+      return isEventItemValid && isDateValid && isLocationValid && isHostValid && isInstructorValid && isImageValid;
     },
     dateInput: {
       get() {
@@ -195,6 +229,7 @@ export default {
           host: { id: '' },
           instructor: { id: '' },
           image: { data: '' },
+          category: '',
         },
         date: null,
         location: { id: '' },
@@ -255,12 +290,17 @@ export default {
       this.error = '';
       try {
         Logger.debug('EventEditor loading all reference data');
-        const [items, rooms, hosts, instructors] = await Promise.all([
+        const [items, rooms, hosts, instructors, config] = await Promise.all([
           this.eventService.getEventItemList?.({ page: { pageSize: 100 } }),
           this.eventService.getEventRooms?.({ page: { pageSize: 100 } }),
           this.eventService.getEventHosts?.({ page: { pageSize: 100 } }),
           this.eventService.getInstructors?.({ page: { pageSize: 100 } }),
+          this.appService.getConfig(),
         ]);
+
+        // Categories -> { value, label }
+        this.categories = Object.entries(config?.interests || {})
+          .map(([label, { value }]) => ({ label, value: label }));
 
         // Event Items -> { value, label, id, ... }
         this.eventItems = (items?.data || [])
@@ -335,6 +375,7 @@ export default {
           host: ev?.eventItem?.host ?? '',
           instructor: ev?.eventItem?.instructor ?? '',
           image: { data: '', url: imgUrl },
+          category: ev?.eventItem?.category || '',
         },
         date: ev?.date ? new Date(ev.date) : null,
         location: { id: locId, email: locEmail },
@@ -452,6 +493,7 @@ export default {
           duration: Number(this.form.eventItem.duration || 0),
           host: this.form.eventItem.host || '',
           instructor: this.form.eventItem.instructor || '',
+          category: this.form.eventItem.category || '',
           ...(hasNewImage
             ? { image: { data: img.data, name: img.name || '', contentType: img.contentType || '' } }
             : (img.url ? { image: { url: img.url } } : {})),
@@ -532,6 +574,11 @@ export default {
   display: block;
   font-weight: 500;
   margin-bottom: 0.5rem;
+}
+
+.required-field::after {
+  content: ' *';
+  color: red;
 }
 
 .form-input,

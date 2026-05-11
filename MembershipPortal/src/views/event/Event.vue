@@ -1,8 +1,11 @@
 <template>
   <div class="rootClass">
-    <header v-if="isPage" class="flex flex-col sm:flex-row sm:items-center sm:justify-end mb-6 gap-2">
+    <header v-if="isPage" class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-2">
       <div class="flex gap-2 self-start sm:self-auto">
         <Button icon="arrow-left" label="Back" @click="goBack" />
+      </div>
+      <div v-if="canEditEvent" class="flex gap-2 self-start sm:self-auto">
+        <Button icon="share" label="Share" @click="openShare" />
       </div>
     </header>
 
@@ -12,10 +15,6 @@
     <div v-if="error" class="mb-3 p-3 rounded border border-red-300 bg-red-50 text-red-800 text-sm">
       {{ error }}
     </div>
-
-    <h3 v-if="isCard && event" class="text-xl font-bold text-center mb-3">
-      {{ event?.getTitle() }}
-    </h3>
 
     <div v-if="event" :class="bodyClass">
       <!-- Image/Gallery (left) -->
@@ -48,6 +47,7 @@
       <!-- Details (right) -->
       <div :class="detailsColClass">
         <div class="text-gray-700 space-y-1">
+          <div><span class="font-semibold">Title:</span> <span class="font-bold wrap-anywhere">{{ event.getTitle() }}</span></div>
           <div><span class="font-semibold">Date:</span> {{ formatDate(event.getDate()) }}</div>
           <div><span class="font-semibold">Duration:</span> {{ event.getDurationHours() }} hours</div>
           <div><span class="font-semibold">Price:</span> ${{ price }}</div>
@@ -293,15 +293,18 @@ export default {
     id() {
       if (!this.initial) this.loadEvent();
     },
-    event() {
+    event(newEvent, oldEvent) {
       if (this.isPage && this.setPageTitle) {
-        this.setPageTitle(this.event?.getTitle() || 'Event');
+        this.setPageTitle('Event');
+      }
+      if (newEvent && !oldEvent && this.$route.query.action === 'signup') {
+        this.onSignup();
       }
     },
   },
   mounted() {
     if (this.isPage && this.setPageTitle) {
-      this.setPageTitle(this.event?.getTitle() || (this.initial ? EventModel.fromObject(this.initial).getTitle() : 'Event'));
+      this.setPageTitle('Event');
     }
   },
   unmounted() {
@@ -355,7 +358,7 @@ export default {
       return this.loginStatus !== 'VERIFIED';
     },
     redirectToLogin() {
-      const target = { path: '/event/view', query: { id: this.id, mode: this.fromMode } };
+      const target = { path: '/event/view', query: { id: this.id, mode: this.fromMode, action: 'signup' } };
       const redirect = encodeURIComponent(JSON.stringify(target));
       this.$router.push({ path: '/member', query: { redirect } });
     },
@@ -363,13 +366,19 @@ export default {
     async onSignup() {
       this.error = '';
       this.message = '';
+
+      if (this.requireVerified()) {
+        this.redirectToLogin();
+        return;
+      }
+
       this.pending = true;
       try {
         const eventId = this.event?.id || this.$route?.query?.id;
         const memberId = this.session?.member?.id;
         const res = await this.eventService.signup(eventId, memberId); // no start arg
         if (res.success) {
-          this.message = res.message;
+          this.message = `${res.message} Please check your email for an invoice. You can pay online using the 'Pay Now' button or in person at the time of the class with cash or check.`;
           await this.refreshAfterChange();
         } else {
           this.error = res.message;
@@ -417,6 +426,11 @@ export default {
       } catch {
         return String(value);
       }
+    },
+    openShare() {
+      const eventId = this.id || this.event?.id;
+      if (!eventId) return;
+      this.appService.withSpinner(() => this.$router.push({ name: 'EmbedInstructions', params: { id: eventId } }));
     },
     openEditor() {
       const eventId = this.id || this.event?.id;

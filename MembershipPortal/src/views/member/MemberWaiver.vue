@@ -80,7 +80,21 @@ export default {
             const refreshed = await this.memberService.getMemberByEmail(email);
             if (refreshed && typeof refreshed === 'object') this.session.member = refreshed;
           }
-          // Send member to the standard Classes listing after waiver completion.
+
+          const redirectRaw = this.$route?.query?.redirect;
+          if (redirectRaw) {
+            try {
+              const redirectTarget = JSON.parse(decodeURIComponent(redirectRaw));
+              if (redirectTarget && redirectTarget.path) {
+                this.$router.push(redirectTarget);
+                return;
+              }
+            } catch (e) {
+              // Could not parse redirect, fall through to default
+            }
+          }
+          
+          // Default: Send member to the standard Classes listing after waiver completion.
           this.$router.push({ path: '/event', query: { mode: 'list', type: 'Class' } });
         } catch (e) {
           this.error = e?.message || 'Could not refresh member status';

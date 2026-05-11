@@ -2,6 +2,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   const view = (p.view || 'member').toString().toLowerCase();      // 'member' | 'event'
   const viewMode = (p.viewMode || p.mode || 'list').toString();     // 'list' | 'table' etc.
+  const id = p.id || null;
 
   // Load your built SPA HTML (no GAS templating tags inside)
   const base = HtmlService.createHtmlOutputFromFile('ui/index');
@@ -11,8 +12,9 @@ function doGet(e) {
   const inject = [
     `<script type="application/json" id="view">${JSON.stringify(view)}</script>`,
     `<script type="application/json" id="view-mode">${JSON.stringify(viewMode)}</script>`,
+    `<script type="application/json" id="id">${JSON.stringify(id)}</script>`,
     `<script>window.__RUNTIME__=${JSON.stringify({ isGas: true })};</script>`
-  ].join('\n');
+  ].join('\\n');
 
   // Insert before </body> to keep valid HTML
   html = html.replace('</body>', `${inject}\n</body>`);
@@ -20,7 +22,6 @@ function doGet(e) {
   return HtmlService
     .createHtmlOutput(html)
     .setTitle('Membership Portal')
-    // UPDATE THIS LINE: Add maximum-scale and user-scalable
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no') 
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1') 
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

@@ -14,6 +14,7 @@ export class Event extends Entity{
     this.sizeLimit = data.sizeLimit || 0; // 0 means no limit
     this.eventItem = data.eventItem || null; // linked event item with more details
     this.enabled = data.enabled !== false;
+    this.category = data.category || '';
     // copy any other properties from data to this object
     Object.assign(this, data || {});
   }
@@ -99,4 +100,6 @@ export class Event extends Entity{
     const isRegistered = this.isMemberRegistered(memberOrEmail);
     return this.hasSizeLimit() && spots === 0 && !isRegistered;
   }
+
+  
 }

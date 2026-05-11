@@ -46,7 +46,7 @@ export class ZohoStorageManager extends StorageManager {
 
 
     // Execute request
-    const response = this.zohoAPI.getEntities(this.resourceName, zohoParams);
+    const response = this.retry(() => this.zohoAPI.getEntities(this.resourceName, zohoParams), 'ZohoAPI.getEntities');
     if (!response || !response[this.resourceName]) {
       throw new Error(`No data found for resource: ${this.resourceName}`);
     }
@@ -82,7 +82,7 @@ export class ZohoStorageManager extends StorageManager {
     // Should not have an id
     delete entity.id;
     const entityRecord = entity.toRecord();
-    const response = this.zohoAPI.createEntity(this.clazz.getResourceNamePlural(), entityRecord, params);
+    const response = this.retry(() => this.zohoAPI.createEntity(this.clazz.getResourceNamePlural(), entityRecord, params), 'ZohoAPI.createEntity');
     return this.clazz.fromRecord(response[this.resourceNameSingular]);
   }
 
@@ -92,7 +92,7 @@ export class ZohoStorageManager extends StorageManager {
    * @returns {Object} The retrieved entity record.
    */
   getById(id) {
-    const response = this.zohoAPI.getEntity(this.resourceName, id);
+    const response = this.retry(() => this.zohoAPI.getEntity(this.resourceName, id), 'ZohoAPI.getEntity');
     if (!response || !response[this.resourceNameSingular]) {
       return new Response(false, null, response ? response.message : 'Not found');
     }
@@ -107,7 +107,7 @@ export class ZohoStorageManager extends StorageManager {
     }
 
     const payload = updatedEntity.toRecord();
-    const response = this.zohoAPI.updateEntity(this.resourceName, id, payload);
+    const response = this.retry(() => this.zohoAPI.updateEntity(this.resourceName, id, payload), 'ZohoAPI.updateEntity');
     if (!response || !response[this.resourceNameSingular]) {
       throw new Error(`Failed to update entity with ID: ${id} with: ${response.message}`);
     }
@@ -118,7 +118,7 @@ export class ZohoStorageManager extends StorageManager {
 
   delete(id) {
     // Implement delete logic using this.zohoAPI
-    return this.zohoAPI.deleteEntity(this.resourceName,id);
+    return this.retry(() => this.zohoAPI.deleteEntity(this.resourceName,id), 'ZohoAPI.deleteEntity');
   }
 
   getFiltered(predicate, params = {},) {

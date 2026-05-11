@@ -49,9 +49,9 @@ export class CalendarManager extends StorageManager {
   get(id) {
     // Correct signature: get(calendarId, eventId)
     try {
-      return Calendar.Events.get(this.calendarId, String(id));
+      return this.retry(() => Calendar.Events.get(this.calendarId, String(id)), 'Calendar.Events.get');
     } catch (e) {
-      const res = Calendar.Events.list(this.calendarId, { iCalUID: String(id), singleEvents: true, maxResults: 1 });
+      const res = this.retry(() => Calendar.Events.list(this.calendarId, { iCalUID: String(id), singleEvents: true, maxResults: 1 }), 'Calendar.Events.list');
       const item = (res.items || [])[0];
       if (!item) throw e;
       return item;
@@ -115,12 +115,12 @@ export class CalendarManager extends StorageManager {
    */
   add(calendarEvent, eventItem) {
     const resource = this.buildResource_(calendarEvent, eventItem);
-    const created = Calendar.Events.insert(resource, this.calendarId);
+    const created = this.retry(() => Calendar.Events.insert(resource, this.calendarId), 'Calendar.Events.insert');
 
-    const description = CalendarManager.updateDescription(created.id, eventItem.id);
-    Calendar.Events.patch({ description }, this.calendarId, created.id);
+    const description = CalendarManager.updateDescription(created.id, eventItem);
+    this.retry(() => Calendar.Events.patch({ description }, this.calendarId, created.id), 'Calendar.Events.patch');
 
-    const item = Calendar.Events.get(this.calendarId, created.id);
+    const item = this.retry(() => Calendar.Events.get(this.calendarId, created.id), 'Calendar.Events.get');
     return this.fromRecord(item);
   }
 
@@ -136,7 +136,7 @@ export class CalendarManager extends StorageManager {
     const start = rec.start || new Date(current.start.dateTime || current.start.date);
     const end = rec.end || new Date(current.end.dateTime || current.end.date);
     const summary = calendarEvent.title || current.summary || 'Untitled Class';
-    const description = CalendarManager.updateDescription(current.id, calendarEvent.eventItem.id);
+    const description = CalendarManager.updateDescription(current.id, calendarEvent.eventItem);
 
     const currentAttendees = Array.isArray(current.attendees) ? current.attendees.slice() : [];
     const roomEmails = (this.getCalendarResources() || []).map(r => r.email);
@@ -174,8 +174,8 @@ export class CalendarManager extends StorageManager {
       }
     }
 
-    Calendar.Events.patch(patch, this.calendarId, current.id);
-    const updated = Calendar.Events.get(this.calendarId, current.id);
+    this.retry(() => Calendar.Events.patch(patch, this.calendarId, current.id), 'Calendar.Events.patch');
+    const updated = this.retry(() => Calendar.Events.get(this.calendarId, current.id), 'Calendar.Events.get');
     return this.fromRecord(updated);
   }
 
@@ -197,7 +197,7 @@ export class CalendarManager extends StorageManager {
       : current.id;
 
     // FIX: use remove(), not delete()
-    Calendar.Events.remove(this.calendarId, String(idToDelete));
+    this.retry(() => Calendar.Events.remove(this.calendarId, String(idToDelete)), 'Calendar.Events.remove');
     return true;
   }
 
@@ -225,7 +225,7 @@ export class CalendarManager extends StorageManager {
     if (params.timeMin) query.timeMin = new Date(params.timeMin).toISOString();
     if (params.timeMax) query.timeMax = new Date(params.timeMax).toISOString();
 
-    const res = Calendar.Events.list(this.calendarId, query);
+    const res = this.retry(() => Calendar.Events.list(this.calendarId, query), 'Calendar.Events.list');
     const items = (res.items || []).map(item => this.fromRecord(item));
     const pageOut = CalendarPage.fromRecord(res, query);
     return new Response(true, items, '', '', pageOut );
@@ -256,7 +256,7 @@ export class CalendarManager extends StorageManager {
   getCalendarResources() {
     const customerId = 'my_customer';
     try {
-      const resources = AdminDirectory.Resources.Calendars.list(customerId).items || [];
+      const resources = this.retry(() => AdminDirectory.Resources.Calendars.list(customerId), 'AdminDirectory.Resources.Calendars.list').items || [];
       return resources.map(resource => CalendarLocation.fromRecord(resource));
     } catch (e) {
       Logger.log('Error fetching calendar resources: ' + e);
@@ -282,14 +282,14 @@ export class CalendarManager extends StorageManager {
   }
 
   getEventByTitle(title, timeMin = new Date(), timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)) {
-    const res = Calendar.Events.list(this.calendarId, {
+    const res = this.retry(() => Calendar.Events.list(this.calendarId, {
       q: String(title),
       singleEvents: true,
       timeMin: timeMin.toISOString(),
       timeMax: timeMax.toISOString(),
       maxResults: 25,
       orderBy: 'startTime',
-    });
+    }), 'Calendar.Events.list');
     const item = (res.items || []).find(i => String(i.summary || '').trim() === String(title).trim());
     if (!item) throw new Error(`Event Not Found for title: ${title}`);
     return this.fromRecord(item);
@@ -308,12 +308,12 @@ export class CalendarManager extends StorageManager {
     const windowStart = (start instanceof Date) ? start : new Date(start);
     const windowEnd = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000);
 
-    const res = Calendar.Events.instances(this.calendarId, seriesId, {
+    const res = this.retry(() => Calendar.Events.instances(this.calendarId, seriesId, {
       timeMin: windowStart.toISOString(),
       timeMax: windowEnd.toISOString(),
       maxResults: 25,
       singleEvents: true,
-    });
+    }), 'Calendar.Events.instances');
 
     const match = (res.items || []).find(inst => CalendarManager.matchInstanceByStart_(inst, windowStart));
     if (!match) throw new Error('Occurrence not found for provided start time');
@@ -322,9 +322,9 @@ export class CalendarManager extends StorageManager {
     const exists = attendees.some(a => (a.email || '').toLowerCase() === String(emailAddress).toLowerCase());
     if (!exists) attendees.push({ email: emailAddress });
 
-    Calendar.Events.patch({ attendees }, this.calendarId, match.id);
+    this.retry(() => Calendar.Events.patch({ attendees }, this.calendarId, match.id), 'Calendar.Events.patch');
 
-    return this.fromRecord(Calendar.Events.get(this.calendarId, match.id));
+    return this.fromRecord(this.retry(() => Calendar.Events.get(this.calendarId, match.id), 'Calendar.Events.get'));
   }
 
   /**
@@ -340,25 +340,25 @@ export class CalendarManager extends StorageManager {
     const windowStart = (start instanceof Date) ? start : new Date(start);
     const windowEnd = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000);
 
-    const res = Calendar.Events.instances(this.calendarId, seriesId, {
+    const res = this.retry(() => Calendar.Events.instances(this.calendarId, seriesId, {
       timeMin: windowStart.toISOString(),
       timeMax: windowEnd.toISOString(),
       maxResults: 25,
       singleEvents: true,
-    });
+    }), 'Calendar.Events.instances');
 
     const match = (res.items || []).find(inst => CalendarManager.matchInstanceByStart_(inst, windowStart));
     if (!match) return { success: false, error: 'Occurrence not found for provided start time.' };
 
     const attendees = Array.isArray(match.attendees) ? match.attendees : [];
     const next = attendees.filter(a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
-    Calendar.Events.patch({ attendees: next }, this.calendarId, match.id);
+    this.retry(() => Calendar.Events.patch({ attendees: next }, this.calendarId, match.id), 'Calendar.Events.patch');
 
     return {
       success: true,
       message: `Attendee ${email} removed from this occurrence.`,
       eventId: seriesId,
-      data: this.fromRecord(Calendar.Events.get(this.calendarId, match.id)),
+      data: this.fromRecord(this.retry(() => Calendar.Events.get(this.calendarId, match.id), 'Calendar.Events.get')),
     };
   }
 
@@ -371,8 +371,8 @@ export class CalendarManager extends StorageManager {
     const exists = attendees.some(a => (a.email || '').toLowerCase() === String(email).toLowerCase());
     if (!exists) attendees.push({ email: email });
 
-    Calendar.Events.patch({ attendees }, this.calendarId, ev.id);
-    return this.fromRecord(Calendar.Events.get(this.calendarId, ev.id));
+    this.retry(() => Calendar.Events.patch({ attendees }, this.calendarId, ev.id), 'Calendar.Events.patch');
+    return this.fromRecord(this.retry(() => Calendar.Events.get(this.calendarId, ev.id), 'Calendar.Events.get'));
   }
 
   // Remove a guest directly from the specified event (instance id)
@@ -383,19 +383,32 @@ export class CalendarManager extends StorageManager {
     const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
     const next = attendees.filter( a => (a.email || '').toLowerCase() !== String(email).toLowerCase());
 
-    Calendar.Events.patch({ attendees: next }, this.calendarId, ev.id);
+    this.retry(() => Calendar.Events.patch({ attendees: next }, this.calendarId, ev.id), 'Calendar.Events.patch');
     return {
       success: true,
       message: `Attendee ${email} removed from this occurrence.`,
       eventId: ev.id,
-      data: this.fromRecord(Calendar.Events.get(this.calendarId, ev.id)),
+      data: this.fromRecord(this.retry(() => Calendar.Events.get(this.calendarId, ev.id), 'Calendar.Events.get')),
     };
   }
 
   // Keep updateDescription unchanged
-  static updateDescription(eventId, eventItemId) {
-    const updatedDescription = `<a href="${getConfig().baseUrl}?view=event&eventId=${eventId}&eventItemId=${eventItemId}">View Details</a>`;
-    return updatedDescription;
+  static updateDescription(eventId, eventItem) {
+    const config = typeof getConfig === 'function' ? getConfig() : {};
+    const webUrl = config.webUrl;
+    if (!webUrl) {
+      // Fallback to old URL if webUrl is not configured
+      return `<p>Missing WebUrl</p>`;
+    }
+
+    const interests = config.interests || {};
+    const category = eventItem?.category || '';
+    const categoryInfo = interests[category]
+    const categoryKey = categoryInfo?.key;
+
+    const url = `${webUrl}classes/${categoryKey}/${eventId}?${eventItem ? `eventItemId=${eventItem.id}` : ''}`;
+
+    return `<a href="${url}">View Details</a>`;
   }
 
   // Location helpers

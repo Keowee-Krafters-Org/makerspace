@@ -70,4 +70,30 @@ export class StorageManager {
     create(data = {}) {
       throw new Error('create() must be implemented by subclass');
     }
+
+    /**
+     * A generic retry function with exponential backoff.
+     * @param {Function} fn The function to execute.
+     * @param {string} functionName A descriptive name for the function being tried, for logging.
+     * @param {number} maxRetries The maximum number of retries.
+     * @returns {*} The result of the function if successful.
+     * @throws The last error if all retries fail.
+     */
+    retry(fn, functionName = 'unnamed function', maxRetries = 5) {
+        let lastError = null;
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return fn();
+            } catch (e) {
+                lastError = e;
+                if (i < maxRetries - 1) {
+                    const waitTime = Math.pow(2, i) * 1000 + Math.round(Math.random() * 1000);
+                    console.warn(`Attempt ${i + 1} failed for ${functionName}. Retrying in ${waitTime}ms...`);
+                    Utilities.sleep(waitTime);
+                }
+            }
+        }
+        console.error(`Failed to execute ${functionName} after ${maxRetries} attempts.`);
+        throw lastError;
+    }
 }

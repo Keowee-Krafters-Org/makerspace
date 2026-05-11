@@ -1,4 +1,14 @@
 <template>
+  <!-- Embed Modal -->
+  <div v-if="showEmbed" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="showEmbed = false">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+      <EmbedInstructions :event="event" />
+      <div class="text-right mt-4">
+        <Button label="Close" @click="showEmbed = false" />
+      </div>
+    </div>
+  </div>
+
   <!-- Menu Layout -->
   <div v-if="layout === 'menu'" class="relative inline-block text-left">
     <Button
@@ -48,10 +58,12 @@
 <script>
 import Button from './Button.vue';
 import Icon from './Icon.vue';
+import { inject } from 'vue';
+import EmbedInstructions from './EmbedInstructions.vue';
 
 export default {
   name: 'EventButtonPanel',
-  components: { Button, Icon },
+  components: { Button, Icon, EmbedInstructions },
   emits: ['details', 'edit', 'delete', 'attendees', 'signup', 'unregister'],
   props: {
     event: { type: Object, required: true },
@@ -60,13 +72,21 @@ export default {
     showDetails: { type: Boolean, default: true },
     showAttendees: { type: Boolean, default: false },
     showSignup: { type: Boolean, default: true },
+    showShare: { type: Boolean, default: false },
     detailsLabel: { type: String, default: 'Details' },
     layout: { type: String, default: 'row' }, // 'row' or 'menu'
+  },
+  setup() {
+    const session = inject('session');
+    const eventService = inject('eventService');
+    const appService = inject('appService');
+    return { session, eventService, appService };
   },
   data() {
     return {
       isOpen: false,
       openUpwards: false,
+      showEmbed: false,
     };
   },
   computed: {
@@ -99,6 +119,13 @@ export default {
           icon: 'users',
           show: this.showAttendees,
           handler: () => this.$emit('attendees', this.event),
+        },
+        {
+          id: 'share',
+          label: 'Share',
+          icon: 'share',
+          show: this.showShare,
+          handler: () => this.showEmbed = true,
         },
         {
           id: 'signup',
@@ -171,6 +198,27 @@ export default {
       if (action.disabled) return;
       action.handler();
       this.isOpen = false;
+    },
+    copyShareLink() {
+      const baseUrl = this.session.config?.webUrl || window.location.href.split('#')[0];
+      const shareUrl = `${baseUrl}#view=event&id=${this.event.id}`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl)
+          .then(() => {
+            this.appService.alert('Link copied to clipboard!');
+          })
+          .catch(() => {
+            // Fallback for environments where clipboard access is restricted
+            this.fallbackCopy(shareUrl);
+          });
+      } else {
+        // Fallback for older browsers
+        this.fallbackCopy(shareUrl);
+      }
+    },
+    fallbackCopy(text) {
+      window.prompt('Copy this link:', text);
     },
   },
 };

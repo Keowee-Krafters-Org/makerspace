@@ -10,6 +10,7 @@
         :showDetails="true"
         :showAttendees="true"
         :showSignup="true"
+        :showShare="true"
         detailsLabel="View"
         layout="menu"
         @details="$emit('select', ev)"

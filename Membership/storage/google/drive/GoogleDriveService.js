@@ -4,15 +4,16 @@ import { DriveFile } from './DriveFile.js';
  * GoogleDriveService handles file storage in a configured Drive folder.
  * It provides methods to add, retrieve, and delete files.
  */
-export class GoogleDriveService {
+class GoogleDriveService extends StorageManager {
   constructor(config) {
+    super();
     this.folderId = config?.imageFolderId;
     if (!this.folderId) throw new Error('Missing imageFolderId in config.');
-    this.folder = DriveApp.getFolderById(this.folderId);
+    this.folder = this.retry(() => DriveApp.getFolderById(this.folderId), 'DriveApp.getFolderById');
 
     // Root folder for per-event subfolders (optional; falls back to imageFolderId)
     this.eventsRootFolderId = config?.eventsRootFolderId || this.folderId;
-    this.eventsRootFolder = DriveApp.getFolderById(this.eventsRootFolderId);
+    this.eventsRootFolder = this.retry(() => DriveApp.getFolderById(this.eventsRootFolderId), 'DriveApp.getFolderById');
   }
 
   // --- Generic file methods (unchanged) ---
@@ -65,7 +66,7 @@ export class GoogleDriveService {
   }
 
   getAll(folderId = null) {
-    const targetFolder = folderId ? DriveApp.getFolderById(folderId) : this.folder;
+    const targetFolder = folderId ? this.retry(() => DriveApp.getFolderById(folderId), 'DriveApp.getFolderById') : this.folder;
     const files = [];
     const fileIterator = targetFolder.getFiles();
     while (fileIterator.hasNext()) {
@@ -103,7 +104,7 @@ export class GoogleDriveService {
     const existingId = evt.extendedProperties?.private?.eventFolderId;
     if (existingId) {
       try {
-        DriveApp.getFolderById(existingId);
+        this.retry(() => DriveApp.getFolderById(existingId), 'DriveApp.getFolderById');
         return existingId;
       } catch (_) {
         // recreate
@@ -130,7 +131,7 @@ export class GoogleDriveService {
     const folderId = this.getEventFolderId(calendarId, eventId);
     if (!folderId) return [];
     let folder;
-    try { folder = DriveApp.getFolderById(folderId); } catch { return []; }
+    try { folder = this.retry(() => DriveApp.getFolderById(folderId), 'DriveApp.getFolderById'); } catch { return []; }
 
     const files = folder.getFiles();
     const images = [];
@@ -169,7 +170,7 @@ export class GoogleDriveService {
     // Ensure folder
     const evt = Calendar.Events.get(calendarId, eventId);
     const folderId = this.ensureEventFolder(calendarId, eventId, evt.summary);
-    const folder = DriveApp.getFolderById(folderId);
+    const folder = this.retry(() => DriveApp.getFolderById(folderId), 'DriveApp.getFolderById');
 
     // Existing file id
     if (typeof imageArg === 'string' && /^[A-Za-z0-9_-]+$/.test(imageArg)) {
@@ -217,7 +218,7 @@ export class GoogleDriveService {
       }
       if (onlyHere) file.setTrashed(true);
       else {
-        const folder = DriveApp.getFolderById(folderId);
+        const folder = this.retry(() => DriveApp.getFolderById(folderId), 'DriveApp.getFolderById');
         folder.removeFile(file);
       }
     } catch {}

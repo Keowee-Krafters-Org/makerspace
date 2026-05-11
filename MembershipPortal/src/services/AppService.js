@@ -4,8 +4,6 @@ import { PortalSession } from '@/services/PortalSession.js';
 import { LookupCache } from '@/services/LookupCache.js';
 import { getConfig } from '../../../Membership/config.js';
 
-
-
 export class AppService {
   constructor() {
     this.config = null;
@@ -23,7 +21,6 @@ export class AppService {
   }
 
   initialize() {
-    // If getConfig is async in your project, make this async and await it
     const config = getConfig();
     this.config = config;
     this.logger = new Logger(config.logLevel || 'INFO');
@@ -79,4 +76,7 @@ export class AppService {
     }
   }
   
+  getConfig() {
+    return this.config || getConfig();
+  }
 }

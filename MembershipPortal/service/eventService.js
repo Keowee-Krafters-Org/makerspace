@@ -137,17 +137,23 @@ function unregister(classId, memberId) {
 function getEventById(eventId) {
   const modelFactory = Membership.newModelFactory();
   const eventManager = modelFactory.eventManager();
+
   const event = eventManager.getEventById(eventId);
-  return JSON.stringify({ success: true, data: event });
+  return JSON.stringify(event);
 }
 
-function getMembersFromContacts(contacts, paramsString = {}) {
+function getEventsByEventItemId(eventItemId) {
   const modelFactory = Membership.newModelFactory();
-  const membershipManager = modelFactory.membershipManager();
-  const contactsArray = Array.isArray(contacts) ? contacts : (typeof contacts === 'string' ? JSON.parse(contacts) : []);
-  const params = typeof paramsString === 'string' ? JSON.parse(paramsString) : paramsString;
-  const members = membershipManager.getMembersFromContacts(contactsArray, params);
-  return JSON.stringify({ success: true, data: members });
+  const eventManager = modelFactory.eventManager();
+  const response = eventManager.getEventsByEventItemId(eventItemId);
+  return JSON.stringify(response.toObject());
+}
+
+function getEventAttendees(eventId) {
+  const modelFactory = Membership.newModelFactory();
+  const eventManager = modelFactory.eventManager();
+  const response = eventManager.getEventAttendees(eventId);
+  return JSON.stringify(response.toObject());
 }
 
 function getEventImages(eventId) {

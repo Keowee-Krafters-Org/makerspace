@@ -18,6 +18,7 @@ export function createRouter(session) {
     { path: '/event/edit/:id?', name: 'EventEditor', component: () => import('@/views/event/EventEditor.vue'), props: true },
     { path: '/event/attendees', component: () => import('@/views/event/EventAttendees.vue'), props: (route) => ({ id: route.query.id }) },
     { path: '/event/view', name: 'EventView', component: () => import('@/views/event/Event.vue'), props: (route) => ({ id: route.query.id, mode: route.query.mode }) },
+    { path: '/event/item/:id', name: 'EventItem', component: () => import('@/views/event/EventItem.vue'), props: true },
 
     { path: '/login', component: () => import('@/views/login/LoginView.vue') },
 
@@ -27,6 +28,10 @@ export function createRouter(session) {
         const view = (session?.view || 'event').toString().toLowerCase();
         if (view === 'member') return { path: '/member' };
         const mode = (session?.viewMode || 'list').toString().toLowerCase();
+        const id = session?.id;
+        if (id && view === 'event') {
+          return { name: 'EventView', query: { id, mode } };
+        }
         return { path: '/event', query: { mode, type: 'Class' } };
       },
     },

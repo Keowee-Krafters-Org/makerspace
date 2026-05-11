@@ -283,7 +283,7 @@ export class MembershipManager {
       { host: 'true', page: { pageSize: 200 } });
   }
  
-
+ 
   createNew(data = {}) {
     const member = this.storageManager.createNew(data);
     member.discount = MembershipManager.calculateDiscount(member, this.config);
