@@ -1,0 +1,19 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "ZeffyAPI",
+        "version": "1",
+        "libraryId": "1YbDfhQtOy08w43TQGPc3Go1DSp3zs2E8aOoFD6h9Ly_ebIhReJAcPmEl",
+        "developmentMode": true
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE_ANONYMOUS"
+  }
+}

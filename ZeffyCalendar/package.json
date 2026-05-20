@@ -1,0 +1,36 @@
+{
+  "name": "zeffycalendar",
+  "version": "1.0.0",
+  "description": "A calendar web page for Zeffy events, designed for Google Apps Script.",
+  "scripts": {
+    "test": "vitest",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && clasp push"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0-alpha.13",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "rollup-plugin-copy": "^3.5.0",
+    "tailwindcss": "^3.4.3",
+    "vite": "^5.2.8",
+    "vite-plugin-clean": "^1.0.0",
+    "vite-plugin-singlefile": "^2.0.1",
+    "vitest": "^1.4.0"
+  },
+  "keywords": [
+    "google-apps-script",
+    "calendar",
+    "vue"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module"
+}
