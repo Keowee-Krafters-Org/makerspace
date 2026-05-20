@@ -1,0 +1,21 @@
+{
+  "name": "zeffyapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "ZeffyAPI.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build --mode production",
+    "dev": "vite build --mode development",
+    "deploy": "npm run build && clasp push",
+    "deploy:dev": "npm run dev && clasp push"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "rollup-plugin-copy": "^3.5.0",
+    "vite": "^5.2.11"
+  }
+}

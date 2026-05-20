@@ -1,7 +1,7 @@
 import { getConfig } from '../config.js';
 import { FormWaiver } from '../storage/form/FormStorageManager.js';
 
-class WaiverManager {
+export class WaiverManager {
     constructor(storageManageManager, membershipManager, config = null) {
         this.config = config || getConfig();
         this.destinationFolderId = this.config.forms.waiver.destinationFolderId;
@@ -92,7 +92,5 @@ class WaiverManager {
 
 
 }
-
-export { WaiverManager };
 
 

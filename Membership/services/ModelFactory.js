@@ -91,24 +91,34 @@ export class ModelFactory {
     return new CalendarManager(calendarId, this._config);
   }
 
+  getStorageManager(clazz) {
+    switch(this._config.storage) {
+      case 'zeffy':
+        return new ZeffyStorageManager(clazz);
+      case 'quickbooks':
+        return new QuickbooksStorageManager(clazz);
+      default:
+        return new ZohoStorageManager(clazz);
+    }
+  }
+
   eventManager() {
-    return new EventManager(new ZohoStorageManager(ZohoEvent, this._zohoApiRuntime), 
+    return new EventManager(this.getStorageManager(ZohoEvent), 
     this.calendarManager(),
     this.membershipManager(), 
     this.googleDriveService(),
     this.invoiceManager(),
     this.googleDriveService(),
-    this.vendorManager(),
-    this._config
+    this.vendorManager()
     );
   }
 
   membershipManager() {
-    return new MembershipManager(new ZohoStorageManager(ZohoMember, this._zohoApiRuntime), this.invoiceManager(), this._config);
+    return new MembershipManager(this.getStorageManager(ZohoMember), this.invoiceManager());
   }
 
   vendorManager() {
-    return new VendorManager(new ZohoStorageManager(ZohoInstructor, this._zohoApiRuntime));
+    return new VendorManager(this.getStorageManager(ZohoInstructor));
   }
 
   event(data = {}) {
@@ -116,11 +126,11 @@ export class ModelFactory {
   }
 
   waiverManager() {
-    return new WaiverManager(new FormStorageManager(FormWaiver, this._config), this.membershipManager(), this._config);
+    return new WaiverManager(new FormStorageManager(FormWaiver), this.membershipManager());
   }
 
   invoiceManager() {
-    return new InvoiceManager(new ZohoStorageManager(ZohoInvoice, this._zohoApiRuntime), new ZohoStorageManager(ZohoEvent, this._zohoApiRuntime), this._config);
+    return new InvoiceManager(this.getStorageManager(ZohoInvoice), this.getStorageManager(ZohoEvent));
   }
   googleDriveService() {
     return new GoogleDriveService(this._config); 
