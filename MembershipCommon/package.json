@@ -1,22 +1,26 @@
 {
-  "name": "MembershipCommon",
+  "name": "@makerspace/membership-common",
   "private": true,
-  "type": "module",
   "version": "1.0.0",
   "description": "Common models for Makerspace Membership System",
+  "type": "module",
+  "main": "./dist/membership-common.cjs",
+  "module": "./dist/membership-common.js",
+  "exports": {
+    ".": {
+      "import": "./dist/membership-common.js",
+      "require": "./dist/membership-common.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "clean": "rimraf dist",
-    "build:app": "vite build",
-    "build": "npm run clean && npm run build:app",
-    "build:dev": "npm run clean && npm run build:app -- --mode development",
-    "build:prod": "npm run clean && npm run build:app -- --mode production",
-    "push": "npm run build:dev && clasp push",
+    "build": "vite build",
     "test": "vitest"
   },
   "devDependencies": {
-    "rimraf": "^5.0.5",
-    "rollup-plugin-copy": "^3.5.0",
-    "vite": "^5.4.21",
-    "vitest": "^1.6.0"
+    "vite": "^5.2.8",
+    "vitest": "^1.4.0"
   }
 }

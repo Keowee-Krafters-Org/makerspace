@@ -1,4 +1,4 @@
-import { StorageManager } from "../StorageManager";
+import { StorageManager } from "@makerspace/membership-common";
 
 export class QuickbooksStorageManager extends StorageManager {
     constructor(clazz) {

@@ -1,4 +1,4 @@
-import { ZeffyAPI } from './ZeffyAPI.js';
+import { ZeffyAPI } from './src/ZeffyAPI.js';
 import { TestRunner } from './tests/TestRunner.js';
 
 // Expose the classes to the global scope for Google Apps Script

@@ -5,17 +5,15 @@ import copy from 'rollup-plugin-copy';
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
-  const entry = isProd
-    ? resolve(__dirname, 'ZeffyAPI.js')
-    : resolve(__dirname, 'index.dev.js');
-
-  const libName = isProd ? 'ZeffyAPI' : 'ZeffyDev';
+  const entry = resolve(__dirname, 'src/index.js');
+  const libName = 'ZeffyAPI';
 
   return {
     plugins: [
       copy({
         targets: [
           { src: 'appsscript.json', dest: 'dist' },
+          { src: 'utils.js', dest: 'dist' },
           { src: 'tests/test.js', dest: 'dist' }
         ],
         hook: 'writeBundle',
@@ -35,10 +33,19 @@ export default defineConfig(({ mode }) => {
       target: 'es2020',
       rollupOptions: {
         output: {
-          // Force the output file to have a .js extension
-          entryFileNames: `[name].js`,
+          entryFileNames: `Code.js`,
           chunkFileNames: `[name].js`,
-          assetFileNames: `[name].[ext]`
+          assetFileNames: `[name].[ext]`,
+          footer: [
+            '',
+            '// Expose bundle exports to globalThis for Apps Script',
+            'if (typeof ZeffyAPI !== "undefined") {',
+            '  globalThis.ZeffyAPIFactory = ZeffyAPI.ZeffyAPIFactory;',
+            '  globalThis.ZeffyStorageManager = ZeffyAPI.ZeffyStorageManager;',
+            '  globalThis.TestRunner = ZeffyAPI.TestRunner;',
+            '}',
+            ''
+          ].join('\n')
         }
       }
     },

@@ -1,4 +1,4 @@
-import { StorageManager } from '../StorageManager.js';
+import { StorageManager } from "@makerspace/membership-common";
 import { ZohoRequestParameters} from './ZohoRequestParameters.js';
 import { ZohoResponse } from './ZohoResponse.js'; 
 import { Response } from '../../models/Response.js';

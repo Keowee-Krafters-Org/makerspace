@@ -1,5 +1,5 @@
-import { Invoice } from "../../models/Invoice";
-import { LineItem } from "../../models/LineItem";
+import { Invoice } from "@makerspace/membership-common";
+import { LineItem } from "@makerspace/membership-common";
 
 export class ZeffyPayment extends Invoice {
     constructor(data) {

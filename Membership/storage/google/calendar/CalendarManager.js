@@ -1,4 +1,4 @@
-import { StorageManager } from '../../StorageManager.js';
+import { StorageManager } from "@makerspace/membership-common";
 import { getConfig } from '../../../config.js';
 import { CalendarEvent } from './CalendarEvent.js';
 import { CalendarLocation } from './CalendarLocation.js';

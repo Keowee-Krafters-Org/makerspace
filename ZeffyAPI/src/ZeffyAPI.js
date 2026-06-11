@@ -1,6 +1,10 @@
-export class ZeffyAPI {
+import { config } from '../config.secrets.js';
+import { Repository } from '@makerspace/membership-common';
+
+export class ZeffyAPI extends Repository {
   constructor(apiKey) {
-    this.apiKey = apiKey;
+    super();
+    this.apiKey = config.zeffy.AuthToken;
     this.baseUrl = 'https://api.zeffy.com/api/v1';
     this.fetch = typeof UrlFetchApp !== 'undefined' ? UrlFetchApp.fetch : fetch;
   }
@@ -58,8 +62,10 @@ export class ZeffyAPI {
    * @param {string} id - The ID of the entity.
    * @returns {Promise<object>}
    */
-  getEntity(entityType, id) {
+  getEntityById(entityType, id) {
     const endpoint = `${entityType}/${id}`;
     return this._request(endpoint);
   }
 }
+
+

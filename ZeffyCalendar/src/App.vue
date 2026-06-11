@@ -1,12 +1,16 @@
 <template>
   <div id="app" class="p-4">
-    <h1 class="text-2xl font-bold mb-4">Zeffy Calendar</h1>
-    <router-view></router-view>
+    <Calendar />
   </div>
 </template>
 
 <script>
+import Calendar from './components/Calendar.vue';
+
 export default {
   name: 'App',
+  components: {
+    Calendar,
+  },
 };
 </script>

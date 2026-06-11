@@ -1,6 +1,6 @@
 import { getConfig } from '../../config.js';
 import { Member } from '../../models/Member.js';
-import { StorageManager } from '../StorageManager.js';
+import { StorageManager } from "@makerspace/membership-common";
 
 export class SheetStorageManager extends StorageManager {
     constructor(storageName, clazz, config = null) {

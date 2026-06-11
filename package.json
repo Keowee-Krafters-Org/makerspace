@@ -1,0 +1,17 @@
+{
+  "name": "makerspace-monorepo",
+  "private": true,
+  "workspaces": [
+    "MembershipCommon",
+    "ZeffyCalendar",
+    "ZeffyAPI",
+    "ZohoAPI",
+    "Membership",
+    "MembershipForm",
+    "MembershipPortal",
+    "Waiver"
+  ],
+  "devDependencies": {
+    "terser": "^5.48.0"
+  }
+}

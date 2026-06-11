@@ -10,6 +10,17 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
+  const copyTargets = [
+    // Always include GAS service code and manifest in dist root
+    { src: 'service/**/*', dest: 'dist/service' },
+    { src: 'appsscript.json', dest: 'dist' },
+  ];
+
+  if (!isProd) {
+    copyTargets.push({ src: 'tests/testApi.js', dest: 'dist' });
+    copyTargets.push({ src: 'tests/test.js', dest: 'dist' });
+  }
+
   return {
     plugins: [
       clean(),
@@ -17,11 +28,7 @@ export default defineConfig(({ mode }) => {
       viteSingleFile(),
       tailwindcss(),
       copy({
-        targets: [
-          // Always include GAS service code and manifest in dist root
-          { src: 'service/**/*', dest: 'dist/service' },
-          { src: 'appsscript.json', dest: 'dist' },
-        ],
+        targets: copyTargets,
         hook: 'writeBundle',
       }),
     ],

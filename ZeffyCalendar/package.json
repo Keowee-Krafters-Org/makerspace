@@ -6,10 +6,17 @@
     "test": "vitest",
     "dev": "vite",
     "build": "vite build",
+    "build:dev": "vite build --mode development && vite build --config vite.config.tests.js",
     "preview": "vite preview",
-    "deploy": "npm run build && clasp push"
+    "deploy": "npm run build && clasp push",
+    "deploy:dev": "npm run build:dev && clasp push",
+    "open:script": "clasp open-script",
+    "open:calendar": "npm run deploy:dev && open https://script.google.com/macros/s/AKfycbzD-yfUVsv3XihQT0XQHGGuCecazv_RehjjMv2mvDk/dev"
   },
   "dependencies": {
+    "@makerspace/membership-common": "1.0.0",
+    "@popperjs/core": "^2.11.8",
+    "v-calendar": "^3.1.2",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },

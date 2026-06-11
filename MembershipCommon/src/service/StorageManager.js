@@ -47,7 +47,7 @@ export class StorageManager {
      * Retrieves all entities.
      * To be implemented by subclasses.
      */
-    getAll() {
+    getAll(params = {}) {
         throw new Error('getAll() must be implemented by subclass');
     }
 

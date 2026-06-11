@@ -1,38 +1,23 @@
-import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import copy from 'rollup-plugin-copy';
+import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => {
-  const isProd = mode === 'production';
-
-  return {
-    plugins: [
-      copy({
-        targets: [
-          { src: 'appsscript.json', dest: 'dist' },
-        ],
-        hook: 'writeBundle',
-        verbose: true,
-      }),
-    ],
-    build: {
-      outDir: resolve(__dirname, 'dist'),
-      emptyOutDir: true,
-      minify: isProd,
-      lib: {
-        entry: resolve(__dirname, 'src/index.js'),
-        name: 'MembershipCommon',
-        fileName: 'Code',
-        formats: ['iife'],
-      },
-      target: 'es2017',
-      rollupOptions: {
-        output: {
-          inlineDynamicImports: true,
-        },
-        treeshake: true,
+export default defineConfig({
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/index.js'),
+      name: 'MembershipCommon',
+      fileName: 'membership-common',
+      formats: ['es', 'cjs']
+    },
+    rollupOptions: {
+      output: {
+        // In UMD builds, this is the global variable name
+        globals: {},
       },
     },
-    resolve: { alias: { '@': resolve(__dirname, 'src') } },
-  };
+    minify: 'terser',
+    terserOptions: {
+      keep_classnames: true,
+    },
+  },
 });

@@ -20,7 +20,6 @@ export * from './services/MembershipManager.js';
 export * from './services/ModelFactory.js';
 export * from './services/VendorManager.js';
 export * from './services/WaiverManager.js';
-export { StorageManager } from './storage/StorageManager.js';
 export { FormStorageManager, FormWaiver } from './storage/form/FormStorageManager.js';
 export { CalendarEvent } from './storage/google/calendar/CalendarEvent.js';
 export { SheetStorageManager } from './storage/sheet/SheetStorageManager.js';
