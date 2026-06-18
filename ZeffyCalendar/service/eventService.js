@@ -1,20 +1,33 @@
-const getCampaigns = async () => {
+const getEventManager = () => {
+  const factory = ZeffyAPI.newZeffyAPIFactory();
+  return factory.eventManager();
+};
+
+const toJsonString = (response) => {
+  if (response && typeof response.toObject === 'function') {
+    return JSON.stringify(response.toObject());
+  }
+  return JSON.stringify(response);
+};
+
+const getCampaigns = () => {
   try {
-    const zeffyAPI = ZeffyAPI.newZeffyAPI();
-    const campaigns = await zeffyAPI.getEntities('campaigns', { limit: 100 });
-    return campaigns;
+    return getEventManager()
+      .getAll({ page: { pageSize: 100 } })
+      .then((response) => toJsonString(response))
+      .catch((e) => JSON.stringify({ error: e.message }));
   } catch (e) {
-    return { error: e.message };
+    return Promise.resolve(JSON.stringify({ error: e.message }));
   }
 };
 
 const getEvents = () => {
   try {
-    const zeffyAPI = ZeffyAPI.newZeffyAPI();
-    const filter = { field: 'category', operator: 'equals', value: 'Event' };
-    return zeffyAPI.getEntitiesByFilter('campaigns', { limit: 100 }, filter)
-      .catch(e => ({ error: e.message }));
+    return getEventManager()
+      .getAll({ page: { pageSize: 100 } })
+      .then((response) => toJsonString(response))
+      .catch((e) => JSON.stringify({ error: e.message }));
   } catch (e) {
-    return Promise.resolve({ error: e.message });
+    return Promise.resolve(JSON.stringify({ error: e.message }));
   }
 };

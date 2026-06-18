@@ -8,7 +8,8 @@
     "build": "vite build --mode production",
     "dev": "vite build --mode development",
     "deploy": "npm run build && clasp push",
-    "deploy:dev": "npm run dev && clasp push"
+    "deploy:dev": "npm run dev && clasp push",
+    "open:script": "clasp open-script"
   },
   "keywords": [],
   "author": "",

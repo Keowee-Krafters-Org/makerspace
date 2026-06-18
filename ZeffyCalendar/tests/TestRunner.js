@@ -3,12 +3,40 @@ import { Assert } from '../../MembershipCommon/tests/Assert.js';
 
 export class TestRunner {
   constructor() {
-    this.zeffyAPI = ZeffyAPI.newZeffyAPI();
+    this.factory = ZeffyAPI.newZeffyAPIFactory();
+    this.eventManager = this.factory.eventManager();
+    this.contactManager = this.factory.contactManager();
+    this.paymentManager = this.factory.paymentManager();
   }
+
+  getTests() {
+    return [
+      {
+        name: 'test_when_API_is_called__then_data_is_returned',
+        status: 'PASS',
+        fn: () => this.test_when_API_is_called__then_data_is_returned(),
+      },
+      {
+        name: 'test_when_campaigns_API_is_called__then_data_is_returned',
+        status: 'PASS',
+        fn: () => this.test_when_campaigns_API_is_called__then_data_is_returned(),
+      },
+      {
+        name: 'test_when_contacts_API_is_called__then_data_is_returned',
+        status: 'PASS',
+        fn: () => this.test_when_contacts_API_is_called__then_data_is_returned(),
+      },
+      {
+        name: 'test_when_get_events_function_is_called__then_data_is_returned',
+        status: 'NEW',
+        fn: () => this.test_when_get_events_function_is_called__then_data_is_returned(),
+      },
+    ];
+  }
+
   test_when_API_is_called__then_data_is_returned() {
     console.log('Running ZeffyAPI integration test...');
-    const zeffyAPI = ZeffyAPI.newZeffyAPI();
-    return zeffyAPI.getEntities('payments', { limit: 1 }).then(response => {
+    return this.paymentManager.getAll({ page: { pageSize: 1 } }).then(response => {
       Assert.assert('Response should not be null or undefined', response != null, true);
       Assert.assert('Response data should exist', response.data != null, true);
       Assert.assert('Response data should be an array', Array.isArray(response.data), true);
@@ -18,8 +46,7 @@ export class TestRunner {
 
   test_when_campaigns_API_is_called__then_data_is_returned() {
     console.log('Running ZeffyAPI campaigns integration test...');
-    const zeffyAPI = ZeffyAPI.newZeffyAPI();
-    return zeffyAPI.getEntities('campaigns', { limit: 1 }).then(response => {
+    return this.eventManager.getAll({ page: { pageSize: 1 } }).then(response => {
       Assert.assert('Campaigns response should not be null or undefined', response != null, true);
       Assert.assert('Campaigns response data should exist', response.data != null, true);
       Assert.assert('Campaigns response data should be an array', Array.isArray(response.data), true);
@@ -29,8 +56,7 @@ export class TestRunner {
   
   test_when_contacts_API_is_called__then_data_is_returned() {
     console.log('Running ZeffyAPI contacts integration test...');
-    const zeffyAPI = ZeffyAPI.newZeffyAPI();
-    return zeffyAPI.getEntities('contacts', { limit: 1 }).then(response => {
+    return this.contactManager.getAll({ page: { pageSize: 1 } }).then(response => {
       Assert.assert('Contacts response should not be null or undefined', response != null, true);
       Assert.assert('Contacts response data should exist', response.data != null, true);
       Assert.assert('Contacts response data should be an array', Array.isArray(response.data), true);
@@ -55,14 +81,50 @@ export class TestRunner {
     });
   }
 
-  runAll() {
-    console.log('Running all ZeffyAPI Integration Tests...');
-    Promise.resolve()
-      .then(() => this.test_when_API_is_called__then_data_is_returned())
-      .then(() => this.test_when_campaigns_API_is_called__then_data_is_returned())
-      .then(() => this.test_when_contacts_API_is_called__then_data_is_returned())
-      .then(() => this.test_when_get_events_function_is_called__then_data_is_returned())
-      .then(() => console.log('All ZeffyAPI Integration Tests Finished Successfully.'))
-      .catch(e => console.error('One or more tests failed:', e.message));
+  runAll(status = null) {
+    const allTests = this.getTests();
+    const requestedStatuses = status == null
+      ? null
+      : (Array.isArray(status) ? status : [status]).map((s) => String(s).toUpperCase());
+
+    const tests = allTests.filter((test) => {
+      const testStatus = String(test.status || '').toUpperCase();
+      if (!requestedStatuses || requestedStatuses.length === 0) {
+        return testStatus !== 'SKIP';
+      }
+      return requestedStatuses.includes(testStatus);
+    });
+
+    console.log(`Running ZeffyAPI Integration Tests${requestedStatuses ? ` for status: ${requestedStatuses.join(', ')}` : ' (excluding SKIP)'}...`);
+
+    if (tests.length === 0) {
+      console.log('No tests matched the requested status filter.');
+      return Promise.resolve();
+    }
+
+    const failures = [];
+
+    return tests
+      .reduce((promise, test) => {
+        return promise.then(() => {
+          return Promise.resolve()
+            .then(() => test.fn())
+            .catch((e) => {
+              failures.push({ name: test.name, status: test.status, error: e });
+              console.error(`Test failed [${test.status}]: ${test.name}`, e && e.message ? e.message : e);
+            });
+        });
+      }, Promise.resolve())
+      .then(() => {
+        if (failures.length === 0) {
+          console.log(`All ${tests.length} selected ZeffyAPI Integration Tests Finished Successfully.`);
+          return;
+        }
+
+        console.error(`${failures.length} test(s) failed.`);
+        failures.forEach((failure) => {
+          console.error(`- [${failure.status}] ${failure.name}:`, failure.error && failure.error.message ? failure.error.message : failure.error);
+        });
+      });
   }
 }

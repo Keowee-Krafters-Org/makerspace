@@ -2,8 +2,6 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import './index.css';
-import VCalendar from 'v-calendar';
-import 'v-calendar/style.css';
 import { Logger } from '@makerspace/membership-common';
 import { config } from './config.js';
 import { EventService } from './services/EventService.js';
@@ -15,6 +13,5 @@ const app = createApp(App);
 app.provide('eventService', new EventService());
 
 app.use(router);
-app.use(VCalendar, {});
 
 app.mount('#app');

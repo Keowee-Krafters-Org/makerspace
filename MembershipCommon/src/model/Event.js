@@ -125,7 +125,16 @@ export  class Event extends Entity {
         return `${this.name} at ${this.location} on ${this.date ? this.date.toDateString() : ''}`;
     }
 
+    getDuration() {
+        return this.duration || 0;
+    }
 
+    setDuration(duration) {
+        if (typeof duration !== 'number' || duration < 0) {
+            throw new Error('Duration must be a non-negative number.');
+        }
+        this.duration = duration;
+    }
 }
 
 

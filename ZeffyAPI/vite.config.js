@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
             '  globalThis.ZeffyAPIFactory = ZeffyAPI.ZeffyAPIFactory;',
             '  globalThis.ZeffyStorageManager = ZeffyAPI.ZeffyStorageManager;',
             '  globalThis.TestRunner = ZeffyAPI.TestRunner;',
+            '  globalThis.StorageManagerTestRunner = ZeffyAPI.StorageManagerTestRunner;',
             '}',
             ''
           ].join('\n')

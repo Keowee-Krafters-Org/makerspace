@@ -10,4 +10,26 @@ export class ZeffyContact extends Contact {
         this.phone = props.phone;
     }
 
+    static getResourceNameSingular() {
+        return this.getResourceNamePlural();
+    }
+
+    static getResourceNamePlural() {
+        return 'contacts'; // Zeffy uses "contacts" for contact entities
+    }
+
+    static getToRecordMap() {
+        return {
+            id: 'id',
+            firstName: 'first_name',
+            lastName: 'last_name',
+            emailAddress: 'email',
+            phoneNumber: 'phone',
+            // compatibility aliases used in some legacy paths
+            email: 'email',
+            phone: 'phone',
+            name: 'name',
+        };
+    }
+
 } 

@@ -11,12 +11,17 @@
     "deploy": "npm run build && clasp push",
     "deploy:dev": "npm run build:dev && clasp push",
     "open:script": "clasp open-script",
-    "open:calendar": "npm run deploy:dev && open https://script.google.com/macros/s/AKfycbzD-yfUVsv3XihQT0XQHGGuCecazv_RehjjMv2mvDk/dev"
+    "open:view": "npm run deploy:dev && \"/mnt/c/Program Files/Google/Chrome/Application/chrome.exe\" \"https://script.google.com/macros/s/AKfycbzD-yfUVsv3XihQT0XQHGGuCecazv_RehjjMv2mvDk/dev\""
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.15",
+    "@fullcalendar/daygrid": "^6.1.15",
+    "@fullcalendar/interaction": "^6.1.15",
+    "@fullcalendar/list": "^6.1.15",
+    "@fullcalendar/timegrid": "^6.1.15",
+    "@fullcalendar/vue3": "^6.1.15",
     "@makerspace/membership-common": "1.0.0",
     "@popperjs/core": "^2.11.8",
-    "v-calendar": "^3.1.2",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },

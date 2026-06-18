@@ -2,6 +2,22 @@ import { Response } from '@makerspace/membership-common';
 import { ZeffyPage } from './ZeffyPage.js';
 
 export class ZeffyResponse extends Response {
+  static getToRecordMap() {
+    return {
+      success: 'success',
+      data: 'data',
+      message: 'message',
+      error: 'error',
+      page: 'page',
+    };
+  }
+
+  static fromRecord(record = {}) {
+    const data = this.convertRecordToData(record, this.getFromRecordMap());
+    const page = data.page ? ZeffyPage.fromRecord(data.page) : null;
+    return new ZeffyResponse(data.success, data.data, data.message, data.error, page);
+  }
+
   /**
    * @param {boolean} success
    * @param {Array|Object} data

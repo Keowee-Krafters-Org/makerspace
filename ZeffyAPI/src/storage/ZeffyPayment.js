@@ -16,7 +16,6 @@ export class ZeffyPayment extends Invoice {
 
     static getToRecordMap() {
         return {
-            ...super.getToRecordMap(),
             'id': 'id',
             'amount': 'amount',
             'createdDate': 'created',
@@ -38,7 +37,7 @@ export class ZeffyPayment extends Invoice {
         const data = this.convertRecordToData(record, this.getFromRecordMap());
 
         // Custom handling for nested properties and transformations
-        if (record.amount) {
+        if (record.amount !== undefined && record.amount !== null) {
             data.amount = record.amount / 100;
         }
         if (record.created) {

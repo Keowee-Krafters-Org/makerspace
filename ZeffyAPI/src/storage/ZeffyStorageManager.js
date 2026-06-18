@@ -55,12 +55,24 @@ export class ZeffyStorageManager extends StorageManager {
      * Get all entities, handling pagination if needed
      */
     getAll(params = {}) {
-        const pagedata = params.page? new ZeffyPage(params.page).toRecord() : {};
-        return this.zeffyApi.getEntities(this.resourceName, { ...params, ...this.clazz.getFilter?.() || {}, ...pagedata })
+        const { page, upcoming, includePast, ...queryParams } = params;
+        const pagedata = page ? new ZeffyPage(page).toRecord() : {};
+        const requestParams = {
+            ...(this.clazz.getFilter?.() || {}),
+            ...queryParams,
+            ...pagedata
+        };
+
+        return this.zeffyApi.getEntities(this.resourceName, requestParams)
             .then(response => {
-                const items = (response.data && response.data.length > 0)
+                let items = (response.data && response.data.length > 0)
                     ? response.data.map(itemData => this.clazz.fromRecord ? this.clazz.fromRecord(itemData) : new this.clazz(itemData))
                     : [];
+
+                if (typeof this.clazz.applyDefaultFilter === 'function') {
+                    items = this.clazz.applyDefaultFilter(items, { ...queryParams, upcoming, includePast });
+                }
+
                 const page = ZeffyPage.fromRecord({
                     ...response,
                     pageSize: items.length,
