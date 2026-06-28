@@ -16,7 +16,7 @@ export class ZeffyEvent extends Event {
         return 'campaigns'; // Zeffy uses "campaigns" for events
     }
 
-    static getFilter() { return { category: 'Event' }; }
+    static getFilter() { return { category: 'Event,Custom' }; }
 
     static applyDefaultFilter(items, params = {}) {
         // Default behavior: show upcoming events unless explicitly disabled.

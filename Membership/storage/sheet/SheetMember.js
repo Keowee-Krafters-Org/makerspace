@@ -1,5 +1,5 @@
 // SheetMember: handles mapping to/from sheet rows
-
+import {Member} from '../../Membership/Member.js';
 class SheetMember extends Member {
   constructor(data = {}) {
     super(data);

@@ -1,8 +1,8 @@
 {
-  "name": "zeffyapi",
+  "name": "SheetWaiverManager",
   "version": "1.0.0",
   "description": "",
-  "main": "ZeffyAPI.js",
+  "main": "SheetWaiverManager.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "vite build --mode production",

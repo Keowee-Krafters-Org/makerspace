@@ -9,7 +9,8 @@
     "Membership",
     "MembershipForm",
     "MembershipPortal",
-    "Waiver"
+    "Waiver",
+    "SheetWaiverManager"
   ],
   "devDependencies": {
     "terser": "^5.48.0"

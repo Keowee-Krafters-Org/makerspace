@@ -27,18 +27,15 @@
     "@vitest/coverage-v8": "^4.0.14",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.21",
-    "babel-jest": "^26.6.3",
-    "jest": "^26.6.3",
     "jsdom": "^27.2.0",
     "postcss": "^8.5.6",
     "postcss-cli": "^11.0.1",
     "rollup-plugin-copy": "^3.5.0",
     "tailwindcss": "^4.1.13",
-    "vite": "^7.1.5",
-    "vite-plugin-clean": "^2.0.1",
+    "vite": "8.1.0",
+    "vite-plugin-clean": "2.0.1",
     "vite-plugin-singlefile": "^2.3.0",
-    "vitest": "^4.0.14",
-    "vue-jest": "^5.0.0-alpha.10"
+    "vitest": "4.1.9"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
