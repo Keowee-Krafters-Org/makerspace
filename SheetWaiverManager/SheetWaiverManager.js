@@ -1,4 +1,4 @@
-import { Waiver } from './Waiver.js';
+
 import {Waiver} from '@makerspace/membership-common';
 export class SheetWaiverManager {
 

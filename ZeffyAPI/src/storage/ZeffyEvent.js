@@ -26,9 +26,15 @@ export class ZeffyEvent extends Event {
 
         const now = Date.now();
         return (Array.isArray(items) ? items : []).filter((item) => {
-            const start = this.pickFirst(item, ['startDate', 'date']);
-            const startTime = this.parseTime(start);
-            return startTime !== null && startTime >= now;
+            if (Array.isArray(item.recurrence) && item.recurrence.length > 0) {
+                // If there are recurrences, check if any of them are in the future.
+                return item.recurrence.some(occurrence => {
+                    const start = occurrence.start;
+                    const startTime = this.parseTime(start);
+                    return startTime !== null && startTime >= now;
+                });
+            }
+            return false; // Exclude items without future recurrences
         });
     }
 
@@ -166,10 +172,7 @@ export class ZeffyEvent extends Event {
         const normalized = this.normalizeDatesDeep(data);
 
         // Normalize recurrence naming to match Calendar/Event model conventions.
-        normalized.recurrence = Array.isArray(normalized.recurrence) ? normalized.recurrence : [];
-        if (typeof normalized.isRecurring !== 'boolean') {
-            normalized.isRecurring = normalized.recurrence.length > 1;
-        }
+        normalized.recurrence = Array.isArray(normalized.recurrence) ? normalized.recurrence.filter(occurrence => occurrence && occurrence.isArchived !== true) : [];
 
         // Avoid duplicate recurrence aliases in serialized payloads.
         delete normalized.occurrences;

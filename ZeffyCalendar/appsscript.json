@@ -4,9 +4,9 @@
     "libraries": [
       {
         "userSymbol": "ZeffyAPI",
-        "version": "2",
+        "version": "5",
         "libraryId": "1YbDfhQtOy08w43TQGPc3Go1DSp3zs2E8aOoFD6h9Ly_ebIhReJAcPmEl",
-        "developmentMode": true
+        "developmentMode": false
       }
     ]
   },

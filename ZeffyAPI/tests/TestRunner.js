@@ -63,8 +63,8 @@ export class TestRunner {
   test_when_eventManager_gets_events__then_data_is_returned() {
     console.log('Running getEvents via ZeffyEventManager integration test...');
     const eventManager = this.zeffyAPIFactory.eventManager();
-    const page = { pageSize: 1 };
-    return eventManager.getAll({ ...page }).then(response => {
+    const page = { pageSize: 20 };
+    return eventManager.getAll({ page: { ...page } }).then(response => {
       Assert.assert('Events response should not be null or undefined', true, response != null);
       Assert.assert('Events response data should exist', true, response.data != null);
       Assert.assert('Events response data should be an array', true, Array.isArray(response.data));

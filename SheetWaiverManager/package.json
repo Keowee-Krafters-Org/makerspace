@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "vite build --mode production",
-    "dev": "vite build --mode development",
+    "build:dev": "vite build --mode development",
     "deploy": "npm run build && clasp push",
     "deploy:dev": "npm run dev && clasp push",
     "open:script": "clasp open-script"
@@ -17,6 +17,8 @@
   "type": "module",
   "devDependencies": {
     "rollup-plugin-copy": "^3.5.0",
+    "vite-plugin-clean": "^2.0.1",
+    "vite-plugin-singlefile": "^2.0.1",
     "vite": "^8.1.0"
   },
   "dependencies": {

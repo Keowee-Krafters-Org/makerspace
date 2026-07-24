@@ -73,7 +73,8 @@ export class TestRunner {
    */
   test_when_get_events_function_is_called__then_data_is_returned() {
     console.log('Running getEvents integration test...');
-    return getEvents().then(events => {
+    return getEvents().then(eventsJson => {
+      const events = JSON.parse(eventsJson);
       Assert.assert('Events response should not be null or undefined', events != null, true);
       Assert.assert('Events response data should exist', events.data != null, true);
       Assert.assert('Events response data should be an array', Array.isArray(events.data), true);
